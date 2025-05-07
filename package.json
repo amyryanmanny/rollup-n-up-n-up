@@ -5,7 +5,8 @@
   "scripts": {
     "prepare": "husky",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "start": "bun run index.ts"
   },
   "husky": {
     "hooks": {
@@ -16,6 +17,11 @@
     "*.{js,jsx,ts,tsx,json,css,scss,md}": [
       "eslint --fix"
     ]
+  },
+  "dependencies": {
+    "@actions/core": "^1.11.1",
+    "@octokit/auth-app": "^7.2.1",
+    "@octokit/core": "^6.1.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.26.0",
