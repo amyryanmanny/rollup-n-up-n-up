@@ -17,6 +17,8 @@
     "strict": true,
     "skipLibCheck": true,
     "noFallthroughCasesInSwitch": true,
+    "noImplicitAny": true,
+    "noImplicitOverride": true,
 
     // Some stricter flags (disabled by default)
     "noUnusedLocals": true,

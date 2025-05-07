@@ -1,7 +1,7 @@
 import { getInput } from "@actions/core";
 
 export function getSecret(name: string): string | undefined {
-  let secret;
+  let secret: string | undefined;
   if (process.env.GITHUB_ACTIONS === "true") {
     secret = getInput(name);
   }
