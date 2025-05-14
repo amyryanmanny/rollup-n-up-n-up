@@ -1,8 +1,6 @@
-import { getGitHubSecrets } from "./src/secrets/github";
-import { initOctokit } from "./src/octokit";
+import { getOctokit } from "./src/octokit";
 
-const secrets = getGitHubSecrets();
-const octokit = initOctokit(secrets);
+const octokit = getOctokit();
 
 // Use it
 octokit.request("GET /user").then((response) => {

@@ -1,43 +1,42 @@
-import { Octokit } from "@octokit/core";
+import { Octokit } from "@octokit/rest";
 import { createAppAuth } from "@octokit/auth-app";
 
-import { type GitHubSecrets } from "./secrets/github";
+import { getGitHubSecrets } from "./secrets/github";
 
 // Singleton
 let octokitInstance: Octokit | null = null;
 
-export function initOctokit(secrets: GitHubSecrets): Octokit {
-  if (!octokitInstance) {
-    if (secrets.kind === "pat" || secrets.kind === "default") {
-      const { token } = secrets;
+function initOctokit(): Octokit {
+  const secrets = getGitHubSecrets();
+  let instance: Octokit;
 
-      octokitInstance = new Octokit({
-        auth: token,
-      });
-    } else if (secrets.kind === "app") {
-      const { appId, privateKey, installationId } = secrets;
+  if (secrets.kind === "pat" || secrets.kind === "default") {
+    const { token } = secrets;
 
-      octokitInstance = new Octokit({
-        authStrategy: createAppAuth,
-        auth: {
-          appId,
-          privateKey,
-          installationId,
-        },
-      });
-    } else {
-      throw new Error("Unknown authentication method");
-    }
+    instance = new Octokit({
+      auth: token,
+    });
+  } else if (secrets.kind === "app") {
+    const { appId, privateKey, installationId } = secrets;
+
+    instance = new Octokit({
+      authStrategy: createAppAuth,
+      auth: {
+        appId,
+        privateKey,
+        installationId,
+      },
+    });
+  } else {
+    throw new Error("Unknown authentication method");
   }
 
-  return octokitInstance;
+  return instance;
 }
 
 export function getOctokit(): Octokit {
   if (!octokitInstance) {
-    throw new Error(
-      "Octokit has not been initialized. Call initOctokit first.",
-    );
+    octokitInstance = initOctokit();
   }
   return octokitInstance;
 }
