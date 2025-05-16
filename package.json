@@ -6,7 +6,8 @@
     "prepare": "husky",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "start": "bun run index.ts"
+    "start": "bun run index.ts",
+    "template": "bun run src/templates/render.ts"
   },
   "husky": {
     "hooks": {
@@ -21,7 +22,8 @@
   "dependencies": {
     "@actions/core": "^1.11.1",
     "@octokit/auth-app": "^7.2.1",
-    "@octokit/rest": "^21.1.1"
+    "@octokit/rest": "^21.1.1",
+    "ventojs": "^1.12.16"
   },
   "devDependencies": {
     "@eslint/js": "^9.26.0",

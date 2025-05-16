@@ -2,5 +2,6 @@
   "recommendations": [
     "eamodio.gitlens",
     "dbaeumer.vscode-eslint",
+    "oscarotero.vento-syntax",
   ]
 }
