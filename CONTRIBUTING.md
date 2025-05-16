@@ -6,6 +6,10 @@ This repo uses Bun as the package manager, primarily for the Typescript interpre
 
 Follow the [official guide to Install Bun](https://bun.sh/docs/installation#installing) on your machine.
 
+## Secrets
+
+Locally, the secrets can be populated from a `.env` file. Typically you will use a PAT for testing, but GitHub App authentication is also supported. If you provide both, it will use the App. See `.env.example` for key names.
+
 ## Husky
 
 This repo uses Husky to lint files before they are committed to the repo. Run `bun run prepare` before committing to install the hooks.

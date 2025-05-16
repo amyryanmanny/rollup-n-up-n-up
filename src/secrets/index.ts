@@ -1,3 +1,5 @@
+import * as dotenv from "dotenv";
+
 import { getInput } from "@actions/core";
 
 export function getSecret(name: string): string | undefined {
@@ -9,6 +11,7 @@ export function getSecret(name: string): string | undefined {
 
   // Fallback to local environment variable
   if (secret === undefined || secret === "") {
+    dotenv.config();
     secret = process.env[name];
   }
 
