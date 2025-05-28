@@ -1,3 +1,10 @@
 # Test
 
 {{ await client.issuesForRepo("amyryanmanny", "rollup-n-up-n-up").first() }}
+
+## Project
+
+{{ set synapseProject = client.issuesForProject("github", 21922, "Project Layer", "Initiative") }}
+
+{{ await synapseProject.length() }}
+{{ await synapseProject.first() }}

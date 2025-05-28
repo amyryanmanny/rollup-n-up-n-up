@@ -8,4 +8,18 @@ export class Client {
   issuesForRepo(owner: string, repo: string): IssueList {
     return IssueList.forRepo(this, { owner, repo });
   }
+
+  issuesForProject(
+    organization: string,
+    projectNumber: number,
+    typeField?: string,
+    typeFilter?: string,
+  ): IssueList {
+    return IssueList.forProjectV2(this, {
+      organization,
+      projectNumber,
+      typeField,
+      typeFilter,
+    });
+  }
 }
