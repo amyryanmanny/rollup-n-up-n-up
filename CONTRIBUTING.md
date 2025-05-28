@@ -14,6 +14,8 @@ Locally, the secrets can be populated from a `.env` file. Typically you will use
 
 This repo uses Husky to lint files before they are committed to the repo. Run `bun run prepare` before committing to install the hooks.
 
+You'll also need to [source your Node environment](https://github.com/typicode/husky/blob/main/docs/how-to.md#solution).
+
 ## Eslint
 
 Eslint rules are marked as errors, but there's no need to fix them manually as you code. If you use VSCode, just press `Shift-Option-F` (Mac) or `Shift-Alt-F` to automatically format the current file.
