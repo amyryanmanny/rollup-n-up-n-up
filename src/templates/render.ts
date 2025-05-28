@@ -19,6 +19,6 @@ for (const filter of Object.values(filters)) {
 // Create the client so the template can use it
 const client = new Client();
 
-const template = await env.load(`${tDir}/main.vto`);
+const template = await env.load(`${tDir}/main.md.vto`);
 const result = await template({ client });
 console.log(result.content);
