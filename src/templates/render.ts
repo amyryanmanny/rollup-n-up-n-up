@@ -21,4 +21,4 @@ const client = new Client();
 
 const template = await env.load(`${tDir}/main.vto`);
 const result = await template({ client });
-console.log(result);
+console.log(result.content);

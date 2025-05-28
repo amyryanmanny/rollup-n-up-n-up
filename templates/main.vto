@@ -1,10 +1,12 @@
 # Test
 
-{{ await client.issuesForRepo("amyryanmanny", "rollup-n-up-n-up").first() }}
-
 ## Project
 
-{{ set synapseProject = client.issuesForProject("github", 21922, "Project Layer", "Initiative") }}
+{{ set synapseProject = client.issuesForProject("github", 21922, "Initiative", "Project Layer") }}
+{{ set initiatives = await synapseProject.all() }}
 
-{{ await synapseProject.length() }}
-{{ await synapseProject.first() }}
+{{ for initiative of initiatives }}
+  {{ set latestUpdate = await initiative.latestUpdate() }}
+  ## {{ initiative.issue.title }}
+  {{ latestUpdate.body }}
+{{ /for }}

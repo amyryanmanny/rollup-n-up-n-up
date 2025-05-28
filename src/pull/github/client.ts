@@ -12,14 +12,14 @@ export class Client {
   issuesForProject(
     organization: string,
     projectNumber: number,
-    typeField?: string,
     typeFilter?: string,
+    typeField?: string,
   ): IssueList {
     return IssueList.forProjectV2(this, {
       organization,
       projectNumber,
-      typeField,
       typeFilter,
+      typeField,
     });
   }
 }

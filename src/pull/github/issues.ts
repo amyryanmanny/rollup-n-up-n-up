@@ -1,17 +1,20 @@
 import { Client } from "./client";
 import type { RestEndpointMethodTypes } from "@octokit/rest";
 
+// Interface
 type ListIssuesForRepoParameters =
   RestEndpointMethodTypes["issues"]["listForRepo"]["parameters"];
 type ListIssuesForProjectViewParameters = {
   organization: string;
   projectNumber: number;
-  typeField: string | undefined;
   typeFilter: string | undefined;
+  typeField: string | undefined; // Defaults to issueType
 };
 
+// Issue
 type Issue =
-  RestEndpointMethodTypes["issues"]["listForRepo"]["response"]["data"][number];
+  | RestEndpointMethodTypes["issues"]["listForRepo"]["response"]["data"][number]
+  | ProjectIssue;
 type ProjectIssue = {
   // Until Projects are added to the REST API we have to construct the type
   // It's not worth making this a Partial, but maybe there should be a single supertype instead
@@ -20,12 +23,66 @@ type ProjectIssue = {
   url: string;
   assignees: string[];
   type: string;
+  comments: Array<ProjectIssueComment>;
+};
+const RE_UPDATE = RegExp(/<(!--\s*UPDATE\s*--)>/);
+
+// Comment
+type Comment = ProjectIssueComment;
+type ProjectIssueComment = {
+  author: string;
+  body: string;
+  createdAt: Date;
 };
 
-export class IssueList {
-  private issues: Promise<(Issue | ProjectIssue)[]>;
+// Client Classes
+class IssueWrapper {
+  public issue: Issue;
 
-  private constructor(issues: Promise<(Issue | ProjectIssue)[]>) {
+  constructor(issue: Issue) {
+    this.issue = issue;
+  }
+
+  latestUpdate(): Comment {
+    const issue = this.issue;
+
+    const comments = issue.comments;
+    if (typeof comments == "number") {
+      // For REST API issues, comments is a number
+      // TODO: Fetch the comments for the issue
+      throw new Error(
+        "Fetching last update for REST API issues is not implemented yet.",
+      );
+    }
+
+    const updates = comments
+      .filter((comment) => {
+        // Check if the comment body contains the update marker
+        return RE_UPDATE.test(comment.body);
+      })
+      .sort((a, b) => {
+        // Sort comments by createdAt in descending order
+        return b.createdAt.getTime() - a.createdAt.getTime();
+      });
+    if (updates.length === 0) {
+      return {
+        author: "",
+        body: "No updates found",
+        createdAt: new Date(0), // Return a default date
+      };
+    }
+    const newestUpdate = updates[0];
+    // Remove the update marker from the body
+    newestUpdate.body = newestUpdate.body.replace(RE_UPDATE, "");
+
+    return newestUpdate;
+  }
+}
+
+export class IssueList {
+  private issues: Promise<Issue[]>;
+
+  private constructor(issues: Promise<Issue[]>) {
     this.issues = issues;
   }
 
@@ -55,13 +112,25 @@ export class IssueList {
                     __typename
                     ... on Issue {
                       title
-                      assignees(first:5) {
+                      assignees(first: 5) {
                         nodes {
                           login
                         }
                       }
+                      issueType {
+                        name
+                      }
                       body
                       url
+                      comments(last: 20) {
+                        nodes {
+                          author {
+                            login
+                          }
+                          body
+                          createdAt
+                        }
+                      }
                     }
                   }
                   fieldValueByName(name: $typeField) {
@@ -92,11 +161,23 @@ export class IssueList {
                 content: {
                   __typename: string;
                   title: string;
+                  body: string;
+                  url: string;
                   assignees: {
                     nodes: Array<{ login: string }>;
                   };
-                  body: string;
-                  url: string;
+                  issueType: {
+                    name: string;
+                  };
+                  comments: {
+                    nodes: Array<{
+                      author: {
+                        login: string;
+                      };
+                      body: string;
+                      createdAt: string; // ISO 8601 date string
+                    }>;
+                  };
                 } | null;
                 fieldValueByName: {
                   name?: string;
@@ -129,34 +210,35 @@ export class IssueList {
             assignees: content.assignees.nodes.map(
               (assignee) => assignee.login,
             ),
-            type: edge.node.fieldValueByName?.name || "",
+            type:
+              content.issueType?.name || edge.node.fieldValueByName?.name || "",
+            comments: content.comments.nodes.map((comment) => ({
+              author: comment.author.login,
+              body: comment.body,
+              createdAt: new Date(comment.createdAt),
+            })),
           } as ProjectIssue;
           // TODO: Paginate
         })
         .filter((item) => item !== null)
         .filter(
           // So we can filter by Bug, Initiative
-          (item) => params.typeFilter && item.type == params.typeFilter,
+          (item) => {
+            return !params.typeFilter || item.type == params.typeFilter;
+          },
         );
     });
 
     return new IssueList(data);
   }
 
+  async all(): Promise<IssueWrapper[]> {
+    const issues = await this.issues;
+    return issues.map((issue) => new IssueWrapper(issue));
+  }
+
   async length(): Promise<number> {
     const issues = await this.issues;
     return issues.length;
-  }
-
-  async first(): Promise<string> {
-    const issues = await this.issues;
-    if (issues.length === 0) {
-      return "";
-    }
-    const body = issues[0].body;
-    if (!body) {
-      return "";
-    }
-    return body;
   }
 }
