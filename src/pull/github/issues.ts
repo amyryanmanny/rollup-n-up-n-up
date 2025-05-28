@@ -43,6 +43,10 @@ class IssueWrapper {
     this.issue = issue;
   }
 
+  title(): string {
+    return this.issue.title;
+  }
+
   latestUpdate(): Comment {
     const issue = this.issue;
 

@@ -1,10 +1,9 @@
 # Synapse Initiative Updates **{{ new Date().toISOString().slice(0, 10) }}**
 
-{{ set synapseProject = client.issuesForProject("github", 21922, "Initiative", "Project Layer") }}
-{{ set initiatives = await synapseProject.all() }}
+{{ set synapseInitiatives = await client.issuesForProject("github", 21922, "Initiative", "Project Layer").all() }}
 
-{{ for initiative of initiatives }}
+{{ for initiative of synapseInitiatives }}
+  ## {{ initiative.title() }}
   {{ set latestUpdate = await initiative.latestUpdate() }}
-  ## {{ initiative.issue.title }}
   {{ latestUpdate.body }}
 {{ /for }}
