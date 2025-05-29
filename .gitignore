@@ -137,3 +137,6 @@ dist
 
 # dotenv
 .env
+
+# Output
+output.md

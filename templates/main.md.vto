@@ -7,3 +7,7 @@
 {{- set latestUpdate = await initiative.latestUpdate() -}}
 {{- latestUpdate.renderBody() -}}
 {{ /for }}
+
+## TL;DR
+
+{{ await client.summarizeMemory() }}
