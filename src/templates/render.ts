@@ -1,24 +1,35 @@
+import fs from "fs";
 import path from "path";
 import vento from "ventojs";
 
 import * as filters from "./filters";
 import { Client } from "../pull/github/client";
 
-const tDir = path.resolve(__dirname, "../..", "templates/");
+const rootDir = path.resolve(__dirname, "../..");
+const templateDir = path.resolve(rootDir, "templates/");
 const env = vento({
   dataVarname: "global",
   autoDataVarname: true,
-  includes: tDir,
+  includes: templateDir,
   autoescape: true,
 });
 
-// Register all custom filters from filters.ts
+// Register all Filters
 for (const filter of Object.values(filters)) {
   env.filters[filter.name] = filter;
 }
-// Create the client so the template can use it
-const client = new Client();
 
-const template = await env.load(`${tDir}/main.md.vto`);
-const result = await template({ client });
-console.log(result.content);
+// Setup Globals
+const client = new Client();
+const today = new Date().toISOString().split("T")[0];
+
+const globals = { client, today };
+
+// Render
+const template = await env.load(`${templateDir}/main.md.vto`);
+const result = await template(globals);
+console.debug(result.content);
+
+// Write File
+const outputPath = path.resolve(rootDir, "output.md");
+fs.writeFileSync(outputPath, result.content, "utf8");
