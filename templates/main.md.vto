@@ -4,6 +4,6 @@
 
 {{ for initiative of synapseInitiatives }}
 ## {{ initiative.title() }}
-{{ set latestUpdate = await initiative.latestUpdate() }}
-{{- latestUpdate.body }}
+{{- set latestUpdate = await initiative.latestUpdate() -}}
+{{- latestUpdate.renderBody() -}}
 {{ /for }}

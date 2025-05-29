@@ -1,4 +1,5 @@
 import { Client } from "./client";
+import { getMemory } from "../../ai/memory";
 import type { RestEndpointMethodTypes } from "@octokit/rest";
 
 // Interface
@@ -36,8 +37,45 @@ type ProjectIssueComment = {
 };
 
 // Client Classes
+class CommentWrapper {
+  private comment: Comment;
+  private issueTitle: string;
+  private memory = getMemory();
+
+  constructor(issueTitle: string, comment: Comment) {
+    this.issueTitle = issueTitle;
+    this.comment = comment;
+  }
+
+  static empty(): CommentWrapper {
+    return new CommentWrapper("", {
+      author: "",
+      body: "No updates found",
+      createdAt: new Date(0),
+    });
+  }
+
+  author(): string {
+    return this.comment.author;
+  }
+
+  remember() {
+    this.memory.remember(`Comment on ${this.issueTitle}: ${this.comment.body}`);
+  }
+
+  renderBody(): string {
+    this.remember();
+    return this.comment.body;
+  }
+
+  createdAt(): Date {
+    return this.comment.createdAt;
+  }
+}
+
 class IssueWrapper {
-  public issue: Issue;
+  private issue: Issue;
+  private memory = getMemory();
 
   constructor(issue: Issue) {
     this.issue = issue;
@@ -47,7 +85,16 @@ class IssueWrapper {
     return this.issue.title;
   }
 
-  latestUpdate(): Comment {
+  remember() {
+    this.memory.remember(`${this.issue.title}: ${this.issue.body}`);
+  }
+
+  renderBody(): string {
+    this.remember();
+    return this.issue.body || "";
+  }
+
+  latestUpdate(): CommentWrapper {
     const issue = this.issue;
 
     const comments = issue.comments;
@@ -69,17 +116,13 @@ class IssueWrapper {
         return b.createdAt.getTime() - a.createdAt.getTime();
       });
     if (updates.length === 0) {
-      return {
-        author: "",
-        body: "No updates found",
-        createdAt: new Date(0), // Return a default date
-      };
+      return CommentWrapper.empty();
     }
     const newestUpdate = updates[0];
     // Remove the update marker from the body
     newestUpdate.body = newestUpdate.body.replace(RE_UPDATE, "");
 
-    return newestUpdate;
+    return new CommentWrapper(issue.title, newestUpdate);
   }
 }
 
@@ -99,7 +142,7 @@ export class IssueList {
     return new IssueList(data);
   }
 
-  static forProjectV2(
+  static forProject(
     client: Client,
     params: ListIssuesForProjectViewParameters,
   ): IssueList {

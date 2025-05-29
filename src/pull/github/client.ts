@@ -15,7 +15,7 @@ export class Client {
     typeFilter?: string,
     typeField?: string,
   ): IssueList {
-    return IssueList.forProjectV2(this, {
+    return IssueList.forProject(this, {
       organization,
       projectNumber,
       typeFilter,
