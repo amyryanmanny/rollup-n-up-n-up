@@ -1,28 +1,27 @@
 import ModelClient, { isUnexpected } from "@azure-rest/ai-inference";
 import { AzureKeyCredential } from "@azure/core-auth";
 
-export async function quickSummarize(content: string): Promise<string> {
+import * as fs from "fs";
+import * as core from "@actions/core";
+import { getMemory } from "./memory";
+import { getToken } from "../octokit";
+
+const CONTENT_RE = RegExp(/{{.*CONTENT>.*}}/);
+
+function loadPrompt(input: string): string {
+  const promptFileOrInput = core.getInput(input);
+
+  if (promptFileOrInput === undefined || promptFileOrInput === "") {
+    throw new Error(`Prompt input "${input}" was requested but not provided.`);
+  }
+  if (fs.existsSync(promptFileOrInput)) {
+    return fs.readFileSync(promptFileOrInput, "utf-8");
+  }
+  return promptFileOrInput;
+}
+
+async function runPrompt(prompt: string): Promise<string> {
   try {
-    // Load prompt content - required
-    const prompt = `
-    Summarize the following updates into a rollup for the Synapse team.
-
-    Use the following format for the rollup:
-
-    TL;DR: <summary of the updates>
-
-    🎉 Wins/Accomplishments (Subsections "What We Shipped" and "What We're Learning")
-
-    📣 FYI
-
-    🆘 SOS/Need Support
-
-    Here is the content to summarize:
-    START CONTENT
-    ${content}
-    END CONTENT
-    `;
-
     // Load system prompt with default value
     const systemPrompt =
       "You are a helpful assistant summarizing Issues and Comments into a concise rollup.";
@@ -57,10 +56,7 @@ export async function quickSummarize(content: string): Promise<string> {
         throw response.body.error;
       }
       throw new Error(
-        "An error occurred while fetching the response (" +
-          response.status +
-          "): " +
-          response.body,
+        `An error occurred while fetching the response (${response.status}) ${response.body}`,
       );
     }
 
@@ -76,4 +72,19 @@ export async function quickSummarize(content: string): Promise<string> {
       return "An unexpected error occurred";
     }
   }
+}
+
+export async function summarize(
+  promptInput: string,
+  memoryBank: number = 0,
+): Promise<string> {
+  const prompt = loadPrompt(promptInput);
+
+  const memory = getMemory();
+  const content = memory.getBankContent(memoryBank);
+
+  const hydratedPrompt = prompt.replace(CONTENT_RE, content);
+  const output = await runPrompt(hydratedPrompt);
+
+  return output;
 }

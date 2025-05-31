@@ -2,12 +2,12 @@
 
 {{ set synapseInitiatives = await client.issuesForProject("github", 21922, "Initiative", "Project Layer").all() }}
 
-{{ for initiative of synapseInitiatives }}
-## {{ initiative.title() }}
-{{- set latestUpdate = await initiative.latestUpdate() -}}
-{{- latestUpdate.renderBody() -}}
+{{ for issue of synapseInitiatives }}
+## {{ issue.title() }}
+{{- set update = await issue.latestUpdate() -}}
+{{- update.renderBody() -}}
 {{ /for }}
 
 ## TL;DR
 
-{{ await client.summarizeMemory() }}
+{{ await client.renderSummary("TLDR_PROMPT") }}

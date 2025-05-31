@@ -1,5 +1,4 @@
-import { getMemory } from "../../ai/memory";
-import { quickSummarize } from "../../ai/summarize";
+import { summarize } from "../../ai/summarize";
 import { getOctokit } from "../../octokit";
 import { IssueList } from "./issues";
 
@@ -25,9 +24,7 @@ export class Client {
     });
   }
 
-  async summarizeMemory(): Promise<string> {
-    const memory = getMemory();
-    const summary = await quickSummarize(memory.getAll().join("\n\n"));
-    return summary;
+  async renderSummary(prompt: string, memoryBank: number = 0): Promise<string> {
+    return await summarize(prompt, memoryBank);
   }
 }

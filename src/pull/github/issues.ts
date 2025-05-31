@@ -13,9 +13,9 @@ type ListIssuesForProjectViewParameters = {
 };
 
 // Issue
-type Issue =
-  | RestEndpointMethodTypes["issues"]["listForRepo"]["response"]["data"][number]
-  | ProjectIssue;
+type Issue = RestIssue | ProjectIssue;
+type RestIssue =
+  RestEndpointMethodTypes["issues"]["listForRepo"]["response"]["data"][number];
 type ProjectIssue = {
   // Until Projects are added to the REST API we have to construct the type
   // It's not worth making this a Partial, but maybe there should be a single supertype instead
@@ -132,6 +132,8 @@ export class IssueList {
   private constructor(issues: Promise<Issue[]>) {
     this.issues = issues;
   }
+
+  // TODO: Trying to iterate this object needs to throw an error, or transparently call all()
 
   static forRepo(
     client: Client,
@@ -258,7 +260,7 @@ export class IssueList {
               (assignee) => assignee.login,
             ),
             type:
-              content.issueType?.name || edge.node.fieldValueByName?.name || "",
+              edge.node.fieldValueByName?.name || content.issueType?.name || "",
             comments: content.comments.nodes.map((comment) => ({
               author: comment.author.login,
               body: comment.body,
@@ -284,7 +286,7 @@ export class IssueList {
     return issues.map((issue) => new IssueWrapper(issue));
   }
 
-  async length(): Promise<number> {
+  async count(): Promise<number> {
     const issues = await this.issues;
     return issues.length;
   }

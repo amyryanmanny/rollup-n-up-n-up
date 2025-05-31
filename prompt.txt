@@ -1,0 +1,15 @@
+Summarize the following updates into a rollup for the Synapse team.
+
+Use the following format for the rollup:
+
+TL;DR: <summary of the updates>
+
+🎉 Wins/Accomplishments (Subsections "What We Shipped" and "What We're Learning")
+
+📣 FYI
+
+🆘 SOS/Need Support
+
+The rest of the input is the content to summarize:
+
+{{CONTENT}}
