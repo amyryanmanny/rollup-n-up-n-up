@@ -52,7 +52,7 @@ function getGitHubAppSecrets(): GitHubAppSecrets | undefined {
   };
 }
 
-export function getGitHubPatSecrets(): GitHubPatSecrets | undefined {
+function getGitHubPatSecrets(): GitHubPatSecrets | undefined {
   const token = getSecret("GITHUB_PAT_TOKEN");
 
   if (!token) {

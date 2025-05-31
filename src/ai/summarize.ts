@@ -1,6 +1,5 @@
 import ModelClient, { isUnexpected } from "@azure-rest/ai-inference";
 import { AzureKeyCredential } from "@azure/core-auth";
-import { getGitHubPatSecrets } from "../secrets/github";
 
 export async function quickSummarize(content: string): Promise<string> {
   try {
@@ -31,10 +30,7 @@ export async function quickSummarize(content: string): Promise<string> {
     const modelName: string = "gpt-4.1";
     const maxTokens: number = 800;
 
-    const token = getGitHubPatSecrets()!.token;
-    if (token === undefined) {
-      throw new Error("GITHUB_TOKEN is not set");
-    }
+    const token = await getToken();
 
     const endpoint = "https://models.inference.ai.azure.com";
 

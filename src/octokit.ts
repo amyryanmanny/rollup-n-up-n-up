@@ -7,8 +7,8 @@ import { getGitHubSecrets } from "./secrets/github";
 let octokitInstance: Octokit | null = null;
 
 function initOctokit(): Octokit {
-  const secrets = getGitHubSecrets();
   let instance: Octokit;
+  const secrets = getGitHubSecrets();
 
   if (secrets.kind === "pat" || secrets.kind === "default") {
     const { token } = secrets;
@@ -24,6 +24,8 @@ function initOctokit(): Octokit {
       auth: {
         appId,
         privateKey,
+        // TODO: Fetch installationId dynamically from actions context
+        // https://github.com/octokit/app.js/issues/413#issuecomment-1560335463
         installationId,
       },
     });
@@ -32,6 +34,23 @@ function initOctokit(): Octokit {
   }
 
   return instance;
+}
+
+export async function getToken(): Promise<string> {
+  const octokit = getOctokit();
+  const secrets = getGitHubSecrets();
+
+  if (secrets.kind === "pat" || secrets.kind === "default") {
+    const { token } = secrets;
+    return token;
+  } else if (secrets.kind === "app") {
+    const { installationId } = secrets;
+    const { data } = await octokit.apps.createInstallationAccessToken({
+      installation_id: installationId,
+    });
+    return data.token;
+  }
+  throw new Error("Unknown authentication method");
 }
 
 export function getOctokit(): Octokit {
