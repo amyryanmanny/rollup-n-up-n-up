@@ -40,7 +40,7 @@ const sortCommentsByDateDesc = (a: Comment, b: Comment) => {
   return b.createdAt.getTime() - a.createdAt.getTime();
 };
 const filterUpdates = (comment: Comment) => {
-  const updateMarker = RegExp(/<(!--\s*UPDATE\s*--)>/); // TODO: Custom marker as input
+  const updateMarker = RegExp(/<(!--\s*UPDATE\s*--)>/g); // TODO: Custom marker as input
   // Check if the comment body contains the update marker
   const isUpdate = updateMarker.test(comment.body);
   if (!isUpdate) return false;
@@ -155,7 +155,12 @@ export class IssueList {
     this.issues = issues;
   }
 
-  // TODO: Trying to iterate this object needs to throw an error, or transparently call all()
+  [Symbol.iterator]() {
+    // Explicitly reject iteration. Debugging attempts to iterate over the Promise object is confusing.
+    throw new Error(
+      "IssueLists cannot be iterated directly. Did you mean to call '.all()'?",
+    );
+  }
 
   static forRepo(
     client: Client,
