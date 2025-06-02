@@ -70,21 +70,26 @@ class CommentWrapper {
     });
   }
 
+  // Properties
   author(): string {
     return this.comment.author;
   }
 
-  remember() {
-    this.memory.remember(`Comment on ${this.issueTitle}: ${this.comment.body}`);
-  }
-
-  renderBody(): string {
-    this.remember();
-    return this.comment.body;
-  }
-
   createdAt(): Date {
     return this.comment.createdAt;
+  }
+
+  // Render / Memory Functions
+  remember(bankIndex: number = 0) {
+    this.memory.remember(
+      `Comment on ${this.issueTitle}: ${this.comment.body}`,
+      bankIndex,
+    );
+  }
+
+  renderBody(memoryBankIndex: number = 0): string {
+    this.remember(memoryBankIndex);
+    return this.comment.body;
   }
 }
 
@@ -96,10 +101,12 @@ class IssueWrapper {
     this.issue = issue;
   }
 
+  // Properties
   title(): string {
     return this.issue.title;
   }
 
+  // Render / Memory Functions
   remember() {
     this.memory.remember(`${this.issue.title}: ${this.issue.body}`);
   }
@@ -109,6 +116,7 @@ class IssueWrapper {
     return this.issue.body || "";
   }
 
+  // Comment Functions
   getComments(): Comment[] {
     const issue = this.issue;
 
@@ -156,7 +164,7 @@ export class IssueList {
   }
 
   [Symbol.iterator]() {
-    // Explicitly reject iteration. Debugging attempts to iterate over the Promise object is confusing.
+    // Explicitly reject iteration. Debugging attempts to iterate over the IssueList object is confusing.
     throw new Error(
       "IssueLists cannot be iterated directly. Did you mean to call '.all()'?",
     );
