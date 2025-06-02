@@ -26,7 +26,6 @@ type ProjectIssue = {
   type: string;
   comments: Array<ProjectIssueComment>;
 };
-const RE_UPDATE = RegExp(/<(!--\s*UPDATE\s*--)>/);
 
 // Comment
 type Comment = ProjectIssueComment;
@@ -34,6 +33,22 @@ type ProjectIssueComment = {
   author: string;
   body: string;
   createdAt: Date;
+};
+
+const sortCommentsByDateDesc = (a: Comment, b: Comment) => {
+  // Sort comments by createdAt in descending order
+  return b.createdAt.getTime() - a.createdAt.getTime();
+};
+const filterUpdates = (comment: Comment) => {
+  const updateMarker = RegExp(/<(!--\s*UPDATE\s*--)>/); // TODO: Custom marker as input
+  // Check if the comment body contains the update marker
+  const isUpdate = updateMarker.test(comment.body);
+  if (!isUpdate) return false;
+
+  // SIDE_EFFECT: Remove the update marker from the body
+  comment.body = comment.body.replaceAll(updateMarker, "");
+
+  return true;
 };
 
 // Client Classes
@@ -94,7 +109,7 @@ class IssueWrapper {
     return this.issue.body || "";
   }
 
-  latestUpdate(): CommentWrapper {
+  getComments(): Comment[] {
     const issue = this.issue;
 
     const comments = issue.comments;
@@ -106,23 +121,30 @@ class IssueWrapper {
       );
     }
 
-    const updates = comments
-      .filter((comment) => {
-        // Check if the comment body contains the update marker
-        return RE_UPDATE.test(comment.body);
-      })
-      .sort((a, b) => {
-        // Sort comments by createdAt in descending order
-        return b.createdAt.getTime() - a.createdAt.getTime();
-      });
+    return comments;
+  }
+
+  latestComment(): CommentWrapper {
+    const comments = this.getComments().sort(sortCommentsByDateDesc);
+
+    if (comments.length === 0) {
+      return CommentWrapper.empty();
+    }
+
+    const latestComment = comments[0];
+    return new CommentWrapper(this.issue.title, latestComment);
+  }
+
+  latestUpdate(): CommentWrapper {
+    const comments = this.getComments().sort(sortCommentsByDateDesc);
+    const updates = comments.filter(filterUpdates);
+
     if (updates.length === 0) {
       return CommentWrapper.empty();
     }
-    const newestUpdate = updates[0];
-    // Remove the update marker from the body
-    newestUpdate.body = newestUpdate.body.replace(RE_UPDATE, "");
 
-    return new CommentWrapper(issue.title, newestUpdate);
+    const latestUpdate = updates[0];
+    return new CommentWrapper(this.issue.title, latestUpdate);
   }
 }
 
