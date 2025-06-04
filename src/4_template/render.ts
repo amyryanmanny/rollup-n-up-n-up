@@ -3,7 +3,7 @@ import vento from "ventojs";
 import * as filters from "./filters";
 import * as plugins from "./plugins";
 
-import { Client } from "../pull/github/client";
+import { Client } from "../2_pull/github/client";
 
 const env = vento({
   dataVarname: "global",

@@ -1,7 +1,7 @@
 import { Octokit } from "@octokit/rest";
 import { createAppAuth } from "@octokit/auth-app";
 
-import { getGitHubSecrets } from "./secrets/github";
+import { getGitHubSecrets } from "./util/secrets/github";
 
 // Singleton
 let octokitInstance: Octokit | null = null;

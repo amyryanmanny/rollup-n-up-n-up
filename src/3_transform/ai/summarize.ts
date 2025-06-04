@@ -3,8 +3,9 @@ import { AzureKeyCredential } from "@azure/core-auth";
 
 import * as fs from "fs";
 import * as core from "@actions/core";
-import { getMemory } from "./memory";
-import { getToken } from "../octokit";
+
+import { getMemory } from "../memory";
+import { getToken } from "../../octokit";
 
 const CONTENT_RE = RegExp(/{{.*CONTENT>.*}}/);
 

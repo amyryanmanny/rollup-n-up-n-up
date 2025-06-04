@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 
-import { renderTemplate } from "../templates/render";
+import { renderTemplate } from "../4_template/render";
 
 const rootDir = process.cwd();
 const templateDir = path.resolve(rootDir, "templates/");

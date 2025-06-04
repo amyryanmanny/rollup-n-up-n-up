@@ -1,5 +1,5 @@
 import { Client } from "./client";
-import { getMemory } from "../../ai/memory";
+import { getMemory } from "../../3_transform/memory";
 import type { RestEndpointMethodTypes } from "@octokit/rest";
 
 // Interface

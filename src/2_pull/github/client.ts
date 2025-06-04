@@ -1,8 +1,8 @@
 import { IssueList } from "./issues";
-import { summarize } from "../../ai/summarize";
+import { summarize } from "../../3_transform/ai/summarize";
 
 import { getOctokit } from "../../octokit";
-import { getMemory } from "../../ai/memory";
+import { getMemory } from "../../3_transform/memory";
 
 export class Client {
   // The Client class is a wrapper around the GitHub API client.

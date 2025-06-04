@@ -1,4 +1,4 @@
-import { renderTemplate } from "../templates/render";
+import { renderTemplate } from "../4_template/render";
 import { getInput, setOutput } from "@actions/core";
 
 const template = getInput("template") || "main.md.vto";

@@ -4,11 +4,11 @@
   "type": "module",
   "scripts": {
     "prepare": "husky",
-    "build-render": "bun build ./src/trigger/action-render.ts --target node --outfile ./dist/render/index.js",
+    "build-render": "bun build ./src/1_trigger/action-render.ts --target node --outfile ./dist/render/index.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "start": "bun run index.ts",
-    "template": "bun run ./src/trigger/local.ts"
+    "local": "bun run ./src/1_trigger/local.ts"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,json,css,scss,md}": [
