@@ -32476,7 +32476,7 @@ function mod_default(options = {}) {
   return env;
 }
 
-// src/templates/filters.ts
+// src/4_template/filters.ts
 var exports_filters = {};
 __export(exports_filters, {
   stub: () => stub
@@ -32485,13 +32485,13 @@ function stub(text) {
   return `stub-${text}`;
 }
 
-// src/templates/plugins/index.ts
+// src/4_template/plugins/index.ts
 var exports_plugins = {};
 __export(exports_plugins, {
   hoist: () => hoist_default
 });
 
-// src/templates/plugins/hoist.ts
+// src/4_template/plugins/hoist.ts
 function hoist_default() {
   return (env) => {
     env.tags.push(mark);
@@ -32523,7 +32523,7 @@ function hoist(env, code, outputVar, tokens) {
   return `${outputVar} = ${outputVar}.replace(${marker}, ${val});`;
 }
 
-// src/ai/memory.ts
+// src/3_transform/memory.ts
 var memory;
 function getMemory() {
   if (!memory) {
@@ -32572,7 +32572,7 @@ class Memory {
   }
 }
 
-// src/pull/github/issues.ts
+// src/2_pull/github/issues.ts
 var sortCommentsByDateDesc = (a2, b2) => {
   return b2.createdAt.getTime() - a2.createdAt.getTime();
 };
@@ -36443,7 +36443,7 @@ function getPathFromMapKey(mapKey) {
 // node_modules/@azure-rest/ai-inference/dist/esm/index.js
 var esm_default = createClient;
 
-// src/ai/summarize.ts
+// src/3_transform/ai/summarize.ts
 var core = __toESM(require_core(), 1);
 import * as fs from "fs";
 
@@ -41083,7 +41083,7 @@ function createAppAuth(options) {
   });
 }
 
-// src/secrets/index.ts
+// src/util/secrets/index.ts
 var dotenv = __toESM(require_main3(), 1);
 var import_core2 = __toESM(require_core(), 1);
 function getSecret(name) {
@@ -41098,7 +41098,7 @@ function getSecret(name) {
   return secret;
 }
 
-// src/secrets/github.ts
+// src/util/secrets/github.ts
 function getGitHubSecrets() {
   const secrets = getGitHubAppSecrets() ?? getGitHubPatSecrets() ?? getGitHubDefaultSecrets();
   if (secrets !== undefined) {
@@ -41188,7 +41188,7 @@ function getOctokit() {
   return octokitInstance;
 }
 
-// src/ai/summarize.ts
+// src/3_transform/ai/summarize.ts
 var CONTENT_RE = RegExp(/{{.*CONTENT>.*}}/);
 function loadPrompt(input) {
   const promptFileOrInput = core.getInput(input);
@@ -41251,7 +41251,7 @@ async function summarize(promptInput, memoryBank = 0) {
   return output;
 }
 
-// src/pull/github/client.ts
+// src/2_pull/github/client.ts
 class Client {
   octokit = getOctokit();
   issuesForRepo(owner, repo) {
@@ -41274,7 +41274,7 @@ class Client {
   }
 }
 
-// src/templates/render.ts
+// src/4_template/render.ts
 var env = mod_default({
   dataVarname: "global",
   autoDataVarname: true,
@@ -41298,7 +41298,7 @@ async function renderTemplate(templatePath) {
   return result.content;
 }
 
-// src/trigger/action-render.ts
+// src/1_trigger/action-render.ts
 var import_core3 = __toESM(require_core(), 1);
 var template = import_core3.getInput("template") || "main.md.vto";
 var md = await renderTemplate(template);
