@@ -1,0 +1,13 @@
+name: "RollupNup Render"
+description: "Render a Vento.js template as a string using the internal client"
+author: "amyryanmanny"
+inputs:
+  template:
+    description: "The path to the Vento.js template file to render."
+    required: true
+outputs:
+  md:
+    description: "The markdown file rendered as a string from the template."
+runs:
+  using: node20
+  main: "../dist/render/index.js"
