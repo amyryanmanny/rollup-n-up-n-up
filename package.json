@@ -7,12 +7,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "start": "bun run index.ts",
-    "template": "bun run src/templates/render.ts"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
-    }
+    "template": "bun run ./src/trigger/local.ts"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,json,css,scss,md}": [

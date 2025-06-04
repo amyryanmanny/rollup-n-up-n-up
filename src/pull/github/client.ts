@@ -1,6 +1,8 @@
-import { summarize } from "../../ai/summarize";
-import { getOctokit } from "../../octokit";
 import { IssueList } from "./issues";
+import { summarize } from "../../ai/summarize";
+
+import { getOctokit } from "../../octokit";
+import { getMemory } from "../../ai/memory";
 
 export class Client {
   // The Client class is a wrapper around the GitHub API client.
@@ -22,6 +24,11 @@ export class Client {
       typeFilter,
       typeField,
     });
+  }
+
+  reset(): void {
+    const memory = getMemory();
+    memory.headbonk(); // Clear all memory banks
   }
 
   async renderSummary(prompt: string, memoryBank: number = 0): Promise<string> {

@@ -45,7 +45,7 @@ class Memory {
     return bank.join("\n\n");
   }
 
-  headbonk(bankIndex: number | undefined): void {
+  headbonk(bankIndex?: number): void {
     if (bankIndex === undefined) {
       this.banks.clear();
     } else if (this.banks.has(bankIndex)) {
