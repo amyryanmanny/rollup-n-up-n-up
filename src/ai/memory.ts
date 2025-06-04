@@ -34,7 +34,7 @@ class Memory {
 
   getBank(bankIndex: number = 0): string[] {
     if (!this.banks.has(bankIndex)) {
-      throw new Error(`Memory bank ${bankIndex} has not been initialized.`);
+      return [];
     }
     const bank = this.banks.get(bankIndex)!;
     return bank.slice();
@@ -50,8 +50,6 @@ class Memory {
       this.banks.clear();
     } else if (this.banks.has(bankIndex)) {
       this.banks.delete(bankIndex);
-    } else {
-      throw new Error(`Memory bank ${bankIndex} does not exist.`);
     }
   }
 }

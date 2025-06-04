@@ -82,6 +82,9 @@ export async function summarize(
 
   const memory = getMemory();
   const content = memory.getBankContent(memoryBank);
+  if (!content || content.trim() === "") {
+    return "No content to summarize. Please ensure you have 'render'ed or 'remember'ered text.";
+  }
 
   const hydratedPrompt = prompt.replace(CONTENT_RE, content);
   const output = await runPrompt(hydratedPrompt);
