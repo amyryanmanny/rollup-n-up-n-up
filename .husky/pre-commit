@@ -1,1 +1,5 @@
+# Lint
 npx lint-staged --allow-empty
+
+# Build Actions
+npm run build-render

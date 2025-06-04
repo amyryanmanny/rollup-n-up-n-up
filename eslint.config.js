@@ -1,4 +1,4 @@
-import { defineConfig } from "eslint/config";
+import { defineConfig, globalIgnores } from "eslint/config";
 
 import globals from "globals";
 
@@ -11,6 +11,7 @@ export default defineConfig([
     files: ["**/*.{js,mjs,cjs,ts}"],
     languageOptions: { globals: globals.node },
   },
+  globalIgnores(["**/dist/**", "**/node_modules/**"]),
   js.configs.recommended,
   tseslint.configs.recommended,
   prettierRecommended,
