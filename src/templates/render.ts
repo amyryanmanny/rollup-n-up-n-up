@@ -3,6 +3,8 @@ import path from "path";
 import vento from "ventojs";
 
 import * as filters from "./filters";
+import * as plugins from "./plugins";
+
 import { Client } from "../pull/github/client";
 
 const rootDir = path.resolve(__dirname, "../..");
@@ -14,9 +16,14 @@ const env = vento({
   autoescape: true,
 });
 
-// Register all Filters
+// Register Filters
 for (const filter of Object.values(filters)) {
   env.filters[filter.name] = filter;
+}
+
+// Register Plugins
+for (const plugin of Object.values(plugins)) {
+  env.use(plugin());
 }
 
 // Setup Globals

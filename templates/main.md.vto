@@ -1,13 +1,17 @@
 # Synapse Initiative Updates {{ today }}
 
+## TL;DR
+
+{{ mark TLDR }}
+
+## Initiative Details
+
 {{ set synapseInitiatives = await client.issuesForProject("github", 21922, "Initiative", "Project Layer").all() }}
 
 {{ for issue of synapseInitiatives }}
-## {{ issue.title() }}
+### {{ issue.title() }}
 {{- set update = await issue.latestUpdate() -}}
 {{- update.renderBody() -}}
 {{ /for }}
 
-## TL;DR
-
-{{ await client.renderSummary("TLDR_PROMPT") }}
+{{ hoist TLDR = await client.renderSummary("TLDR_PROMPT") }}
