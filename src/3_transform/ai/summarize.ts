@@ -1,14 +1,13 @@
-import * as fs from "fs";
+import fs from "fs";
 
 import ModelClient, { isUnexpected } from "@azure-rest/ai-inference";
 import { AzureKeyCredential } from "@azure/core-auth";
 
 import { getInput, summary } from "@actions/core";
+import { SUMMARY_ENV_VAR } from "@actions/core/lib/summary";
 
 import { getMemory } from "../memory";
 import { getToken } from "../../octokit";
-
-const CONTENT_RE = RegExp(/\{\{\s*CONTENT\s*\}\}/);
 
 function loadPrompt(input: string): string {
   const promptFileOrInput = getInput(input);
@@ -88,10 +87,23 @@ export async function summarize(
     return "No content to summarize. Check you have 'render'ed or 'remember'ered content.";
   }
 
-  const hydratedPrompt = prompt.replace(CONTENT_RE, content);
-  summary
-    .addDetails(`Hydrated Prompt for Memory Bank ${memoryBank}`, hydratedPrompt)
-    .write();
+  const contentMarker = RegExp(/\{\{\s*CONTENT\s*\}\}/);
+  const hydratedPrompt = prompt.replace(contentMarker, content);
+
+  if (SUMMARY_ENV_VAR in process.env) {
+    // If running on a GitHub Action, log the prompt for debugging
+    summary
+      .addDetails(
+        `Hydrated Prompt for Memory Bank ${memoryBank}`,
+        hydratedPrompt,
+      )
+      .write();
+  } else {
+    console.log(
+      `Hydrated Prompt for Memory Bank ${memoryBank}:\n${hydratedPrompt}`,
+    );
+  }
+
   const output = await runPrompt(hydratedPrompt);
 
   return output;

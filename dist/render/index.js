@@ -32766,7 +32766,7 @@ class IssueList {
 }
 
 // src/3_transform/ai/summarize.ts
-import * as fs from "fs";
+import fs from "fs";
 
 // node_modules/tslib/modules/index.js
 var import_tslib = __toESM(require_tslib(), 1);
@@ -36452,6 +36452,7 @@ var esm_default = createClient;
 
 // src/3_transform/ai/summarize.ts
 var import_core3 = __toESM(require_core(), 1);
+var import_summary = __toESM(require_summary(), 1);
 
 // node_modules/universal-user-agent/index.js
 function getUserAgent() {
@@ -41195,7 +41196,6 @@ function getOctokit() {
 }
 
 // src/3_transform/ai/summarize.ts
-var CONTENT_RE = RegExp(/\{\{\s*CONTENT\s*\}\}/);
 function loadPrompt(input) {
   const promptFileOrInput = import_core3.getInput(input);
   if (promptFileOrInput === undefined || promptFileOrInput === "") {
@@ -41252,8 +41252,14 @@ async function summarize(promptInput, memoryBank = 0) {
   if (!content || content.trim() === "") {
     return "No content to summarize. Check you have 'render'ed or 'remember'ered content.";
   }
-  const hydratedPrompt = prompt.replace(CONTENT_RE, content);
-  import_core3.summary.addDetails(`Hydrated Prompt for Memory Bank ${memoryBank}`, hydratedPrompt).write();
+  const contentMarker = RegExp(/\{\{\s*CONTENT\s*\}\}/);
+  const hydratedPrompt = prompt.replace(contentMarker, content);
+  if (import_summary.SUMMARY_ENV_VAR in process.env) {
+    import_core3.summary.addDetails(`Hydrated Prompt for Memory Bank ${memoryBank}`, hydratedPrompt).write();
+  } else {
+    console.log(`Hydrated Prompt for Memory Bank ${memoryBank}:
+${hydratedPrompt}`);
+  }
   const output = await runPrompt(hydratedPrompt);
   return output;
 }
