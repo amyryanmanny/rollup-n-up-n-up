@@ -41191,7 +41191,7 @@ function getOctokit() {
 }
 
 // src/3_transform/ai/summarize.ts
-var CONTENT_RE = RegExp(/{{.*CONTENT>.*}}/);
+var CONTENT_RE = RegExp(/\{\{\s*CONTENT\s*\}\}/);
 function loadPrompt(input) {
   const promptFileOrInput = import_core3.getInput(input);
   if (promptFileOrInput === undefined || promptFileOrInput === "") {

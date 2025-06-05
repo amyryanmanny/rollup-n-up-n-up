@@ -8,7 +8,7 @@ import { getInput, summary } from "@actions/core";
 import { getMemory } from "../memory";
 import { getToken } from "../../octokit";
 
-const CONTENT_RE = RegExp(/{{.*CONTENT>.*}}/);
+const CONTENT_RE = RegExp(/\{\{\s*CONTENT\s*\}\}/);
 
 function loadPrompt(input: string): string {
   const promptFileOrInput = getInput(input);
