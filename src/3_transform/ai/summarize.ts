@@ -1,8 +1,9 @@
+import * as fs from "fs";
+
 import ModelClient, { isUnexpected } from "@azure-rest/ai-inference";
 import { AzureKeyCredential } from "@azure/core-auth";
 
-import * as fs from "fs";
-import * as core from "@actions/core";
+import { getInput, summary } from "@actions/core";
 
 import { getMemory } from "../memory";
 import { getToken } from "../../octokit";
@@ -10,7 +11,7 @@ import { getToken } from "../../octokit";
 const CONTENT_RE = RegExp(/{{.*CONTENT>.*}}/);
 
 function loadPrompt(input: string): string {
-  const promptFileOrInput = core.getInput(input);
+  const promptFileOrInput = getInput(input);
 
   if (promptFileOrInput === undefined || promptFileOrInput === "") {
     throw new Error(`Prompt input "${input}" was requested but not provided.`);
@@ -84,10 +85,13 @@ export async function summarize(
   const memory = getMemory();
   const content = memory.getBankContent(memoryBank);
   if (!content || content.trim() === "") {
-    return "No content to summarize. Please ensure you have 'render'ed or 'remember'ered text.";
+    return "No content to summarize. Check you have 'render'ed or 'remember'ered content.";
   }
 
   const hydratedPrompt = prompt.replace(CONTENT_RE, content);
+  summary
+    .addDetails(`Hydrated Prompt for Memory Bank ${memoryBank}`, hydratedPrompt)
+    .write();
   const output = await runPrompt(hydratedPrompt);
 
   return output;
