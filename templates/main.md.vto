@@ -4,8 +4,7 @@
 
 {{ mark TLDR }}
 
-## Initiative Details
-
+<details><summary>Expand to read original updates!</summary>
 {{ set synapseInitiatives = await client.issuesForProject("github", 21922, "Initiative", "Project Layer").all() }}
 
 {{ for issue of synapseInitiatives }}
@@ -13,5 +12,6 @@
 {{- set update = await issue.latestUpdate() -}}
 {{- update.renderBody() -}}
 {{ /for }}
+</details>
 
 {{ hoist TLDR = await client.renderSummary("TLDR_PROMPT") }}
