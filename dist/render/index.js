@@ -41303,3 +41303,4 @@ var import_core3 = __toESM(require_core(), 1);
 var template = import_core3.getInput("template") || "main.md.vto";
 var md = await renderTemplate(template);
 import_core3.setOutput("md", md);
+import_core3.summary.addRaw(md, true).write();
