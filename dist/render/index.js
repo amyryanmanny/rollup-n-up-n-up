@@ -32761,6 +32761,9 @@ class IssueList {
   }
 }
 
+// src/3_transform/ai/summarize.ts
+import * as fs from "fs";
+
 // node_modules/tslib/modules/index.js
 var import_tslib = __toESM(require_tslib(), 1);
 var {
@@ -36444,8 +36447,7 @@ function getPathFromMapKey(mapKey) {
 var esm_default = createClient;
 
 // src/3_transform/ai/summarize.ts
-var core = __toESM(require_core(), 1);
-import * as fs from "fs";
+var import_core3 = __toESM(require_core(), 1);
 
 // node_modules/universal-user-agent/index.js
 function getUserAgent() {
@@ -41191,7 +41193,7 @@ function getOctokit() {
 // src/3_transform/ai/summarize.ts
 var CONTENT_RE = RegExp(/{{.*CONTENT>.*}}/);
 function loadPrompt(input) {
-  const promptFileOrInput = core.getInput(input);
+  const promptFileOrInput = import_core3.getInput(input);
   if (promptFileOrInput === undefined || promptFileOrInput === "") {
     throw new Error(`Prompt input "${input}" was requested but not provided.`);
   }
@@ -41244,9 +41246,10 @@ async function summarize(promptInput, memoryBank = 0) {
   const memory2 = getMemory();
   const content = memory2.getBankContent(memoryBank);
   if (!content || content.trim() === "") {
-    return "No content to summarize. Please ensure you have 'render'ed or 'remember'ered text.";
+    return "No content to summarize. Check you have 'render'ed or 'remember'ered content.";
   }
   const hydratedPrompt = prompt.replace(CONTENT_RE, content);
+  import_core3.summary.addDetails(`Hydrated Prompt for Memory Bank ${memoryBank}`, hydratedPrompt).write();
   const output = await runPrompt(hydratedPrompt);
   return output;
 }
@@ -41299,8 +41302,8 @@ async function renderTemplate(templatePath) {
 }
 
 // src/1_trigger/action-render.ts
-var import_core3 = __toESM(require_core(), 1);
-var template = import_core3.getInput("template") || "main.md.vto";
+var import_core4 = __toESM(require_core(), 1);
+var template = import_core4.getInput("template") || "main.md.vto";
 var md = await renderTemplate(template);
-import_core3.setOutput("md", md);
-import_core3.summary.addRaw(md, true).write();
+import_core4.setOutput("md", md);
+import_core4.summary.addRaw(md, true).write();
