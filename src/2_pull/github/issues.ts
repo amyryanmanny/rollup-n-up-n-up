@@ -82,7 +82,7 @@ class CommentWrapper {
   // Render / Memory Functions
   remember(bankIndex: number = 0) {
     this.memory.remember(
-      `Comment on ${this.issueTitle}: ${this.comment.body}`,
+      `## Comment on ${this.issueTitle}:\n\n${this.comment.body}`,
       bankIndex,
     );
   }
@@ -108,7 +108,7 @@ class IssueWrapper {
 
   // Render / Memory Functions
   remember() {
-    this.memory.remember(`${this.issue.title}: ${this.issue.body}`);
+    this.memory.remember(`## ${this.issue.title}:\n\n${this.issue.body}`);
   }
 
   renderBody(): string {

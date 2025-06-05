@@ -32607,7 +32607,9 @@ class CommentWrapper {
     return this.comment.createdAt;
   }
   remember(bankIndex = 0) {
-    this.memory.remember(`Comment on ${this.issueTitle}: ${this.comment.body}`, bankIndex);
+    this.memory.remember(`## Comment on ${this.issueTitle}:
+
+${this.comment.body}`, bankIndex);
   }
   renderBody(memoryBankIndex = 0) {
     this.remember(memoryBankIndex);
@@ -32625,7 +32627,9 @@ class IssueWrapper {
     return this.issue.title;
   }
   remember() {
-    this.memory.remember(`${this.issue.title}: ${this.issue.body}`);
+    this.memory.remember(`## ${this.issue.title}:
+
+${this.issue.body}`);
   }
   renderBody() {
     this.remember();
