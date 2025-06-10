@@ -39,6 +39,6 @@ export async function renderTemplate(templatePath: string): Promise<string> {
 
   memory.headbonk(); // Reset memory after rendering
 
-  console.debug(result.content);
+  console.info(result.content);
   return result.content;
 }

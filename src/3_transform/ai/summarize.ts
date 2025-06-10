@@ -87,7 +87,7 @@ export async function summarize(
     // If running on a GitHub Action, log the prompt for debugging
     summary.addDetails(`Hydrated Prompt`, hydratedPrompt).write();
   } else {
-    console.log(`Hydrated Prompt:\n${hydratedPrompt}`);
+    console.debug(`Hydrated Prompt:\n${hydratedPrompt}`);
   }
 
   const output = await runPrompt(hydratedPrompt);
