@@ -3,7 +3,8 @@ import vento from "ventojs";
 import * as filters from "./filters";
 import * as plugins from "./plugins";
 
-import { Client } from "../2_pull/github/client";
+import { GitHubClient } from "../2_pull/github/client";
+import { getMemory } from "../3_transform/memory";
 
 const env = vento({
   dataVarname: "global",
@@ -23,10 +24,11 @@ for (const plugin of Object.values(plugins)) {
 }
 
 // Setup Globals
-const client = new Client();
+const github = new GitHubClient();
+const memory = getMemory();
 const today = new Date().toISOString().split("T")[0];
 
-const globals = { client, today };
+const globals = { github, memory, today };
 
 export async function renderTemplate(templatePath: string): Promise<string> {
   // Load the template
@@ -35,7 +37,7 @@ export async function renderTemplate(templatePath: string): Promise<string> {
   // Render the template with the provided data
   const result = await template(globals);
 
-  client.reset(); // Reset the client after rendering
+  memory.headbonk(); // Reset memory after rendering
 
   console.debug(result.content);
   return result.content;

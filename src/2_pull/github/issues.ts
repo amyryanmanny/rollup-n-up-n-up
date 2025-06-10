@@ -1,4 +1,4 @@
-import { Client } from "./client";
+import { GitHubClient } from "./client";
 import { getMemory } from "../../3_transform/memory";
 import type { RestEndpointMethodTypes } from "@octokit/rest";
 
@@ -171,7 +171,7 @@ export class IssueList {
   }
 
   static forRepo(
-    client: Client,
+    client: GitHubClient,
     params: ListIssuesForRepoParameters,
   ): IssueList {
     const response = client.octokit.rest.issues.listForRepo(params);
@@ -180,7 +180,7 @@ export class IssueList {
   }
 
   static forProject(
-    client: Client,
+    client: GitHubClient,
     params: ListIssuesForProjectViewParameters,
   ): IssueList {
     const query = `

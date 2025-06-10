@@ -1,3 +1,5 @@
+import { summarize } from "./ai/summarize";
+
 // Singleton
 let memory: Memory;
 
@@ -32,7 +34,7 @@ class Memory {
     bank.push(item);
   }
 
-  getBank(bankIndex: number = 0): string[] {
+  private getBank(bankIndex: number = 0): string[] {
     if (!this.banks.has(bankIndex)) {
       return [];
     }
@@ -40,9 +42,18 @@ class Memory {
     return bank.slice();
   }
 
-  getBankContent(bankIndex: number = 0): string {
+  private getBankContent(bankIndex: number = 0): string {
     const bank = this.getBank(bankIndex);
     return bank.join("\n\n");
+  }
+
+  async renderSummary(prompt: string, memoryBank: number = 0): Promise<string> {
+    const content = this.getBankContent(memoryBank);
+    if (!content || content.trim() === "") {
+      return "No content to summarize. Check you have 'render'ed or 'remember'ered content.";
+    }
+
+    return await summarize(prompt, content);
   }
 
   headbonk(bankIndex?: number): void {

@@ -1,10 +1,8 @@
 import { IssueList } from "./issues";
-import { summarize } from "../../3_transform/ai/summarize";
 
 import { getOctokit } from "../../octokit";
-import { getMemory } from "../../3_transform/memory";
 
-export class Client {
+export class GitHubClient {
   // The Client class is a wrapper around the GitHub API client.
   public octokit = getOctokit();
 
@@ -24,14 +22,5 @@ export class Client {
       typeFilter,
       typeField,
     });
-  }
-
-  reset(): void {
-    const memory = getMemory();
-    memory.headbonk(); // Clear all memory banks
-  }
-
-  async renderSummary(prompt: string, memoryBank: number = 0): Promise<string> {
-    return await summarize(prompt, memoryBank);
   }
 }

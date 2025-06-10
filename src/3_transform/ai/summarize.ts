@@ -6,7 +6,6 @@ import { AzureKeyCredential } from "@azure/core-auth";
 import { getInput, summary } from "@actions/core";
 import { SUMMARY_ENV_VAR } from "@actions/core/lib/summary";
 
-import { getMemory } from "../memory";
 import { getToken } from "../../octokit";
 
 function loadPrompt(input: string): string {
@@ -77,31 +76,18 @@ async function runPrompt(prompt: string): Promise<string> {
 
 export async function summarize(
   promptInput: string,
-  memoryBank: number = 0,
+  content: string,
 ): Promise<string> {
   const prompt = loadPrompt(promptInput);
-
-  const memory = getMemory();
-  const content = memory.getBankContent(memoryBank);
-  if (!content || content.trim() === "") {
-    return "No content to summarize. Check you have 'render'ed or 'remember'ered content.";
-  }
 
   const contentMarker = RegExp(/\{\{\s*CONTENT\s*\}\}/);
   const hydratedPrompt = prompt.replace(contentMarker, content);
 
   if (SUMMARY_ENV_VAR in process.env) {
     // If running on a GitHub Action, log the prompt for debugging
-    summary
-      .addDetails(
-        `Hydrated Prompt for Memory Bank ${memoryBank}`,
-        hydratedPrompt,
-      )
-      .write();
+    summary.addDetails(`Hydrated Prompt`, hydratedPrompt).write();
   } else {
-    console.log(
-      `Hydrated Prompt for Memory Bank ${memoryBank}:\n${hydratedPrompt}`,
-    );
+    console.log(`Hydrated Prompt:\n${hydratedPrompt}`);
   }
 
   const output = await runPrompt(hydratedPrompt);
