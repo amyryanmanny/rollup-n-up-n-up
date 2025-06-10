@@ -32523,248 +32523,6 @@ function hoist(env, code, outputVar, tokens) {
   return `${outputVar} = ${outputVar}.replace(${marker}, ${val});`;
 }
 
-// src/3_transform/memory.ts
-var memory;
-function getMemory() {
-  if (!memory) {
-    memory = new Memory;
-  }
-  return memory;
-}
-
-class Memory {
-  banks;
-  constructor() {
-    this.banks = new Map;
-  }
-  remember(item, bankIndex = 0) {
-    if (!item || item.trim() === "") {
-      return;
-    }
-    if (!this.banks.has(bankIndex)) {
-      this.banks.set(bankIndex, []);
-    }
-    const bank = this.banks.get(bankIndex);
-    if (bank.includes(item)) {
-      return;
-    }
-    bank.push(item);
-  }
-  getBank(bankIndex = 0) {
-    if (!this.banks.has(bankIndex)) {
-      return [];
-    }
-    const bank = this.banks.get(bankIndex);
-    return bank.slice();
-  }
-  getBankContent(bankIndex = 0) {
-    const bank = this.getBank(bankIndex);
-    return bank.join(`
-
-`);
-  }
-  headbonk(bankIndex) {
-    if (bankIndex === undefined) {
-      this.banks.clear();
-    } else if (this.banks.has(bankIndex)) {
-      this.banks.delete(bankIndex);
-    }
-  }
-}
-
-// src/2_pull/github/issues.ts
-var sortCommentsByDateDesc = (a2, b2) => {
-  return b2.createdAt.getTime() - a2.createdAt.getTime();
-};
-var filterUpdates = (comment) => {
-  const updateMarker = RegExp(/<(!--\s*UPDATE\s*--)>/g);
-  const isUpdate = updateMarker.test(comment.body);
-  if (!isUpdate)
-    return false;
-  comment.body = comment.body.replaceAll(updateMarker, "");
-  return true;
-};
-
-class CommentWrapper {
-  comment;
-  issueTitle;
-  memory = getMemory();
-  constructor(issueTitle, comment) {
-    this.issueTitle = issueTitle;
-    this.comment = comment;
-  }
-  static empty() {
-    return new CommentWrapper("", {
-      author: "",
-      body: "No updates found",
-      createdAt: new Date(0)
-    });
-  }
-  author() {
-    return this.comment.author;
-  }
-  createdAt() {
-    return this.comment.createdAt;
-  }
-  remember(bankIndex = 0) {
-    this.memory.remember(`## Comment on ${this.issueTitle}:
-
-${this.comment.body}`, bankIndex);
-  }
-  renderBody(memoryBankIndex = 0) {
-    this.remember(memoryBankIndex);
-    return this.comment.body;
-  }
-}
-
-class IssueWrapper {
-  issue;
-  memory = getMemory();
-  constructor(issue) {
-    this.issue = issue;
-  }
-  title() {
-    return this.issue.title;
-  }
-  remember() {
-    this.memory.remember(`## ${this.issue.title}:
-
-${this.issue.body}`);
-  }
-  renderBody() {
-    this.remember();
-    return this.issue.body || "";
-  }
-  getComments() {
-    const issue = this.issue;
-    const comments = issue.comments;
-    if (typeof comments == "number") {
-      throw new Error("Fetching last update for REST API issues is not implemented yet.");
-    }
-    return comments;
-  }
-  latestComment() {
-    const comments = this.getComments().sort(sortCommentsByDateDesc);
-    if (comments.length === 0) {
-      return CommentWrapper.empty();
-    }
-    const latestComment = comments[0];
-    return new CommentWrapper(this.issue.title, latestComment);
-  }
-  latestUpdate() {
-    const comments = this.getComments().sort(sortCommentsByDateDesc);
-    const updates = comments.filter(filterUpdates);
-    if (updates.length === 0) {
-      return CommentWrapper.empty();
-    }
-    const latestUpdate = updates[0];
-    return new CommentWrapper(this.issue.title, latestUpdate);
-  }
-}
-
-class IssueList {
-  issues;
-  constructor(issues) {
-    this.issues = issues;
-  }
-  [Symbol.iterator]() {
-    throw new Error("IssueLists cannot be iterated directly. Did you mean to call '.all()'?");
-  }
-  static forRepo(client, params) {
-    const response = client.octokit.rest.issues.listForRepo(params);
-    const data = response.then((res) => res.data);
-    return new IssueList(data);
-  }
-  static forProject(client, params) {
-    const query = `
-      query($organization: String!, $projectNumber: Int!, $typeField: String!) {
-        organization(login: $organization) {
-          projectV2(number: $projectNumber) {
-            title
-            items(first: 100) {
-              edges {
-                node {
-                  id
-                  content {
-                    __typename
-                    ... on Issue {
-                      title
-                      assignees(first: 5) {
-                        nodes {
-                          login
-                        }
-                      }
-                      issueType {
-                        name
-                      }
-                      body
-                      url
-                      comments(last: 20) {
-                        nodes {
-                          author {
-                            login
-                          }
-                          body
-                          createdAt
-                        }
-                      }
-                    }
-                  }
-                  fieldValueByName(name: $typeField) {
-                    ... on ProjectV2ItemFieldSingleSelectValue {
-                      name
-                    }
-                  }
-                }
-              }
-              pageInfo {
-                endCursor
-                hasNextPage
-              }
-            }
-          }
-        }
-      }
-    `;
-    const response = client.octokit.graphql(query, {
-      organization: params.organization,
-      projectNumber: params.projectNumber,
-      typeField: params.typeField || "Type"
-    });
-    const data = response.then((res) => {
-      const items = res.organization.projectV2.items;
-      return items.edges.map((edge) => {
-        const content = edge.node.content;
-        if (!content)
-          return null;
-        return {
-          title: content.title,
-          body: content.body || "",
-          url: content.url,
-          assignees: content.assignees.nodes.map((assignee) => assignee.login),
-          type: edge.node.fieldValueByName?.name || content.issueType?.name || "",
-          comments: content.comments.nodes.map((comment) => ({
-            author: comment.author.login,
-            body: comment.body,
-            createdAt: new Date(comment.createdAt)
-          }))
-        };
-      }).filter((item) => item !== null).filter((item) => {
-        return !params.typeFilter || item.type == params.typeFilter;
-      });
-    });
-    return new IssueList(data);
-  }
-  async all() {
-    const issues = await this.issues;
-    return issues.map((issue) => new IssueWrapper(issue));
-  }
-  async count() {
-    const issues = await this.issues;
-    return issues.length;
-  }
-}
-
 // src/3_transform/ai/summarize.ts
 import fs from "fs";
 
@@ -41245,27 +41003,271 @@ async function runPrompt(prompt) {
     }
   }
 }
-async function summarize(promptInput, memoryBank = 0) {
+async function summarize(promptInput, content) {
   const prompt = loadPrompt(promptInput);
-  const memory2 = getMemory();
-  const content = memory2.getBankContent(memoryBank);
-  if (!content || content.trim() === "") {
-    return "No content to summarize. Check you have 'render'ed or 'remember'ered content.";
-  }
   const contentMarker = RegExp(/\{\{\s*CONTENT\s*\}\}/);
   const hydratedPrompt = prompt.replace(contentMarker, content);
   if (import_summary.SUMMARY_ENV_VAR in process.env) {
-    import_core3.summary.addDetails(`Hydrated Prompt for Memory Bank ${memoryBank}`, hydratedPrompt).write();
+    import_core3.summary.addDetails(`Hydrated Prompt`, hydratedPrompt).write();
   } else {
-    console.log(`Hydrated Prompt for Memory Bank ${memoryBank}:
+    console.debug(`Hydrated Prompt:
 ${hydratedPrompt}`);
   }
   const output = await runPrompt(hydratedPrompt);
   return output;
 }
 
+// src/3_transform/memory.ts
+var memory;
+function getMemory() {
+  if (!memory) {
+    memory = new Memory;
+  }
+  return memory;
+}
+
+class Memory {
+  banks;
+  constructor() {
+    this.banks = new Map;
+  }
+  remember(item, bankIndex = 0) {
+    if (!item || item.trim() === "") {
+      return;
+    }
+    if (!this.banks.has(bankIndex)) {
+      this.banks.set(bankIndex, []);
+    }
+    const bank = this.banks.get(bankIndex);
+    if (bank.includes(item)) {
+      return;
+    }
+    bank.push(item);
+  }
+  getBank(bankIndex = 0) {
+    if (!this.banks.has(bankIndex)) {
+      return [];
+    }
+    const bank = this.banks.get(bankIndex);
+    return bank.slice();
+  }
+  getBankContent(bankIndex = 0) {
+    const bank = this.getBank(bankIndex);
+    return bank.join(`
+
+`);
+  }
+  async renderSummary(prompt, memoryBank = 0) {
+    const content = this.getBankContent(memoryBank);
+    if (!content || content.trim() === "") {
+      return "No content to summarize. Check you have 'render'ed or 'remember'ered content.";
+    }
+    return await summarize(prompt, content);
+  }
+  headbonk(bankIndex) {
+    if (bankIndex === undefined) {
+      this.banks.clear();
+    } else if (this.banks.has(bankIndex)) {
+      this.banks.delete(bankIndex);
+    }
+  }
+}
+
+// src/2_pull/github/issues.ts
+var sortCommentsByDateDesc = (a2, b2) => {
+  return b2.createdAt.getTime() - a2.createdAt.getTime();
+};
+var filterUpdates = (comment) => {
+  const updateMarker = RegExp(/<(!--\s*UPDATE\s*--)>/g);
+  const isUpdate = updateMarker.test(comment.body);
+  if (!isUpdate)
+    return false;
+  comment.body = comment.body.replaceAll(updateMarker, "");
+  return true;
+};
+
+class CommentWrapper {
+  comment;
+  issueTitle;
+  memory = getMemory();
+  constructor(issueTitle, comment) {
+    this.issueTitle = issueTitle;
+    this.comment = comment;
+  }
+  static empty() {
+    return new CommentWrapper("", {
+      author: "",
+      body: "No updates found",
+      createdAt: new Date(0)
+    });
+  }
+  author() {
+    return this.comment.author;
+  }
+  createdAt() {
+    return this.comment.createdAt;
+  }
+  remember(bankIndex = 0) {
+    this.memory.remember(`## Comment on ${this.issueTitle}:
+
+${this.comment.body}`, bankIndex);
+  }
+  renderBody(memoryBankIndex = 0) {
+    this.remember(memoryBankIndex);
+    return this.comment.body;
+  }
+}
+
+class IssueWrapper {
+  issue;
+  memory = getMemory();
+  constructor(issue) {
+    this.issue = issue;
+  }
+  title() {
+    return this.issue.title;
+  }
+  remember() {
+    this.memory.remember(`## ${this.issue.title}:
+
+${this.issue.body}`);
+  }
+  renderBody() {
+    this.remember();
+    return this.issue.body || "";
+  }
+  getComments() {
+    const issue = this.issue;
+    const comments = issue.comments;
+    if (typeof comments == "number") {
+      throw new Error("Fetching last update for REST API issues is not implemented yet.");
+    }
+    return comments;
+  }
+  latestComment() {
+    const comments = this.getComments().sort(sortCommentsByDateDesc);
+    if (comments.length === 0) {
+      return CommentWrapper.empty();
+    }
+    const latestComment = comments[0];
+    return new CommentWrapper(this.issue.title, latestComment);
+  }
+  latestUpdate() {
+    const comments = this.getComments().sort(sortCommentsByDateDesc);
+    const updates = comments.filter(filterUpdates);
+    if (updates.length === 0) {
+      return CommentWrapper.empty();
+    }
+    const latestUpdate = updates[0];
+    return new CommentWrapper(this.issue.title, latestUpdate);
+  }
+}
+
+class IssueList {
+  issues;
+  constructor(issues) {
+    this.issues = issues;
+  }
+  [Symbol.iterator]() {
+    throw new Error("IssueLists cannot be iterated directly. Did you mean to call '.all()'?");
+  }
+  static forRepo(client, params) {
+    const response = client.octokit.rest.issues.listForRepo(params);
+    const data = response.then((res) => res.data);
+    return new IssueList(data);
+  }
+  static forProject(client, params) {
+    const query = `
+      query($organization: String!, $projectNumber: Int!, $typeField: String!) {
+        organization(login: $organization) {
+          projectV2(number: $projectNumber) {
+            title
+            items(first: 100) {
+              edges {
+                node {
+                  id
+                  content {
+                    __typename
+                    ... on Issue {
+                      title
+                      assignees(first: 5) {
+                        nodes {
+                          login
+                        }
+                      }
+                      issueType {
+                        name
+                      }
+                      body
+                      url
+                      comments(last: 20) {
+                        nodes {
+                          author {
+                            login
+                          }
+                          body
+                          createdAt
+                        }
+                      }
+                    }
+                  }
+                  fieldValueByName(name: $typeField) {
+                    ... on ProjectV2ItemFieldSingleSelectValue {
+                      name
+                    }
+                  }
+                }
+              }
+              pageInfo {
+                endCursor
+                hasNextPage
+              }
+            }
+          }
+        }
+      }
+    `;
+    const response = client.octokit.graphql(query, {
+      organization: params.organization,
+      projectNumber: params.projectNumber,
+      typeField: params.typeField || "Type"
+    });
+    const data = response.then((res) => {
+      const items = res.organization.projectV2.items;
+      return items.edges.map((edge) => {
+        const content = edge.node.content;
+        if (!content)
+          return null;
+        return {
+          title: content.title,
+          body: content.body || "",
+          url: content.url,
+          assignees: content.assignees.nodes.map((assignee) => assignee.login),
+          type: edge.node.fieldValueByName?.name || content.issueType?.name || "",
+          comments: content.comments.nodes.map((comment) => ({
+            author: comment.author.login,
+            body: comment.body,
+            createdAt: new Date(comment.createdAt)
+          }))
+        };
+      }).filter((item) => item !== null).filter((item) => {
+        return !params.typeFilter || item.type == params.typeFilter;
+      });
+    });
+    return new IssueList(data);
+  }
+  async all() {
+    const issues = await this.issues;
+    return issues.map((issue) => new IssueWrapper(issue));
+  }
+  async count() {
+    const issues = await this.issues;
+    return issues.length;
+  }
+}
+
 // src/2_pull/github/client.ts
-class Client {
+class GitHubClient {
   octokit = getOctokit();
   issuesForRepo(owner, repo) {
     return IssueList.forRepo(this, { owner, repo });
@@ -41277,13 +41279,6 @@ class Client {
       typeFilter,
       typeField
     });
-  }
-  reset() {
-    const memory2 = getMemory();
-    memory2.headbonk();
-  }
-  async renderSummary(prompt, memoryBank = 0) {
-    return await summarize(prompt, memoryBank);
   }
 }
 
@@ -41300,14 +41295,15 @@ for (const filter of Object.values(exports_filters)) {
 for (const plugin of Object.values(exports_plugins)) {
   env.use(plugin());
 }
-var client = new Client;
+var github = new GitHubClient;
+var memory2 = getMemory();
 var today = new Date().toISOString().split("T")[0];
-var globals = { client, today };
+var globals = { github, memory: memory2, today };
 async function renderTemplate(templatePath) {
   const template = await env.load(templatePath);
   const result = await template(globals);
-  client.reset();
-  console.debug(result.content);
+  memory2.headbonk();
+  console.info(result.content);
   return result.content;
 }
 
