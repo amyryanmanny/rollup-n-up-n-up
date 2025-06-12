@@ -1,4 +1,4 @@
-import { getSecret } from ".";
+import { getConfig } from ".";
 
 type GitHubAppSecrets = {
   kind: "app";
@@ -36,9 +36,9 @@ export function getGitHubSecrets(): GitHubSecrets {
 }
 
 function getGitHubAppSecrets(): GitHubAppSecrets | undefined {
-  const appId = getSecret("GITHUB_APP_ID");
-  const installationId = getSecret("GITHUB_APP_INSTALLATION_ID");
-  const privateKey = getSecret("GITHUB_APP_PRIVATE_KEY");
+  const appId = getConfig("GITHUB_APP_ID");
+  const installationId = getConfig("GITHUB_APP_INSTALLATION_ID");
+  const privateKey = getConfig("GITHUB_APP_PRIVATE_KEY");
 
   if (!appId || !installationId || !privateKey) {
     return undefined;
@@ -53,7 +53,7 @@ function getGitHubAppSecrets(): GitHubAppSecrets | undefined {
 }
 
 function getGitHubPatSecrets(): GitHubPatSecrets | undefined {
-  const token = getSecret("GITHUB_PAT_TOKEN");
+  const token = getConfig("GITHUB_PAT_TOKEN");
 
   if (!token) {
     return undefined;
@@ -66,7 +66,7 @@ function getGitHubPatSecrets(): GitHubPatSecrets | undefined {
 }
 
 function getGitHubDefaultSecrets(): GitHubDefaultSecrets | undefined {
-  const token = getSecret("GITHUB_TOKEN");
+  const token = getConfig("GITHUB_TOKEN");
 
   if (!token) {
     return undefined;

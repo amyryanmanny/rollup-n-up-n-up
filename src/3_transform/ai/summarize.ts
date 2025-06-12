@@ -3,17 +3,18 @@ import fs from "fs";
 import ModelClient, { isUnexpected } from "@azure-rest/ai-inference";
 import { AzureKeyCredential } from "@azure/core-auth";
 
-import { getInput, summary } from "@actions/core";
+import { summary } from "@actions/core";
 import { SUMMARY_ENV_VAR } from "@actions/core/lib/summary";
 import { context } from "@actions/github";
 
 import { getToken } from "../../octokit";
+import { getConfig } from "../../util/secrets";
 
 const DEFAULT_MODEL_NAME = "openai/gpt-4.1";
 const DEFAULT_MAX_TOKENS = 800;
 
 function getEndpoint(tokenKind: string): string {
-  const customEndpoint = getInput("MODEL_ENDPOINT");
+  const customEndpoint = getConfig("MODEL_ENDPOINT") || "";
   if (customEndpoint !== "") {
     return customEndpoint;
   }
@@ -32,7 +33,7 @@ function getEndpoint(tokenKind: string): string {
 }
 
 function loadPrompt(input: string): string {
-  const promptFileOrInput = getInput(input);
+  const promptFileOrInput = getConfig(input);
 
   if (promptFileOrInput === undefined || promptFileOrInput === "") {
     throw new Error(`Prompt input "${input}" was requested but not provided.`);
@@ -49,8 +50,8 @@ async function runPrompt(prompt: string): Promise<string> {
     const systemPrompt =
       "You are a helpful assistant summarizing Issues and Comments into a concise rollup.";
 
-    const modelName = getInput("MODEL_NAME") || DEFAULT_MODEL_NAME;
-    const maxTokens = Number(getInput("MAX_TOKENS")) || DEFAULT_MAX_TOKENS;
+    const modelName = getConfig("MODEL_NAME") || DEFAULT_MODEL_NAME;
+    const maxTokens = Number(getConfig("MAX_TOKENS")) || DEFAULT_MAX_TOKENS;
 
     const token = await getToken();
 

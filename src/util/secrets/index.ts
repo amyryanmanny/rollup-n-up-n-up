@@ -2,18 +2,18 @@ import * as dotenv from "dotenv";
 
 import { getInput } from "@actions/core";
 
-export function getSecret(name: string): string | undefined {
-  let secret: string | undefined;
+export function getConfig(key: string): string | undefined {
+  let config: string | undefined;
   // Flags set by CI/CD - https://stackoverflow.com/a/73973555
   if (process.env.GITHUB_ACTIONS === "true") {
-    secret = getInput(name);
+    config = getInput(key);
   }
 
   // Fallback to local environment variable
-  if (secret === undefined || secret === "") {
+  if (config === "") {
     dotenv.config();
-    secret = process.env[name];
+    config = process.env[key];
   }
 
-  return secret;
+  return config;
 }

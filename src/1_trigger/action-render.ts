@@ -1,7 +1,8 @@
 import { renderTemplate } from "../4_template/render";
-import { getInput, setOutput, summary } from "@actions/core";
+import { setOutput, summary } from "@actions/core";
+import { getConfig } from "../util/secrets";
 
-const template = getInput("template") || "main.md.vto";
+const template = getConfig("template") || "main.md.vto";
 
 // Render Template
 const md = await renderTemplate(template);
