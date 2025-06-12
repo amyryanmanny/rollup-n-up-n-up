@@ -1,14 +1,14 @@
 import { Octokit } from "@octokit/rest";
 import { createAppAuth } from "@octokit/auth-app";
 
-import { getGitHubSecrets } from "./util/secrets/github";
+import { getGitHubSecrets, type GitHubSecretKind } from "./util/secrets/github";
 
 // Singleton
 let octokitInstance: Octokit | null = null;
 
 type Token = {
   value: string;
-  kind: "app" | "pat" | "default";
+  kind: GitHubSecretKind;
 };
 
 function initOctokit(): Octokit {

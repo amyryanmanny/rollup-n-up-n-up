@@ -1,5 +1,7 @@
 import { getConfig } from ".";
 
+export type GitHubSecretKind = "app" | "pat" | "default";
+
 type GitHubAppSecrets = {
   kind: "app";
   appId: string;
