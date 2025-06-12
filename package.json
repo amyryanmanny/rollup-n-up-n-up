@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@actions/core": "^1.11.1",
+    "@actions/github": "^6.0.1",
     "@azure-rest/ai-inference": "latest",
     "@azure/core-auth": "latest",
     "@octokit/auth-app": "^7.2.1",

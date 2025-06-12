@@ -6,6 +6,11 @@ import { getGitHubSecrets } from "./util/secrets/github";
 // Singleton
 let octokitInstance: Octokit | null = null;
 
+type Token = {
+  value: string;
+  kind: "app" | "pat" | "default";
+};
+
 function initOctokit(): Octokit {
   let instance: Octokit;
   const secrets = getGitHubSecrets();
@@ -36,19 +41,22 @@ function initOctokit(): Octokit {
   return instance;
 }
 
-export async function getToken(): Promise<string> {
+export async function getToken(): Promise<Token> {
   const octokit = getOctokit();
   const secrets = getGitHubSecrets();
 
   if (secrets.kind === "pat" || secrets.kind === "default") {
     const { token } = secrets;
-    return token;
+    return {
+      value: token,
+      kind: secrets.kind,
+    };
   } else if (secrets.kind === "app") {
     const { installationId } = secrets;
     const { data } = await octokit.apps.createInstallationAccessToken({
       installation_id: installationId,
     });
-    return data.token;
+    return { value: data.token, kind: "app" };
   }
   throw new Error("Unknown authentication method");
 }

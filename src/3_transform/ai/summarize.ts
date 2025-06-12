@@ -5,8 +5,31 @@ import { AzureKeyCredential } from "@azure/core-auth";
 
 import { getInput, summary } from "@actions/core";
 import { SUMMARY_ENV_VAR } from "@actions/core/lib/summary";
+import { context } from "@actions/github";
 
 import { getToken } from "../../octokit";
+
+const DEFAULT_MODEL_NAME = "openai/gpt-4.1";
+const DEFAULT_MAX_TOKENS = 800;
+
+function getEndpoint(tokenKind: string): string {
+  const customEndpoint = getInput("MODEL_ENDPOINT");
+  if (customEndpoint !== "") {
+    return customEndpoint;
+  }
+
+  switch (tokenKind) {
+    case "app":
+      // Apps must use the org-specific endpoint. Assume the current org
+      return `https://models.github.ai/orgs/${context.repo.owner}/inference`;
+    case "pat":
+    case "default":
+      // Default endpoint for PAT or default token
+      return "https://models.github.ai/inference";
+    default:
+      throw new Error(`Unknown token kind: ${tokenKind}`);
+  }
+}
 
 function loadPrompt(input: string): string {
   const promptFileOrInput = getInput(input);
@@ -26,14 +49,14 @@ async function runPrompt(prompt: string): Promise<string> {
     const systemPrompt =
       "You are a helpful assistant summarizing Issues and Comments into a concise rollup.";
 
-    const modelName = "openai/gpt-4.1";
-    const maxTokens = 800;
+    const modelName = getInput("MODEL_NAME") || DEFAULT_MODEL_NAME;
+    const maxTokens = Number(getInput("MAX_TOKENS")) || DEFAULT_MAX_TOKENS;
 
     const token = await getToken();
-    // TODO: Make this an input
-    const endpoint = "https://models.github.ai/orgs/github/inference";
 
-    const client = ModelClient(endpoint, new AzureKeyCredential(token), {
+    const endpoint = getEndpoint(token.kind);
+
+    const client = ModelClient(endpoint, new AzureKeyCredential(token.value), {
       userAgentOptions: { userAgentPrefix: "github-actions-rollup-n-up" },
     });
 
