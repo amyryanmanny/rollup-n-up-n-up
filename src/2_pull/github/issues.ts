@@ -5,11 +5,10 @@ import type { RestEndpointMethodTypes } from "@octokit/rest";
 // Interface
 type ListIssuesForRepoParameters =
   RestEndpointMethodTypes["issues"]["listForRepo"]["parameters"];
-type ListIssuesForProjectViewParameters = {
+type ListIssuesForProjectParameters = {
   organization: string;
   projectNumber: number;
   typeFilter: string | undefined;
-  typeField: string | undefined; // Defaults to issueType
 };
 
 // Issue
@@ -157,34 +156,31 @@ class IssueWrapper {
 }
 
 export class IssueList {
-  private issues: Promise<Issue[]>;
+  private issues: IssueWrapper[];
 
-  private constructor(issues: Promise<Issue[]>) {
-    this.issues = issues;
+  private constructor(issues: Issue[]) {
+    this.issues = issues.map((issue) => new IssueWrapper(issue));
   }
 
   [Symbol.iterator]() {
-    // Explicitly reject iteration. Debugging attempts to iterate over the IssueList object is confusing.
-    throw new Error(
-      "IssueLists cannot be iterated directly. Did you mean to call '.all()'?",
-    );
+    return this.issues[Symbol.iterator]();
   }
 
-  static forRepo(
+  static async forRepo(
     client: GitHubClient,
     params: ListIssuesForRepoParameters,
-  ): IssueList {
+  ): Promise<IssueList> {
     const response = client.octokit.rest.issues.listForRepo(params);
-    const data = response.then((res) => res.data);
+    const data = await response.then((res) => res.data);
     return new IssueList(data);
   }
 
-  static forProject(
+  static async forProject(
     client: GitHubClient,
-    params: ListIssuesForProjectViewParameters,
-  ): IssueList {
+    params: ListIssuesForProjectParameters,
+  ): Promise<IssueList> {
     const query = `
-      query($organization: String!, $projectNumber: Int!, $typeField: String!) {
+      query($organization: String!, $projectNumber: Int!) {
         organization(login: $organization) {
           projectV2(number: $projectNumber) {
             title
@@ -215,11 +211,6 @@ export class IssueList {
                           createdAt
                         }
                       }
-                    }
-                  }
-                  fieldValueByName(name: $typeField) {
-                    ... on ProjectV2ItemFieldSingleSelectValue {
-                      name
                     }
                   }
                 }
@@ -263,9 +254,6 @@ export class IssueList {
                     }>;
                   };
                 } | null;
-                fieldValueByName: {
-                  name?: string;
-                } | null;
               };
             }>;
             pageInfo: {
@@ -278,10 +266,9 @@ export class IssueList {
     }>(query, {
       organization: params.organization,
       projectNumber: params.projectNumber,
-      typeField: params.typeField || "Type", // Default to "Type" if not provided
     });
 
-    const data = response.then((res) => {
+    const data = await response.then((res) => {
       const items = res.organization.projectV2.items;
       return items.edges
         .map((edge) => {
@@ -294,8 +281,7 @@ export class IssueList {
             assignees: content.assignees.nodes.map(
               (assignee) => assignee.login,
             ),
-            type:
-              edge.node.fieldValueByName?.name || content.issueType?.name || "",
+            type: content.issueType?.name || "Issue",
             comments: content.comments.nodes.map((comment) => ({
               author: comment.author.login,
               body: comment.body,
@@ -314,15 +300,5 @@ export class IssueList {
     });
 
     return new IssueList(data);
-  }
-
-  async all(): Promise<IssueWrapper[]> {
-    const issues = await this.issues;
-    return issues.map((issue) => new IssueWrapper(issue));
-  }
-
-  async count(): Promise<number> {
-    const issues = await this.issues;
-    return issues.length;
   }
 }
