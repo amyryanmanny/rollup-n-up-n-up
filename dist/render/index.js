@@ -47271,18 +47271,17 @@ function createAppAuth(options) {
 }
 
 // src/util/secrets/index.ts
-var dotenv = __toESM(require_main3(), 1);
+var import_dotenv = __toESM(require_main3(), 1);
 var import_core2 = __toESM(require_core(), 1);
 function getConfig(key) {
-  let config2;
   if (process.env.GITHUB_ACTIONS === "true") {
-    config2 = import_core2.getInput(key);
+    const input = import_core2.getInput(key);
+    if (input !== "") {
+      return input;
+    }
   }
-  if (config2 === "") {
-    dotenv.config();
-    config2 = process.env[key];
-  }
-  return config2;
+  import_dotenv.default.config();
+  return process.env[key];
 }
 
 // src/util/secrets/github.ts
