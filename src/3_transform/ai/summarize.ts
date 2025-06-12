@@ -26,8 +26,8 @@ async function runPrompt(prompt: string): Promise<string> {
     const systemPrompt =
       "You are a helpful assistant summarizing Issues and Comments into a concise rollup.";
 
-    const modelName: string = "gpt-4.1";
-    const maxTokens: number = 800;
+    const modelName = "openai/gpt-4.1";
+    const maxTokens = 800;
 
     const token = await getToken();
 

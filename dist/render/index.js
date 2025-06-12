@@ -40967,7 +40967,7 @@ function loadPrompt(input) {
 async function runPrompt(prompt) {
   try {
     const systemPrompt = "You are a helpful assistant summarizing Issues and Comments into a concise rollup.";
-    const modelName = "gpt-4.1";
+    const modelName = "openai/gpt-4.1";
     const maxTokens = 800;
     const token = await getToken2();
     const endpoint2 = "https://models.github.ai/inference";
