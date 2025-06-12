@@ -11,6 +11,11 @@ type ListIssuesForProjectParameters = {
   typeFilter: string | undefined;
 };
 
+type SourceOfTruth = {
+  url: string;
+  title: string;
+};
+
 // Issue
 type Issue = RestIssue | ProjectIssue;
 type RestIssue =
@@ -101,13 +106,21 @@ class IssueWrapper {
   }
 
   // Properties
+  header(): string {
+    return `[${this.issue.title}](${this.issue.url})`;
+  }
+
   title(): string {
     return this.issue.title;
   }
 
+  url(): string {
+    return this.issue.url;
+  }
+
   // Render / Memory Functions
   remember() {
-    this.memory.remember(`## ${this.issue.title}:\n\n${this.issue.body}`);
+    this.memory.remember(`## ${this.header()}:\n\n${this.issue.body}`);
   }
 
   renderBody(): string {
@@ -156,9 +169,11 @@ class IssueWrapper {
 }
 
 export class IssueList {
+  private sourceOfTruth: SourceOfTruth;
   private issues: IssueWrapper[];
 
-  private constructor(issues: Issue[]) {
+  private constructor(sourceOfTruth: SourceOfTruth, issues: Issue[]) {
+    this.sourceOfTruth = sourceOfTruth;
     this.issues = issues.map((issue) => new IssueWrapper(issue));
   }
 
@@ -166,13 +181,29 @@ export class IssueList {
     return this.issues[Symbol.iterator]();
   }
 
+  header(): string {
+    return `[${this.sourceOfTruth.title}](${this.sourceOfTruth.url})`;
+  }
+
+  title(): string {
+    return this.sourceOfTruth.title;
+  }
+
+  url(): string {
+    return this.sourceOfTruth.url;
+  }
+
   static async forRepo(
     client: GitHubClient,
     params: ListIssuesForRepoParameters,
   ): Promise<IssueList> {
-    const response = client.octokit.rest.issues.listForRepo(params);
-    const data = await response.then((res) => res.data);
-    return new IssueList(data);
+    const response = await client.octokit.rest.issues.listForRepo(params);
+    const data = response.data;
+
+    const url = `https://github.com/${params.owner}/${params.repo}`;
+    const title = `Issues from ${params.owner}/${params.repo}`;
+
+    return new IssueList({ url, title }, data);
   }
 
   static async forProject(
@@ -225,7 +256,7 @@ export class IssueList {
       }
     `;
 
-    const response = client.octokit.graphql<{
+    const response = await client.octokit.graphql<{
       organization: {
         projectV2: {
           title: string;
@@ -268,37 +299,37 @@ export class IssueList {
       projectNumber: params.projectNumber,
     });
 
-    const data = await response.then((res) => {
-      const items = res.organization.projectV2.items;
-      return items.edges
-        .map((edge) => {
-          const content = edge.node.content;
-          if (!content) return null;
-          return {
-            title: content.title,
-            body: content.body || "",
-            url: content.url,
-            assignees: content.assignees.nodes.map(
-              (assignee) => assignee.login,
-            ),
-            type: content.issueType?.name || "Issue",
-            comments: content.comments.nodes.map((comment) => ({
-              author: comment.author.login,
-              body: comment.body,
-              createdAt: new Date(comment.createdAt),
-            })),
-          } as ProjectIssue;
-          // TODO: Paginate
-        })
-        .filter((item) => item !== null)
-        .filter(
-          // So we can filter by Bug, Initiative
-          (item) => {
-            return !params.typeFilter || item.type == params.typeFilter;
-          },
-        );
-    });
+    const items = response.organization.projectV2.items;
+    const issues = items.edges
+      .map((edge) => {
+        const content = edge.node.content;
+        if (!content) return null;
+        return {
+          title: content.title,
+          body: content.body || "",
+          url: content.url,
+          assignees: content.assignees.nodes.map((assignee) => assignee.login),
+          type: content.issueType?.name || "Issue",
+          comments: content.comments.nodes.map((comment) => ({
+            author: comment.author.login,
+            body: comment.body,
+            createdAt: new Date(comment.createdAt),
+          })),
+        } as ProjectIssue;
+        // TODO: Paginate
+      })
+      .filter((item) => item !== null)
+      .filter(
+        // So we can filter by Bug, Initiative
+        (item) => {
+          return !params.typeFilter || item.type == params.typeFilter;
+        },
+      );
 
-    return new IssueList(data);
+    const url = `https://github.com/orgs/${params.organization}/projects/${params.projectNumber}`;
+    const issueType = `${params.typeFilter}s`; // TODO: Pluralize
+    const title = `${issueType} from ${response.organization.projectV2.title}`;
+
+    return new IssueList({ url, title }, issues);
   }
 }

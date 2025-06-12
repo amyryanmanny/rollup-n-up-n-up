@@ -4,11 +4,13 @@
 
 {{ mark TLDR }}
 
-<details><summary>Expand to read original updates!</summary>
 {{ set synapseInitiatives = await github.issuesForProject("github", 21922, "Initiative") }}
 
+## {{ synapseInitiatives.header() }}
+
+<details><summary>Expand to read original updates!</summary>
 {{ for issue of synapseInitiatives }}
-### {{ issue.title() }}
+### {{ issue.header() }}
 {{- set update = await issue.latestUpdate() -}}
 {{- update.renderBody() -}}
 {{ /for }}
