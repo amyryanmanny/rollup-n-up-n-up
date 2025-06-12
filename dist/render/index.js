@@ -47565,11 +47565,17 @@ class IssueWrapper {
   constructor(issue) {
     this.issue = issue;
   }
+  header() {
+    return `[${this.issue.title}](${this.issue.url})`;
+  }
   title() {
     return this.issue.title;
   }
+  url() {
+    return this.issue.url;
+  }
   remember() {
-    this.memory.remember(`## ${this.issue.title}:
+    this.memory.remember(`## ${this.header()}:
 
 ${this.issue.body}`);
   }
@@ -47605,17 +47611,30 @@ ${this.issue.body}`);
 }
 
 class IssueList {
+  sourceOfTruth;
   issues;
-  constructor(issues) {
+  constructor(sourceOfTruth, issues) {
+    this.sourceOfTruth = sourceOfTruth;
     this.issues = issues.map((issue) => new IssueWrapper(issue));
   }
   [Symbol.iterator]() {
     return this.issues[Symbol.iterator]();
   }
+  header() {
+    return `[${this.sourceOfTruth.title}](${this.sourceOfTruth.url})`;
+  }
+  title() {
+    return this.sourceOfTruth.title;
+  }
+  url() {
+    return this.sourceOfTruth.url;
+  }
   static async forRepo(client, params) {
-    const response = client.octokit.rest.issues.listForRepo(params);
-    const data = await response.then((res) => res.data);
-    return new IssueList(data);
+    const response = await client.octokit.rest.issues.listForRepo(params);
+    const data = response.data;
+    const url = `https://github.com/${params.owner}/${params.repo}`;
+    const title = `Issues from ${params.owner}/${params.repo}`;
+    return new IssueList({ url, title }, data);
   }
   static async forProject(client, params) {
     const query = `
@@ -47663,33 +47682,34 @@ class IssueList {
         }
       }
     `;
-    const response = client.octokit.graphql(query, {
+    const response = await client.octokit.graphql(query, {
       organization: params.organization,
       projectNumber: params.projectNumber
     });
-    const data = await response.then((res) => {
-      const items = res.organization.projectV2.items;
-      return items.edges.map((edge) => {
-        const content = edge.node.content;
-        if (!content)
-          return null;
-        return {
-          title: content.title,
-          body: content.body || "",
-          url: content.url,
-          assignees: content.assignees.nodes.map((assignee) => assignee.login),
-          type: content.issueType?.name || "Issue",
-          comments: content.comments.nodes.map((comment) => ({
-            author: comment.author.login,
-            body: comment.body,
-            createdAt: new Date(comment.createdAt)
-          }))
-        };
-      }).filter((item) => item !== null).filter((item) => {
-        return !params.typeFilter || item.type == params.typeFilter;
-      });
+    const items = response.organization.projectV2.items;
+    const issues = items.edges.map((edge) => {
+      const content = edge.node.content;
+      if (!content)
+        return null;
+      return {
+        title: content.title,
+        body: content.body || "",
+        url: content.url,
+        assignees: content.assignees.nodes.map((assignee) => assignee.login),
+        type: content.issueType?.name || "Issue",
+        comments: content.comments.nodes.map((comment) => ({
+          author: comment.author.login,
+          body: comment.body,
+          createdAt: new Date(comment.createdAt)
+        }))
+      };
+    }).filter((item) => item !== null).filter((item) => {
+      return !params.typeFilter || item.type == params.typeFilter;
     });
-    return new IssueList(data);
+    const url = `https://github.com/orgs/${params.organization}/projects/${params.projectNumber}`;
+    const issueType = `${params.typeFilter}s`;
+    const title = `${issueType} from ${response.organization.projectV2.title}`;
+    return new IssueList({ url, title }, issues);
   }
 }
 
