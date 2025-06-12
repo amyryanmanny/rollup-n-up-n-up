@@ -40970,7 +40970,7 @@ async function runPrompt(prompt) {
     const modelName = "openai/gpt-4.1";
     const maxTokens = 800;
     const token = await getToken2();
-    const endpoint2 = "https://models.github.ai/inference";
+    const endpoint2 = "https://models.github.ai/orgs/github/inference";
     const client = esm_default(endpoint2, new AzureKeyCredential(token), {
       userAgentOptions: { userAgentPrefix: "github-actions-rollup-n-up" }
     });

@@ -30,8 +30,8 @@ async function runPrompt(prompt: string): Promise<string> {
     const maxTokens = 800;
 
     const token = await getToken();
-
-    const endpoint = "https://models.github.ai/inference";
+    // TODO: Make this an input
+    const endpoint = "https://models.github.ai/orgs/github/inference";
 
     const client = ModelClient(endpoint, new AzureKeyCredential(token), {
       userAgentOptions: { userAgentPrefix: "github-actions-rollup-n-up" },
