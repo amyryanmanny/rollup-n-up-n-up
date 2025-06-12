@@ -5,7 +5,7 @@
 {{ mark TLDR }}
 
 <details><summary>Expand to read original updates!</summary>
-{{ set synapseInitiatives = await github.issuesForProject("github", 21922, "Initiative", "Project Layer").all() }}
+{{ set synapseInitiatives = await github.issuesForProject("github", 21922, "Initiative") }}
 
 {{ for issue of synapseInitiatives }}
 ### {{ issue.title() }}
