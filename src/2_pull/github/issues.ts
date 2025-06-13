@@ -1,3 +1,5 @@
+import pluralize from "pluralize";
+
 import { GitHubClient } from "./client";
 import { getMemory } from "../../3_transform/memory";
 import type { RestEndpointMethodTypes } from "@octokit/rest";
@@ -8,7 +10,12 @@ type ListIssuesForRepoParameters =
 type ListIssuesForProjectParameters = {
   organization: string;
   projectNumber: number;
-  typeFilter: string | undefined;
+  typeFilter: string[] | undefined;
+};
+type ProjectViewParameters = {
+  organization: string;
+  projectNumber: number;
+  projectViewNumber: number;
 };
 
 type SourceOfTruth = {
@@ -94,6 +101,63 @@ class CommentWrapper {
   renderBody(memoryBankIndex: number = 0): string {
     this.remember(memoryBankIndex);
     return this.comment.body;
+  }
+}
+
+class ProjectViewFilter {
+  private name: string;
+  private filters: Map<string, string[]>;
+  private excludeFilters: Map<string, string[]>;
+
+  constructor({ name, filter }: { name: string; filter: string }) {
+    this.name = name;
+
+    this.filters = new Map<string, string[]>();
+    this.excludeFilters = new Map<string, string[]>();
+
+    filter.split(/\s+/g).forEach((f) => {
+      const [key, value] = f.split(":");
+      const values = value.split(",").map((v) => v.trim());
+      if (key && value) {
+        if (key.startsWith("-")) {
+          // Exclude filter
+          this.excludeFilters.set(key.trim().slice(1), values);
+        } else {
+          // Regular filter
+          this.filters.set(key.trim(), values);
+        }
+      }
+    });
+  }
+
+  getName(): string {
+    return this.name;
+  }
+
+  getFilterType(): string[] | undefined {
+    return this.filters.get("type");
+  }
+
+  getFilterOpen(): string[] | undefined {
+    // By default only open issues are fetched anyway
+    return this.filters.get("is");
+  }
+
+  static slugifyFieldName(field: string): string {
+    // RoB Area FY25Q4 -> rob-area-fy25q4
+    // Slugs are not accessible with GraphQL :(
+    return field.toLowerCase().replace(/\s+/g, "-");
+  }
+
+  static defaultFields(): string[] {
+    return ["type", "is", "assignee", "label", "milestone"];
+  }
+
+  getCustomFields(): string[] {
+    const defaultFields = ProjectViewFilter.defaultFields();
+    return Array.from(this.filters.keys()).filter((key) => {
+      return !defaultFields.includes(key);
+    });
   }
 }
 
@@ -322,14 +386,79 @@ export class IssueList {
       .filter(
         // So we can filter by Bug, Initiative
         (item) => {
-          return !params.typeFilter || item.type == params.typeFilter;
+          return (
+            params.typeFilter === undefined ||
+            params.typeFilter.length === 0 ||
+            params.typeFilter.includes(item.type)
+          );
         },
       );
 
+    // Construct a readable Source of Truth
+    let issueType: string;
+    if (params.typeFilter === undefined || params.typeFilter.length === 0) {
+      issueType = "Issues";
+    } else {
+      issueType = params.typeFilter.map((type) => pluralize(type)).join(", ");
+    }
+
     const url = `https://github.com/orgs/${params.organization}/projects/${params.projectNumber}`;
-    const issueType = `${params.typeFilter}s`; // TODO: Pluralize
     const title = `${issueType} from ${response.organization.projectV2.title}`;
 
     return new IssueList({ url, title }, issues);
+  }
+
+  private static async getView(
+    client: GitHubClient,
+    params: ProjectViewParameters,
+  ): Promise<ProjectViewFilter> {
+    const query = `
+      query($organization: String!, $projectNumber: Int!, $projectViewNumber: Int!) {
+        organization(login: $organization) {
+          projectV2(number: $projectNumber) {
+            view(number: $projectViewNumber) {
+              name
+              filter
+            }
+          }
+        }
+      }
+    `;
+
+    const response = await client.octokit.graphql<{
+      organization: {
+        projectV2: {
+          view: {
+            name: string;
+            filter: string;
+          };
+        };
+      };
+    }>(query, {
+      organization: params.organization,
+      projectNumber: params.projectNumber,
+      projectViewNumber: params.projectViewNumber,
+    });
+
+    return new ProjectViewFilter({
+      name: response.organization.projectV2.view.name,
+      filter: response.organization.projectV2.view.filter,
+    });
+  }
+
+  static async forProjectView(
+    client: GitHubClient,
+    params: ProjectViewParameters,
+  ): Promise<IssueList> {
+    const view = await this.getView(client, params);
+    const issues = await this.forProject(client, {
+      organization: params.organization,
+      projectNumber: params.projectNumber,
+      typeFilter: view.getFilterType(),
+    });
+
+    issues.sourceOfTruth.url += `/views/${params.projectViewNumber}`;
+    issues.sourceOfTruth.title += ` - ${view.getName()}`;
+    return issues;
   }
 }

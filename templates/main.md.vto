@@ -4,7 +4,7 @@
 
 {{ mark TLDR }}
 
-{{ set synapseInitiatives = await github.issuesForProject("github", 21922, "Initiative") }}
+{{ set synapseInitiatives = await github.issuesForProjectView("github", 21922, 2) }}
 
 ## {{ synapseInitiatives.header() }}
 
