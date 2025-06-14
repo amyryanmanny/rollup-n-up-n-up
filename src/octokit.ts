@@ -1,30 +1,34 @@
 import { Octokit } from "@octokit/rest";
 import { createAppAuth } from "@octokit/auth-app";
+import { paginateGraphQL } from "@octokit/plugin-paginate-graphql";
 
 import { getGitHubSecrets, type GitHubSecretKind } from "./util/secrets/github";
 
+const OctokitWithPlugins = Octokit.plugin(paginateGraphQL);
+type OctokitType = InstanceType<typeof OctokitWithPlugins>;
+
 // Singleton
-let octokitInstance: Octokit | null = null;
+let octokitInstance: OctokitType | null = null;
 
 type Token = {
   value: string;
   kind: GitHubSecretKind;
 };
 
-function initOctokit(): Octokit {
-  let instance: Octokit;
+function initOctokit(): OctokitType {
+  let instance: OctokitType;
   const secrets = getGitHubSecrets();
 
   if (secrets.kind === "pat" || secrets.kind === "default") {
     const { token } = secrets;
 
-    instance = new Octokit({
+    instance = new OctokitWithPlugins({
       auth: token,
     });
   } else if (secrets.kind === "app") {
     const { appId, privateKey, installationId } = secrets;
 
-    instance = new Octokit({
+    instance = new OctokitWithPlugins({
       authStrategy: createAppAuth,
       auth: {
         appId,
@@ -61,7 +65,7 @@ export async function getToken(): Promise<Token> {
   throw new Error("Unknown authentication method");
 }
 
-export function getOctokit(): Octokit {
+export function getOctokit(): OctokitType {
   if (!octokitInstance) {
     octokitInstance = initOctokit();
   }
