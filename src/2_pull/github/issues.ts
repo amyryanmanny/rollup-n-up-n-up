@@ -115,10 +115,17 @@ class ProjectViewFilter {
     this.filters = new Map<string, string[]>();
     this.excludeFilters = new Map<string, string[]>();
 
-    filter.split(/\s+/g).forEach((f) => {
+    // Parse the filter string. Only split on spaces outside of quotes.
+    filter.match(/(?:[^\s"]+|"[^"]*")+/g)?.forEach((f) => {
       const [key, value] = f.split(":");
-      const values = value.split(",").map((v) => v.trim());
       if (key && value) {
+        const values = value.split(",").map((v) => {
+          if (v.startsWith('"') && v.endsWith('"')) {
+            // Remove quotes from the value
+            v = v.slice(1, -1).trim();
+          }
+          return v.trim();
+        });
         if (key.startsWith("-")) {
           // Exclude filter
           this.excludeFilters.set(key.trim().slice(1), values);
