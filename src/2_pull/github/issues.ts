@@ -42,6 +42,7 @@ type ProjectIssue = {
     full_name: string;
   };
   comments: Array<ProjectIssueComment>;
+  projectFields: Map<string, string>;
 };
 
 // Comment
@@ -66,6 +67,11 @@ const filterUpdates = (comment: Comment) => {
   comment.body = comment.body.replaceAll(updateMarker, "");
 
   return true;
+};
+const slugifyFieldName = (field: string): string => {
+  // RoB Area FY25Q4 -> rob-area-fy25q4
+  // Slugs are not accessible with GraphQL :(
+  return field.toLowerCase().replace(/\s+/g, "-");
 };
 
 // Client Classes
@@ -325,6 +331,21 @@ export class IssueList {
                       }
                     }
                   }
+                  fieldValues(first: 100) {
+                    edges {
+                      node {
+                        __typename
+                        ... on ProjectV2ItemFieldSingleSelectValue {
+                          name
+                          field {
+                            ... on ProjectV2SingleSelectField {
+                              name
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
                 }
               }
               pageInfo {
@@ -370,6 +391,17 @@ export class IssueList {
                     }>;
                   };
                 } | null;
+                fieldValues: {
+                  edges: Array<{
+                    node: {
+                      __typename: string;
+                      name: string;
+                      field: {
+                        name: string; // SingleSelectField name
+                      };
+                    } | null;
+                  }>;
+                };
               };
             }>;
             pageInfo: {
@@ -408,8 +440,22 @@ export class IssueList {
             body: comment.body,
             createdAt: new Date(comment.createdAt),
           })),
-        } as ProjectIssue;
-        // TODO: Paginate
+          projectFields: edge.node.fieldValues.edges.reduce(
+            (acc, fieldEdge) => {
+              const fieldNode = fieldEdge.node;
+              if (
+                fieldNode &&
+                fieldNode.__typename === "ProjectV2ItemFieldSingleSelectValue"
+              ) {
+                const fieldName = slugifyFieldName(fieldNode.field.name);
+                const fieldValue = fieldNode.name;
+                acc.set(fieldName, fieldValue);
+              }
+              return acc;
+            },
+            new Map<string, string>(),
+          ),
+        };
       })
       .filter((item) => item !== null)
       .filter(
