@@ -34,7 +34,13 @@ type ProjectIssue = {
   body: string;
   url: string;
   assignees: string[];
-  type: string;
+  type: {
+    name?: string;
+  };
+  repository: {
+    name: string;
+    full_name: string;
+  };
   comments: Array<ProjectIssueComment>;
 };
 
@@ -304,6 +310,10 @@ export class IssueList {
                       }
                       body
                       url
+                      repository {
+                        name
+                        nameWithOwner
+                      }
                       comments(last: 20) {
                         nodes {
                           author {
@@ -345,6 +355,10 @@ export class IssueList {
                   };
                   issueType: {
                     name: string;
+                  } | null;
+                  repository: {
+                    name: string;
+                    nameWithOwner: string;
                   };
                   comments: {
                     nodes: Array<{
@@ -374,13 +388,21 @@ export class IssueList {
     const issues = items.edges
       .map((edge) => {
         const content = edge.node.content;
-        if (!content) return null;
+        if (!content || content.__typename !== "Issue") {
+          return null;
+        }
         return {
           title: content.title,
           body: content.body || "",
           url: content.url,
           assignees: content.assignees.nodes.map((assignee) => assignee.login),
-          type: content.issueType?.name || "Issue",
+          type: {
+            name: content.issueType?.name,
+          },
+          repository: {
+            name: content.repository.name,
+            full_name: content.repository.nameWithOwner,
+          },
           comments: content.comments.nodes.map((comment) => ({
             author: comment.author.login,
             body: comment.body,
@@ -396,7 +418,7 @@ export class IssueList {
           return (
             params.typeFilter === undefined ||
             params.typeFilter.length === 0 ||
-            params.typeFilter.includes(item.type)
+            params.typeFilter.includes(item.type?.name || "")
           );
         },
       );
