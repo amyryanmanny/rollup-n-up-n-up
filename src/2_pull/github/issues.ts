@@ -294,11 +294,11 @@ export class IssueList {
     params: ListIssuesForProjectParameters,
   ): Promise<IssueList> {
     const query = `
-      query($organization: String!, $projectNumber: Int!) {
+      query paginate($organization: String!, $projectNumber: Int!, $cursor: String) {
         organization(login: $organization) {
           projectV2(number: $projectNumber) {
             title
-            items(first: 100) {
+            items(first: 100, after: $cursor) {
               edges {
                 node {
                   id
@@ -358,7 +358,7 @@ export class IssueList {
       }
     `;
 
-    const response = await client.octokit.graphql<{
+    const response = await client.octokit.graphql.paginate<{
       organization: {
         projectV2: {
           title: string;
