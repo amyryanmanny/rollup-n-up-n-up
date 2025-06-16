@@ -23,7 +23,6 @@
     "@octokit/auth-app": "^7.2.1",
     "@octokit/plugin-paginate-graphql": "^6.0.0",
     "@octokit/rest": "^21.1.1",
-    "pluralize": "^8.0.0",
     "ventojs": "^1.12.16"
   },
   "devDependencies": {

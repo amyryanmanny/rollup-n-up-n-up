@@ -1,57 +1,36 @@
-import pluralize from "pluralize";
+import type { RestEndpointMethodTypes } from "@octokit/rest";
 
 import { GitHubClient } from "./client";
 import { getMemory } from "../../3_transform/memory";
-import type { RestEndpointMethodTypes } from "@octokit/rest";
+
+import {
+  listIssuesForProject,
+  type ListIssuesForProjectParameters,
+  type ProjectIssue,
+  type ProjectIssueComment,
+} from "./project";
+import {
+  getProjectView,
+  ProjectView,
+  type GetProjectViewParameters,
+} from "./project-view";
 
 // Interface
 type ListIssuesForRepoParameters =
   RestEndpointMethodTypes["issues"]["listForRepo"]["parameters"];
-type ListIssuesForProjectParameters = {
-  organization: string;
-  projectNumber: number;
-  typeFilter: string[] | undefined;
-};
-type ProjectViewParameters = {
-  organization: string;
-  projectNumber: number;
-  projectViewNumber: number;
-};
 
 type SourceOfTruth = {
-  url: string;
   title: string;
+  url: string;
 };
 
 // Issue
 type Issue = RestIssue | ProjectIssue;
 type RestIssue =
   RestEndpointMethodTypes["issues"]["listForRepo"]["response"]["data"][number];
-type ProjectIssue = {
-  // Until Projects are added to the REST API we have to construct the type
-  // It's not worth making this a Partial, but maybe there should be a single supertype instead
-  title: string;
-  body: string;
-  url: string;
-  assignees: string[];
-  type: {
-    name?: string;
-  };
-  repository: {
-    name: string;
-    full_name: string;
-  };
-  comments: Array<ProjectIssueComment>;
-  projectFields: Map<string, string>;
-};
 
 // Comment
 type Comment = ProjectIssueComment;
-type ProjectIssueComment = {
-  author: string;
-  body: string;
-  createdAt: Date;
-};
 
 const sortCommentsByDateDesc = (a: Comment, b: Comment) => {
   // Sort comments by createdAt in descending order
@@ -67,11 +46,6 @@ const filterUpdates = (comment: Comment) => {
   comment.body = comment.body.replaceAll(updateMarker, "");
 
   return true;
-};
-const slugifyFieldName = (field: string): string => {
-  // RoB Area FY25Q4 -> rob-area-fy25q4
-  // Slugs are not accessible with GraphQL :(
-  return field.toLowerCase().replace(/\s+/g, "-");
 };
 
 // Client Classes
@@ -113,99 +87,6 @@ class CommentWrapper {
   renderBody(memoryBankIndex: number = 0): string {
     this.remember(memoryBankIndex);
     return this.comment.body;
-  }
-}
-
-class ProjectViewFilter {
-  private name: string;
-  private filters: Map<string, string[]>;
-  private excludeFilters: Map<string, string[]>;
-
-  constructor({ name, filter }: { name: string; filter: string }) {
-    this.name = name;
-
-    this.filters = new Map<string, string[]>();
-    this.excludeFilters = new Map<string, string[]>();
-
-    // Parse the filter string. Only split on spaces outside of quotes.
-    filter.match(/(?:[^\s"]+|"[^"]*")+/g)?.forEach((f) => {
-      const [key, value] = f.split(":");
-      if (key && value) {
-        const values = value.split(",").map((v) => {
-          if (v.startsWith('"') && v.endsWith('"')) {
-            // Remove quotes from the value
-            v = v.slice(1, -1).trim();
-          }
-          return v.trim();
-        });
-        if (key.startsWith("-")) {
-          // Exclude filter
-          this.excludeFilters.set(key.trim().slice(1), values);
-        } else {
-          // Regular filter
-          this.filters.set(key.trim(), values);
-        }
-      }
-    });
-  }
-
-  getName(): string {
-    return this.name;
-  }
-
-  getFilterType(): string[] | undefined {
-    return this.filters.get("type");
-  }
-
-  checkField(field: string, value: string | undefined): boolean {
-    const included = this.filters.get(field);
-    const excluded = this.excludeFilters.get(field);
-
-    if (included && (value === undefined || !included.includes(value!))) {
-      return false;
-    }
-    if (excluded && excluded.includes(value!)) {
-      return false;
-    }
-    return true;
-  }
-
-  checkType(type: string): boolean {
-    return this.checkField("type", type);
-  }
-
-  checkOpen(is: string): boolean {
-    return this.checkField("is", is);
-  }
-
-  checkRepo(repo: string | undefined): boolean {
-    return this.checkField("repo", repo);
-  }
-
-  static defaultFields(): string[] {
-    return [
-      "repository",
-      "assignee",
-      "label",
-      "is",
-      "title",
-      "linked-pull-requests",
-      "milestone",
-      "type", // DONE
-      "reviewers",
-      "parent-issue",
-      "sub-issues-progress",
-      // Boolean modifiers which take a field name
-      "no",
-      "has",
-    ];
-  }
-
-  getCustomFields(): string[] {
-    const defaultFields = ProjectViewFilter.defaultFields();
-    return Array.from(this.filters.keys()).filter((key) => {
-      return !defaultFields.includes(key);
-    });
   }
 }
 
@@ -305,7 +186,7 @@ export class IssueList {
   private sourceOfTruth: SourceOfTruth;
   private issues: IssueWrapper[];
 
-  private constructor(sourceOfTruth: SourceOfTruth, issues: Issue[]) {
+  private constructor(issues: Issue[], sourceOfTruth: SourceOfTruth) {
     this.sourceOfTruth = sourceOfTruth;
     this.issues = issues.map((issue) => new IssueWrapper(issue));
   }
@@ -314,26 +195,33 @@ export class IssueList {
     return this.issues[Symbol.iterator]();
   }
 
-  applyFilter(viewFilter: ProjectViewFilter) {
-    // Apply the view filter to the issues
+  applyFilter(view: ProjectView) {
+    // Filter the issues
     this.issues = this.issues.filter((wrapper) => {
-      if (!viewFilter.checkType(wrapper.type())) {
+      if (!view.checkType(wrapper.type())) {
         return false;
       }
 
-      if (!viewFilter.checkRepo(wrapper.repoNameWithOwner())) {
+      if (!view.checkRepo(wrapper.repoNameWithOwner())) {
         return false;
       }
 
-      for (const field of viewFilter.getCustomFields()) {
+      for (const field of view.getCustomFields()) {
         const value = wrapper.projectFields().get(field);
-        if (!viewFilter.checkField(field, value)) {
+        if (!view.checkField(field, value)) {
           return false;
         }
       }
 
       return true;
     });
+
+    // Scope the Source of Truth to the view
+    const viewNumber = view.getNumber();
+    if (viewNumber) {
+      this.sourceOfTruth.url += `/views/${viewNumber}`;
+    }
+    this.sourceOfTruth.title += ` (${view.getName()})`;
   }
 
   header(): string {
@@ -353,261 +241,52 @@ export class IssueList {
     params: ListIssuesForRepoParameters,
   ): Promise<IssueList> {
     const response = await client.octokit.rest.issues.listForRepo(params);
-    const data = response.data;
+    const issues = response.data;
 
     const url = `https://github.com/${params.owner}/${params.repo}`;
     const title = `Issues from ${params.owner}/${params.repo}`;
 
-    return new IssueList({ url, title }, data);
+    return new IssueList(issues, { title, url });
   }
 
   static async forProject(
     client: GitHubClient,
     params: ListIssuesForProjectParameters,
   ): Promise<IssueList> {
-    const query = `
-      query paginate($organization: String!, $projectNumber: Int!, $cursor: String) {
-        organization(login: $organization) {
-          projectV2(number: $projectNumber) {
-            title
-            items(first: 100, after: $cursor) {
-              edges {
-                node {
-                  id
-                  content {
-                    __typename
-                    ... on Issue {
-                      title
-                      assignees(first: 5) {
-                        nodes {
-                          login
-                        }
-                      }
-                      issueType {
-                        name
-                      }
-                      body
-                      url
-                      repository {
-                        name
-                        nameWithOwner
-                      }
-                      comments(last: 20) {
-                        nodes {
-                          author {
-                            login
-                          }
-                          body
-                          createdAt
-                        }
-                      }
-                    }
-                  }
-                  fieldValues(first: 100) {
-                    edges {
-                      node {
-                        __typename
-                        ... on ProjectV2ItemFieldSingleSelectValue {
-                          name
-                          field {
-                            ... on ProjectV2SingleSelectField {
-                              name
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-              pageInfo {
-                endCursor
-                hasNextPage
-              }
-            }
-          }
-        }
-      }
-    `;
+    const response = await listIssuesForProject(client, params);
 
-    const response = await client.octokit.graphql.paginate<{
-      organization: {
-        projectV2: {
-          title: string;
-          items: {
-            edges: Array<{
-              node: {
-                id: string;
-                content: {
-                  __typename: string;
-                  title: string;
-                  body: string;
-                  url: string;
-                  assignees: {
-                    nodes: Array<{ login: string }>;
-                  };
-                  issueType: {
-                    name: string;
-                  } | null;
-                  repository: {
-                    name: string;
-                    nameWithOwner: string;
-                  };
-                  comments: {
-                    nodes: Array<{
-                      author: {
-                        login: string;
-                      };
-                      body: string;
-                      createdAt: string; // ISO 8601 date string
-                    }>;
-                  };
-                } | null;
-                fieldValues: {
-                  edges: Array<{
-                    node: {
-                      __typename: string;
-                      name: string;
-                      field: {
-                        name: string; // SingleSelectField name
-                      };
-                    } | null;
-                  }>;
-                };
-              };
-            }>;
-            pageInfo: {
-              endCursor: string;
-              hasNextPage: boolean;
-            };
-          };
-        };
-      };
-    }>(query, {
-      organization: params.organization,
-      projectNumber: params.projectNumber,
-    });
+    const { issues, title, url } = response;
 
-    const items = response.organization.projectV2.items;
-    const issues = items.edges
-      .map((edge) => {
-        const content = edge.node.content;
-        if (!content || content.__typename !== "Issue") {
-          return null;
-        }
-        return {
-          title: content.title,
-          body: content.body || "",
-          url: content.url,
-          assignees: content.assignees.nodes.map((assignee) => assignee.login),
-          type: {
-            name: content.issueType?.name,
-          },
-          repository: {
-            name: content.repository.name,
-            full_name: content.repository.nameWithOwner,
-          },
-          comments: content.comments.nodes.map((comment) => ({
-            author: comment.author.login,
-            body: comment.body,
-            createdAt: new Date(comment.createdAt),
-          })),
-          projectFields: edge.node.fieldValues.edges.reduce(
-            (acc, fieldEdge) => {
-              const fieldNode = fieldEdge.node;
-              if (
-                fieldNode &&
-                fieldNode.__typename === "ProjectV2ItemFieldSingleSelectValue"
-              ) {
-                const fieldName = slugifyFieldName(fieldNode.field.name);
-                const fieldValue = fieldNode.name;
-                acc.set(fieldName, fieldValue);
-              }
-              return acc;
-            },
-            new Map<string, string>(),
-          ),
-        };
-      })
-      .filter((item) => item !== null)
-      .filter(
-        // So we can filter by Bug, Initiative
-        (item) => {
-          return (
-            params.typeFilter === undefined ||
-            params.typeFilter.length === 0 ||
-            params.typeFilter.includes(item.type?.name || "")
-          );
-        },
-      );
-
-    // Construct a readable Source of Truth
-    let issueType: string;
-    if (params.typeFilter === undefined || params.typeFilter.length === 0) {
-      issueType = "Issues";
-    } else {
-      issueType = params.typeFilter.map((type) => pluralize(type)).join(", ");
-    }
-
-    const url = `https://github.com/orgs/${params.organization}/projects/${params.projectNumber}`;
-    const title = `${issueType} from ${response.organization.projectV2.title}`;
-
-    return new IssueList({ url, title }, issues);
-  }
-
-  private static async getView(
-    client: GitHubClient,
-    params: ProjectViewParameters,
-  ): Promise<ProjectViewFilter> {
-    const query = `
-      query($organization: String!, $projectNumber: Int!, $projectViewNumber: Int!) {
-        organization(login: $organization) {
-          projectV2(number: $projectNumber) {
-            view(number: $projectViewNumber) {
-              name
-              filter
-            }
-          }
-        }
-      }
-    `;
-
-    const response = await client.octokit.graphql<{
-      organization: {
-        projectV2: {
-          view: {
-            name: string;
-            filter: string;
-          };
-        };
-      };
-    }>(query, {
-      organization: params.organization,
-      projectNumber: params.projectNumber,
-      projectViewNumber: params.projectViewNumber,
-    });
-
-    return new ProjectViewFilter({
-      name: response.organization.projectV2.view.name,
-      filter: response.organization.projectV2.view.filter,
-    });
+    return new IssueList(issues, { title, url });
   }
 
   static async forProjectView(
     client: GitHubClient,
-    params: ProjectViewParameters,
+    params: GetProjectViewParameters,
   ): Promise<IssueList> {
-    const view = await this.getView(client, params);
-    const issues = await this.forProject(client, {
+    let view: ProjectView;
+
+    if (params.projectViewNumber === undefined) {
+      if (params.customQuery === undefined) {
+        throw new Error(
+          "Either projectViewNumber or customQuery must be provided.",
+        );
+      }
+      view = new ProjectView({
+        name: "Custom Query",
+        filter: params.customQuery,
+      });
+    } else {
+      view = await getProjectView(client, params);
+    }
+
+    const issueList = await this.forProject(client, {
       organization: params.organization,
       projectNumber: params.projectNumber,
       typeFilter: view.getFilterType(),
     });
+    issueList.applyFilter(view);
 
-    issues.applyFilter(view);
-
-    issues.sourceOfTruth.url += `/views/${params.projectViewNumber}`;
-    issues.sourceOfTruth.title += ` - ${view.getName()}`;
-    return issues;
+    return issueList;
   }
 }

@@ -38,4 +38,16 @@ export class GitHubClient {
       projectViewNumber,
     });
   }
+
+  issuesForProjectQuery(
+    organization: string,
+    projectNumber: number,
+    customQuery: string,
+  ): Promise<IssueList> {
+    return IssueList.forProjectView(this, {
+      organization,
+      projectNumber,
+      customQuery,
+    });
+  }
 }
