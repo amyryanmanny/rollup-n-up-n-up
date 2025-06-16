@@ -47270,6 +47270,147 @@ function createAppAuth(options) {
   });
 }
 
+// node_modules/@octokit/plugin-paginate-graphql/dist-bundle/index.js
+var generateMessage = (path, cursorValue) => `The cursor at "${path.join(",")}" did not change its value "${cursorValue}" after a page transition. Please make sure your that your query is set up correctly.`;
+var MissingCursorChange = class extends Error {
+  constructor(pageInfo, cursorValue) {
+    super(generateMessage(pageInfo.pathInQuery, cursorValue));
+    this.pageInfo = pageInfo;
+    this.cursorValue = cursorValue;
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, this.constructor);
+    }
+  }
+  name = "MissingCursorChangeError";
+};
+var MissingPageInfo = class extends Error {
+  constructor(response) {
+    super(`No pageInfo property found in response. Please make sure to specify the pageInfo in your query. Response-Data: ${JSON.stringify(response, null, 2)}`);
+    this.response = response;
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, this.constructor);
+    }
+  }
+  name = "MissingPageInfo";
+};
+var isObject2 = (value) => Object.prototype.toString.call(value) === "[object Object]";
+function findPaginatedResourcePath(responseData) {
+  const paginatedResourcePath = deepFindPathToProperty(responseData, "pageInfo");
+  if (paginatedResourcePath.length === 0) {
+    throw new MissingPageInfo(responseData);
+  }
+  return paginatedResourcePath;
+}
+var deepFindPathToProperty = (object, searchProp, path = []) => {
+  for (const key of Object.keys(object)) {
+    const currentPath = [...path, key];
+    const currentValue = object[key];
+    if (isObject2(currentValue)) {
+      if (currentValue.hasOwnProperty(searchProp)) {
+        return currentPath;
+      }
+      const result = deepFindPathToProperty(currentValue, searchProp, currentPath);
+      if (result.length > 0) {
+        return result;
+      }
+    }
+  }
+  return [];
+};
+var get2 = (object, path) => {
+  return path.reduce((current, nextProperty) => current[nextProperty], object);
+};
+var set2 = (object, path, mutator) => {
+  const lastProperty = path[path.length - 1];
+  const parentPath = [...path].slice(0, -1);
+  const parent = get2(object, parentPath);
+  if (typeof mutator === "function") {
+    parent[lastProperty] = mutator(parent[lastProperty]);
+  } else {
+    parent[lastProperty] = mutator;
+  }
+};
+var extractPageInfos = (responseData) => {
+  const pageInfoPath = findPaginatedResourcePath(responseData);
+  return {
+    pathInQuery: pageInfoPath,
+    pageInfo: get2(responseData, [...pageInfoPath, "pageInfo"])
+  };
+};
+var isForwardSearch = (givenPageInfo) => {
+  return givenPageInfo.hasOwnProperty("hasNextPage");
+};
+var getCursorFrom = (pageInfo) => isForwardSearch(pageInfo) ? pageInfo.endCursor : pageInfo.startCursor;
+var hasAnotherPage = (pageInfo) => isForwardSearch(pageInfo) ? pageInfo.hasNextPage : pageInfo.hasPreviousPage;
+var createIterator = (octokit) => {
+  return (query, initialParameters = {}) => {
+    let nextPageExists = true;
+    let parameters2 = { ...initialParameters };
+    return {
+      [Symbol.asyncIterator]: () => ({
+        async next() {
+          if (!nextPageExists)
+            return { done: true, value: {} };
+          const response = await octokit.graphql(query, parameters2);
+          const pageInfoContext = extractPageInfos(response);
+          const nextCursorValue = getCursorFrom(pageInfoContext.pageInfo);
+          nextPageExists = hasAnotherPage(pageInfoContext.pageInfo);
+          if (nextPageExists && nextCursorValue === parameters2.cursor) {
+            throw new MissingCursorChange(pageInfoContext, nextCursorValue);
+          }
+          parameters2 = {
+            ...parameters2,
+            cursor: nextCursorValue
+          };
+          return { done: false, value: response };
+        }
+      })
+    };
+  };
+};
+var mergeResponses = (response1, response2) => {
+  if (Object.keys(response1).length === 0) {
+    return Object.assign(response1, response2);
+  }
+  const path = findPaginatedResourcePath(response1);
+  const nodesPath = [...path, "nodes"];
+  const newNodes = get2(response2, nodesPath);
+  if (newNodes) {
+    set2(response1, nodesPath, (values) => {
+      return [...values, ...newNodes];
+    });
+  }
+  const edgesPath = [...path, "edges"];
+  const newEdges = get2(response2, edgesPath);
+  if (newEdges) {
+    set2(response1, edgesPath, (values) => {
+      return [...values, ...newEdges];
+    });
+  }
+  const pageInfoPath = [...path, "pageInfo"];
+  set2(response1, pageInfoPath, get2(response2, pageInfoPath));
+  return response1;
+};
+var createPaginate = (octokit) => {
+  const iterator2 = createIterator(octokit);
+  return async (query, initialParameters = {}) => {
+    let mergedResponse = {};
+    for await (const response of iterator2(query, initialParameters)) {
+      mergedResponse = mergeResponses(mergedResponse, response);
+    }
+    return mergedResponse;
+  };
+};
+function paginateGraphQL(octokit) {
+  return {
+    graphql: Object.assign(octokit.graphql, {
+      paginate: Object.assign(createPaginate(octokit), {
+        iterator: createIterator(octokit)
+      })
+    })
+  };
+}
+
 // src/util/secrets/index.ts
 var import_dotenv = __toESM(require_main3(), 1);
 var import_core2 = __toESM(require_core(), 1);
@@ -47328,18 +47469,19 @@ function getGitHubDefaultSecrets() {
 }
 
 // src/octokit.ts
+var OctokitWithPlugins = Octokit2.plugin(paginateGraphQL);
 var octokitInstance = null;
 function initOctokit() {
   let instance;
   const secrets = getGitHubSecrets();
   if (secrets.kind === "pat" || secrets.kind === "default") {
     const { token } = secrets;
-    instance = new Octokit2({
+    instance = new OctokitWithPlugins({
       auth: token
     });
   } else if (secrets.kind === "app") {
     const { appId, privateKey, installationId } = secrets;
-    instance = new Octokit2({
+    instance = new OctokitWithPlugins({
       authStrategy: createAppAuth,
       auth: {
         appId,
@@ -47449,7 +47591,7 @@ async function summarize(promptInput, content) {
   const contentMarker = RegExp(/\{\{\s*CONTENT\s*\}\}/);
   const hydratedPrompt = prompt.replace(contentMarker, content);
   if (import_summary.SUMMARY_ENV_VAR in process.env) {
-    import_core3.summary.addDetails(`Hydrated Prompt`, hydratedPrompt).write();
+    import_core3.summary.addDetails("Hydrated Prompt (Debug)", hydratedPrompt).write();
   } else {
     console.debug(`Hydrated Prompt:
 ${hydratedPrompt}`);
@@ -47514,39 +47656,310 @@ class Memory {
   }
 }
 
-// src/2_pull/github/issues.ts
-var sortCommentsByDateDesc = (a2, b2) => {
-  return b2.createdAt.getTime() - a2.createdAt.getTime();
+// src/util/string.ts
+var toSnakeCase = (str) => {
+  return str.replace(/([a-z])([A-Z])/g, "$1_$2").replace(/\s+/g, "_").toLowerCase();
 };
-var filterUpdates = (comment) => {
-  const updateMarker = RegExp(/<(!--\s*UPDATE\s*--)>/g);
-  const isUpdate = updateMarker.test(comment.body);
-  if (!isUpdate)
-    return false;
-  comment.body = comment.body.replaceAll(updateMarker, "");
-  return true;
+var splitMarkdownByHeaders = (markdown) => {
+  const headerRegex = /^#+\s+(.*)$/gm;
+  const sections = new Map;
+  let match;
+  let lastHeader = null;
+  let lastIndex = 0;
+  while ((match = headerRegex.exec(markdown)) !== null) {
+    if (lastHeader !== null) {
+      sections.set(lastHeader, markdown.slice(lastIndex, match.index).trim());
+    }
+    lastHeader = toSnakeCase(match[1].trim());
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastHeader !== null) {
+    sections.set(lastHeader, markdown.slice(lastIndex).trim());
+  }
+  return sections;
+};
+var stripHtml = (s2) => {
+  return s2.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>|<.*?>|<!--[\s\S]*?-->/g, "");
 };
 
+// src/2_pull/github/project.ts
+var slugifyProjectFieldName = (field) => {
+  return field.toLowerCase().replace(/\s+/g, "-");
+};
+async function listIssuesForProject(client, params) {
+  const query = `
+    query paginate($organization: String!, $projectNumber: Int!, $cursor: String) {
+      organization(login: $organization) {
+        projectV2(number: $projectNumber) {
+          title
+          items(first: 100, after: $cursor) {
+            edges {
+              node {
+                id
+                content {
+                  __typename
+                  ... on Issue {
+                    title
+                    assignees(first: 5) {
+                      nodes {
+                        login
+                      }
+                    }
+                    issueType {
+                      name
+                    }
+                    body
+                    url
+                    repository {
+                      name
+                      nameWithOwner
+                    }
+                    comments(last: 20) {
+                      nodes {
+                        author {
+                          login
+                        }
+                        body
+                        createdAt
+                        url
+                      }
+                    }
+                  }
+                }
+                fieldValues(first: 100) {
+                  edges {
+                    node {
+                      __typename
+                      ... on ProjectV2ItemFieldSingleSelectValue {
+                        name
+                        field {
+                          ... on ProjectV2SingleSelectField {
+                            name
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            pageInfo {
+              endCursor
+              hasNextPage
+            }
+          }
+        }
+      }
+    }
+  `;
+  const response = await client.octokit.graphql.paginate(query, {
+    organization: params.organization,
+    projectNumber: params.projectNumber
+  });
+  const items = response.organization.projectV2.items;
+  const issues = items.edges.map((edge) => {
+    const content = edge.node.content;
+    if (!content || content.__typename !== "Issue") {
+      return null;
+    }
+    return {
+      title: content.title,
+      body: content.body || "",
+      url: content.url,
+      assignees: content.assignees.nodes.map((assignee) => assignee.login),
+      type: {
+        name: content.issueType?.name
+      },
+      repository: {
+        name: content.repository.name,
+        full_name: content.repository.nameWithOwner
+      },
+      comments: content.comments.nodes.map((comment) => ({
+        author: comment.author.login,
+        body: comment.body,
+        createdAt: new Date(comment.createdAt),
+        url: comment.url
+      })),
+      projectFields: edge.node.fieldValues.edges.reduce((acc, fieldEdge) => {
+        const fieldNode = fieldEdge.node;
+        if (fieldNode && fieldNode.__typename === "ProjectV2ItemFieldSingleSelectValue") {
+          const fieldName = slugifyProjectFieldName(fieldNode.field.name);
+          const fieldValue = fieldNode.name;
+          acc.set(fieldName, fieldValue);
+        }
+        return acc;
+      }, new Map)
+    };
+  }).filter((item) => item !== null).filter((item) => {
+    return params.typeFilter === undefined || params.typeFilter.length === 0 || params.typeFilter.includes(item.type?.name || "");
+  });
+  return {
+    issues,
+    title: response.organization.projectV2.title,
+    url: `https://github.com/orgs/${params.organization}/projects/${params.projectNumber}`
+  };
+}
+
+// src/2_pull/github/project-view.ts
+class ProjectView {
+  name;
+  number;
+  filters;
+  excludeFilters;
+  constructor(params) {
+    this.name = params.name;
+    this.number = params.number;
+    this.filters = new Map;
+    this.excludeFilters = new Map;
+    params.filter.match(/(?:[^\s"]+|"[^"]*")+/g)?.forEach((f2) => {
+      const [key, value] = f2.split(":");
+      if (key && value) {
+        const values = value.split(",").map((v2) => {
+          if (v2.startsWith('"') && v2.endsWith('"')) {
+            v2 = v2.slice(1, -1).trim();
+          }
+          return v2.trim();
+        });
+        if (key.startsWith("-")) {
+          this.excludeFilters.set(key.trim().slice(1), values);
+        } else {
+          this.filters.set(key.trim(), values);
+        }
+      }
+    });
+  }
+  getName() {
+    return this.name;
+  }
+  getNumber() {
+    return this.number;
+  }
+  getFilterType() {
+    return this.filters.get("type");
+  }
+  checkField(field, value) {
+    const included = this.filters.get(field);
+    const excluded = this.excludeFilters.get(field);
+    if (included && (value === undefined || !included.includes(value))) {
+      return false;
+    }
+    if (excluded && excluded.includes(value)) {
+      return false;
+    }
+    return true;
+  }
+  checkType(type3) {
+    return this.checkField("type", type3);
+  }
+  checkOpen(is) {
+    return this.checkField("is", is);
+  }
+  checkRepo(repo) {
+    return this.checkField("repo", repo);
+  }
+  static defaultFields() {
+    return [
+      "repository",
+      "assignee",
+      "label",
+      "is",
+      "title",
+      "linked-pull-requests",
+      "milestone",
+      "type",
+      "reviewers",
+      "parent-issue",
+      "sub-issues-progress",
+      "no",
+      "has"
+    ];
+  }
+  getCustomFields() {
+    const defaultFields = ProjectView.defaultFields();
+    return Array.from([
+      ...this.filters.keys(),
+      ...this.excludeFilters.keys()
+    ]).filter((key) => {
+      return !defaultFields.includes(key);
+    });
+  }
+}
+async function getProjectView(client, params) {
+  const query = `
+    query($organization: String!, $projectNumber: Int!, $projectViewNumber: Int!) {
+      organization(login: $organization) {
+        projectV2(number: $projectNumber) {
+          view(number: $projectViewNumber) {
+            name
+            filter
+          }
+        }
+      }
+    }
+  `;
+  const response = await client.octokit.graphql(query, {
+    organization: params.organization,
+    projectNumber: params.projectNumber,
+    projectViewNumber: params.projectViewNumber
+  });
+  return new ProjectView({
+    name: response.organization.projectV2.view.name,
+    number: params.projectViewNumber,
+    filter: response.organization.projectV2.view.filter
+  });
+}
+
+// src/2_pull/github/issues.ts
 class CommentWrapper {
+  memory = getMemory();
+  static UPDATE_MARKER = RegExp(/<(!--\s*UPDATE\s*--)>/g);
   comment;
   issueTitle;
-  memory = getMemory();
+  sections;
   constructor(issueTitle, comment) {
     this.issueTitle = issueTitle;
     this.comment = comment;
+    this.sections = splitMarkdownByHeaders(comment.body);
   }
   static empty() {
     return new CommentWrapper("", {
       author: "",
       body: "No updates found",
-      createdAt: new Date(0)
+      createdAt: new Date(0),
+      url: ""
     });
   }
-  author() {
+  get header() {
+    return `[${this.issueTitle}](${this.comment.url})`;
+  }
+  get author() {
     return this.comment.author;
   }
-  createdAt() {
+  get dirtyBody() {
+    return this.comment.body;
+  }
+  get body() {
+    return stripHtml(this.comment.body).trim();
+  }
+  get createdAt() {
     return this.comment.createdAt;
+  }
+  removeUpdateMarker() {
+    this.comment.body = this.comment.body.replaceAll(CommentWrapper.UPDATE_MARKER, "");
+  }
+  getSection(name) {
+    const section = this.sections.get(toSnakeCase(name));
+    if (section === undefined) {
+      return;
+    }
+    return stripHtml(section).trim();
+  }
+  get update() {
+    const section = this.getSection("update");
+    if (section) {
+      return section.trim();
+    }
+    return this.body;
   }
   remember(bankIndex = 0) {
     this.memory.remember(`## Comment on ${this.issueTitle}:
@@ -47555,161 +47968,172 @@ ${this.comment.body}`, bankIndex);
   }
   renderBody(memoryBankIndex = 0) {
     this.remember(memoryBankIndex);
-    return this.comment.body;
+    return this.body;
+  }
+  renderUpdate(memoryBankIndex = 0) {
+    this.remember(memoryBankIndex);
+    return this.update;
   }
 }
 
 class IssueWrapper {
-  issue;
   memory = getMemory();
+  issue;
   constructor(issue) {
     this.issue = issue;
   }
-  header() {
-    return `[${this.issue.title}](${this.issue.url})`;
+  get header() {
+    return `[${this.title}](${this.url})`;
   }
-  title() {
-    return this.issue.title;
+  get title() {
+    return this.issue.title.trim();
   }
-  url() {
+  get url() {
     return this.issue.url;
   }
+  get body() {
+    return this.issue.body || "";
+  }
+  get type() {
+    return this.issue.type?.name || "Issue";
+  }
+  get repo() {
+    return this.issue.repository?.name;
+  }
+  get repoNameWithOwner() {
+    return this.issue.repository?.full_name;
+  }
+  get projectFields() {
+    if ("projectFields" in this.issue) {
+      return this.issue.projectFields;
+    }
+    return new Map;
+  }
   remember() {
-    this.memory.remember(`## ${this.header()}:
+    this.memory.remember(`## ${this.header}:
 
-${this.issue.body}`);
+${this.body}`);
   }
   renderBody() {
     this.remember();
-    return this.issue.body || "";
+    return this.body;
   }
-  getComments() {
+  get comments() {
     const issue = this.issue;
     const comments = issue.comments;
     if (typeof comments == "number") {
       throw new Error("Fetching last update for REST API issues is not implemented yet.");
     }
-    return comments;
+    const sortCommentsByDateDesc = (a2, b2) => {
+      return b2.createdAt.getTime() - a2.createdAt.getTime();
+    };
+    return comments.sort(sortCommentsByDateDesc).map((comment) => new CommentWrapper(issue.title, comment));
   }
   latestComment() {
-    const comments = this.getComments().sort(sortCommentsByDateDesc);
+    const comments = this.comments;
     if (comments.length === 0) {
       return CommentWrapper.empty();
     }
     const latestComment = comments[0];
-    return new CommentWrapper(this.issue.title, latestComment);
+    return latestComment;
   }
   latestUpdate() {
-    const comments = this.getComments().sort(sortCommentsByDateDesc);
+    const comments = this.comments;
+    const filterUpdates = (comment) => {
+      if (CommentWrapper.UPDATE_MARKER.test(comment.dirtyBody)) {
+        comment.removeUpdateMarker();
+        return true;
+      }
+      if (comment.getSection("update") !== undefined) {
+        return true;
+      }
+      return false;
+    };
     const updates = comments.filter(filterUpdates);
     if (updates.length === 0) {
-      return CommentWrapper.empty();
+      return this.latestComment();
     }
     const latestUpdate = updates[0];
-    return new CommentWrapper(this.issue.title, latestUpdate);
+    return latestUpdate;
   }
 }
 
 class IssueList {
   sourceOfTruth;
   issues;
-  constructor(sourceOfTruth, issues) {
-    this.sourceOfTruth = sourceOfTruth;
-    this.issues = issues.map((issue) => new IssueWrapper(issue));
+  get length() {
+    return this.issues.length;
   }
   [Symbol.iterator]() {
     return this.issues[Symbol.iterator]();
   }
-  header() {
+  applyFilter(view) {
+    this.issues = this.issues.filter((wrapper) => {
+      if (!view.checkType(wrapper.type)) {
+        return false;
+      }
+      if (!view.checkRepo(wrapper.repoNameWithOwner)) {
+        return false;
+      }
+      for (const field of view.getCustomFields()) {
+        const value = wrapper.projectFields.get(field);
+        if (!view.checkField(field, value)) {
+          return false;
+        }
+      }
+      return true;
+    });
+    const viewNumber = view.getNumber();
+    if (viewNumber) {
+      this.sourceOfTruth.url += `/views/${viewNumber}`;
+    }
+    this.sourceOfTruth.title += ` (${view.getName()})`;
+  }
+  get header() {
     return `[${this.sourceOfTruth.title}](${this.sourceOfTruth.url})`;
   }
-  title() {
+  get title() {
     return this.sourceOfTruth.title;
   }
-  url() {
+  get url() {
     return this.sourceOfTruth.url;
+  }
+  constructor(issues, sourceOfTruth) {
+    this.sourceOfTruth = sourceOfTruth;
+    this.issues = issues.map((issue) => new IssueWrapper(issue));
   }
   static async forRepo(client, params) {
     const response = await client.octokit.rest.issues.listForRepo(params);
-    const data = response.data;
+    const issues = response.data;
     const url = `https://github.com/${params.owner}/${params.repo}`;
     const title = `Issues from ${params.owner}/${params.repo}`;
-    return new IssueList({ url, title }, data);
+    return new IssueList(issues, { title, url });
   }
   static async forProject(client, params) {
-    const query = `
-      query($organization: String!, $projectNumber: Int!) {
-        organization(login: $organization) {
-          projectV2(number: $projectNumber) {
-            title
-            items(first: 100) {
-              edges {
-                node {
-                  id
-                  content {
-                    __typename
-                    ... on Issue {
-                      title
-                      assignees(first: 5) {
-                        nodes {
-                          login
-                        }
-                      }
-                      issueType {
-                        name
-                      }
-                      body
-                      url
-                      comments(last: 20) {
-                        nodes {
-                          author {
-                            login
-                          }
-                          body
-                          createdAt
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-              pageInfo {
-                endCursor
-                hasNextPage
-              }
-            }
-          }
-        }
+    const response = await listIssuesForProject(client, params);
+    const { issues, title, url } = response;
+    return new IssueList(issues, { title, url });
+  }
+  static async forProjectView(client, params) {
+    let view;
+    if (params.projectViewNumber === undefined) {
+      if (params.customQuery === undefined) {
+        throw new Error("Either projectViewNumber or customQuery must be provided.");
       }
-    `;
-    const response = await client.octokit.graphql(query, {
+      view = new ProjectView({
+        name: "Custom Query",
+        filter: params.customQuery
+      });
+    } else {
+      view = await getProjectView(client, params);
+    }
+    const issueList = await this.forProject(client, {
       organization: params.organization,
-      projectNumber: params.projectNumber
+      projectNumber: params.projectNumber,
+      typeFilter: view.getFilterType()
     });
-    const items = response.organization.projectV2.items;
-    const issues = items.edges.map((edge) => {
-      const content = edge.node.content;
-      if (!content)
-        return null;
-      return {
-        title: content.title,
-        body: content.body || "",
-        url: content.url,
-        assignees: content.assignees.nodes.map((assignee) => assignee.login),
-        type: content.issueType?.name || "Issue",
-        comments: content.comments.nodes.map((comment) => ({
-          author: comment.author.login,
-          body: comment.body,
-          createdAt: new Date(comment.createdAt)
-        }))
-      };
-    }).filter((item) => item !== null).filter((item) => {
-      return !params.typeFilter || item.type == params.typeFilter;
-    });
-    const url = `https://github.com/orgs/${params.organization}/projects/${params.projectNumber}`;
-    const issueType = `${params.typeFilter}s`;
-    const title = `${issueType} from ${response.organization.projectV2.title}`;
-    return new IssueList({ url, title }, issues);
+    issueList.applyFilter(view);
+    return issueList;
   }
 }
 
@@ -47720,10 +48144,27 @@ class GitHubClient {
     return IssueList.forRepo(this, { owner, repo });
   }
   issuesForProject(organization, projectNumber, typeFilter) {
+    if (typeof typeFilter === "string") {
+      typeFilter = [typeFilter];
+    }
     return IssueList.forProject(this, {
       organization,
       projectNumber,
       typeFilter
+    });
+  }
+  issuesForProjectView(organization, projectNumber, projectViewNumber) {
+    return IssueList.forProjectView(this, {
+      organization,
+      projectNumber,
+      projectViewNumber
+    });
+  }
+  issuesForProjectQuery(organization, projectNumber, customQuery) {
+    return IssueList.forProjectView(this, {
+      organization,
+      projectNumber,
+      customQuery
     });
   }
 }
