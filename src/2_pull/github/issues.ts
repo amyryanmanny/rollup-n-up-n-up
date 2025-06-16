@@ -37,33 +37,13 @@ type RestIssue =
 // Comment
 type Comment = ProjectIssueComment;
 
-const sortCommentsByDateDesc = (a: Comment, b: Comment) => {
-  // Sort comments by createdAt in descending order
-  return b.createdAt.getTime() - a.createdAt.getTime();
-};
-
-const UPDATE_MARKER = RegExp(/<(!--\s*UPDATE\s*--)>/g); // TODO: Custom marker as input
-const filterUpdates = (comment: CommentWrapper) => {
-  // Check if the comment body contains the update marker
-  if (UPDATE_MARKER.test(comment.body())) {
-    // SIDE_EFFECT: Remove the update marker from the body
-    comment.removeUpdateMarker();
-    return true;
-  }
-
-  if (comment.getSection("update") !== undefined) {
-    // If the comment has an "update" header, it's considered an update
-    return true;
-  }
-
-  return false;
-};
-
 // Client Classes
 class CommentWrapper {
   private memory = getMemory();
 
-  public comment: Comment;
+  static UPDATE_MARKER = RegExp(/<(!--\s*UPDATE\s*--)>/g); // TODO: Custom marker as input
+
+  private comment: Comment;
   private issueTitle: string;
 
   private sections: Map<string, string>;
@@ -88,6 +68,11 @@ class CommentWrapper {
     return this.comment.author;
   }
 
+  dirtyBody(): string {
+    // Return the raw body of the comment
+    return this.comment.body;
+  }
+
   body(): string {
     // Return processed body of the comment
     return stripHtml(this.comment.body).trim();
@@ -99,7 +84,10 @@ class CommentWrapper {
 
   // Helpers
   removeUpdateMarker() {
-    this.comment.body = this.comment.body.replaceAll(UPDATE_MARKER, "");
+    this.comment.body = this.comment.body.replaceAll(
+      CommentWrapper.UPDATE_MARKER,
+      "",
+    );
   }
 
   getSection(name: string): string | undefined {
@@ -207,6 +195,11 @@ class IssueWrapper {
       );
     }
 
+    const sortCommentsByDateDesc = (a: Comment, b: Comment) => {
+      // Sort comments by createdAt in descending order
+      return b.createdAt.getTime() - a.createdAt.getTime();
+    };
+
     return comments
       .sort(sortCommentsByDateDesc)
       .map((comment) => new CommentWrapper(issue.title, comment));
@@ -225,6 +218,22 @@ class IssueWrapper {
 
   latestUpdate(): CommentWrapper {
     const comments = this.getComments();
+
+    const filterUpdates = (comment: CommentWrapper) => {
+      // Check if the comment body contains the update marker
+      if (CommentWrapper.UPDATE_MARKER.test(comment.dirtyBody())) {
+        // SIDE_EFFECT: Remove the update marker from the body
+        comment.removeUpdateMarker();
+        return true;
+      }
+
+      if (comment.getSection("update") !== undefined) {
+        // If the comment has an "update" header, it's considered an update
+        return true;
+      }
+
+      return false;
+    };
     const updates = comments.filter(filterUpdates);
 
     if (updates.length === 0) {
