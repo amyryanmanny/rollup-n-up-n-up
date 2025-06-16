@@ -33,6 +33,7 @@ export type ProjectIssueComment = {
   author: string;
   body: string;
   createdAt: Date;
+  url: string;
 };
 
 const slugifyProjectFieldName = (field: string): string => {
@@ -79,6 +80,7 @@ export async function listIssuesForProject(
                         }
                         body
                         createdAt
+                        url
                       }
                     }
                   }
@@ -140,6 +142,7 @@ export async function listIssuesForProject(
                     };
                     body: string;
                     createdAt: string; // ISO 8601 date string
+                    url: string;
                   }>;
                 };
               } | null;
@@ -191,6 +194,7 @@ export async function listIssuesForProject(
           author: comment.author.login,
           body: comment.body,
           createdAt: new Date(comment.createdAt),
+          url: comment.url,
         })),
         projectFields: edge.node.fieldValues.edges.reduce((acc, fieldEdge) => {
           const fieldNode = fieldEdge.node;

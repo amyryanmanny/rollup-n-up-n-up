@@ -60,25 +60,30 @@ class CommentWrapper {
       author: "",
       body: "No updates found",
       createdAt: new Date(0),
+      url: "",
     });
   }
 
   // Properties
-  author(): string {
+  get header(): string {
+    return `[${this.issueTitle}](${this.comment.url})`;
+  }
+
+  get author(): string {
     return this.comment.author;
   }
 
-  dirtyBody(): string {
+  get dirtyBody(): string {
     // Return the raw body of the comment
     return this.comment.body;
   }
 
-  body(): string {
+  get body(): string {
     // Return processed body of the comment
     return stripHtml(this.comment.body).trim();
   }
 
-  createdAt(): Date {
+  get createdAt(): Date {
     return this.comment.createdAt;
   }
 
@@ -99,14 +104,14 @@ class CommentWrapper {
     return stripHtml(section).trim();
   }
 
-  update(): string {
+  get update(): string {
     // Get the update section
     const section = this.getSection("update");
     if (section) {
       return section.trim();
     }
     // If no update section, return the body
-    return this.body();
+    return this.body;
   }
 
   // Render / Memory Functions
@@ -119,12 +124,12 @@ class CommentWrapper {
 
   renderBody(memoryBankIndex: number = 0): string {
     this.remember(memoryBankIndex);
-    return this.body();
+    return this.body;
   }
 
   renderUpdate(memoryBankIndex: number = 0): string {
     this.remember(memoryBankIndex);
-    return this.update();
+    return this.update;
   }
 }
 
@@ -138,31 +143,35 @@ class IssueWrapper {
   }
 
   // Properties
-  header(): string {
-    return `[${this.title()}](${this.url()})`;
+  get header(): string {
+    return `[${this.title}](${this.url})`;
   }
 
-  title(): string {
+  get title(): string {
     return this.issue.title.trim();
   }
 
-  url(): string {
+  get url(): string {
     return this.issue.url;
   }
 
-  type(): string {
+  get body(): string {
+    return this.issue.body || "";
+  }
+
+  get type(): string {
     return this.issue.type?.name || "Issue";
   }
 
-  repo(): string | undefined {
+  get repo(): string | undefined {
     return this.issue.repository?.name;
   }
 
-  repoNameWithOwner(): string | undefined {
+  get repoNameWithOwner(): string | undefined {
     return this.issue.repository?.full_name;
   }
 
-  projectFields(): Map<string, string> {
+  get projectFields(): Map<string, string> {
     // Return the custom fields of the issue
     if ("projectFields" in this.issue) {
       return this.issue.projectFields;
@@ -173,16 +182,16 @@ class IssueWrapper {
 
   // Render / Memory Functions
   remember() {
-    this.memory.remember(`## ${this.header()}:\n\n${this.issue.body}`);
+    this.memory.remember(`## ${this.header}:\n\n${this.body}`);
   }
 
   renderBody(): string {
     this.remember();
-    return this.issue.body || "";
+    return this.body;
   }
 
   // Comment Functions
-  getComments(): CommentWrapper[] {
+  get comments(): CommentWrapper[] {
     // TODO: Memoize
     const issue = this.issue;
 
@@ -206,7 +215,7 @@ class IssueWrapper {
   }
 
   latestComment(): CommentWrapper {
-    const comments = this.getComments();
+    const comments = this.comments;
 
     if (comments.length === 0) {
       return CommentWrapper.empty();
@@ -217,11 +226,11 @@ class IssueWrapper {
   }
 
   latestUpdate(): CommentWrapper {
-    const comments = this.getComments();
+    const comments = this.comments;
 
     const filterUpdates = (comment: CommentWrapper) => {
       // Check if the comment body contains the update marker
-      if (CommentWrapper.UPDATE_MARKER.test(comment.dirtyBody())) {
+      if (CommentWrapper.UPDATE_MARKER.test(comment.dirtyBody)) {
         // SIDE_EFFECT: Remove the update marker from the body
         comment.removeUpdateMarker();
         return true;
@@ -249,9 +258,8 @@ export class IssueList {
   private sourceOfTruth: SourceOfTruth;
   private issues: IssueWrapper[];
 
-  private constructor(issues: Issue[], sourceOfTruth: SourceOfTruth) {
-    this.sourceOfTruth = sourceOfTruth;
-    this.issues = issues.map((issue) => new IssueWrapper(issue));
+  get length(): number {
+    return this.issues.length;
   }
 
   [Symbol.iterator]() {
@@ -261,16 +269,16 @@ export class IssueList {
   applyFilter(view: ProjectView) {
     // Filter the issues
     this.issues = this.issues.filter((wrapper) => {
-      if (!view.checkType(wrapper.type())) {
+      if (!view.checkType(wrapper.type)) {
         return false;
       }
 
-      if (!view.checkRepo(wrapper.repoNameWithOwner())) {
+      if (!view.checkRepo(wrapper.repoNameWithOwner)) {
         return false;
       }
 
       for (const field of view.getCustomFields()) {
-        const value = wrapper.projectFields().get(field);
+        const value = wrapper.projectFields.get(field);
         if (!view.checkField(field, value)) {
           return false;
         }
@@ -287,16 +295,22 @@ export class IssueList {
     this.sourceOfTruth.title += ` (${view.getName()})`;
   }
 
-  header(): string {
+  get header(): string {
     return `[${this.sourceOfTruth.title}](${this.sourceOfTruth.url})`;
   }
 
-  title(): string {
+  get title(): string {
     return this.sourceOfTruth.title;
   }
 
-  url(): string {
+  get url(): string {
     return this.sourceOfTruth.url;
+  }
+
+  // Constructors
+  private constructor(issues: Issue[], sourceOfTruth: SourceOfTruth) {
+    this.sourceOfTruth = sourceOfTruth;
+    this.issues = issues.map((issue) => new IssueWrapper(issue));
   }
 
   static async forRepo(
