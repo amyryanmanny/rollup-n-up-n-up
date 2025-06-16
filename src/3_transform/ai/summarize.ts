@@ -57,6 +57,7 @@ async function runPrompt(prompt: string): Promise<string> {
 
     const endpoint = getEndpoint(token.kind);
 
+    // TODO: Detailed debug info MODEL_NAME, etc. Prepare for Datadog
     const client = ModelClient(endpoint, new AzureKeyCredential(token.value), {
       userAgentOptions: { userAgentPrefix: "github-actions-rollup-n-up" },
     });
@@ -109,7 +110,7 @@ export async function summarize(
 
   if (SUMMARY_ENV_VAR in process.env) {
     // If running on a GitHub Action, log the prompt for debugging
-    summary.addDetails(`Hydrated Prompt`, hydratedPrompt).write();
+    summary.addDetails("Hydrated Prompt (Debug)", hydratedPrompt).write();
   } else {
     console.debug(`Hydrated Prompt:\n${hydratedPrompt}`);
   }
