@@ -157,19 +157,48 @@ class ProjectViewFilter {
     return this.filters.get("type");
   }
 
-  getFilterOpen(): string[] | undefined {
-    // By default only open issues are fetched anyway
-    return this.filters.get("is");
+  checkField(field: string, value: string | undefined): boolean {
+    const included = this.filters.get(field);
+    const excluded = this.excludeFilters.get(field);
+
+    if (included && (value === undefined || !included.includes(value!))) {
+      return false;
+    }
+    if (excluded && excluded.includes(value!)) {
+      return false;
+    }
+    return true;
   }
 
-  static slugifyFieldName(field: string): string {
-    // RoB Area FY25Q4 -> rob-area-fy25q4
-    // Slugs are not accessible with GraphQL :(
-    return field.toLowerCase().replace(/\s+/g, "-");
+  checkType(type: string): boolean {
+    return this.checkField("type", type);
+  }
+
+  checkOpen(is: string): boolean {
+    return this.checkField("is", is);
+  }
+
+  checkRepo(repo: string | undefined): boolean {
+    return this.checkField("repo", repo);
   }
 
   static defaultFields(): string[] {
-    return ["type", "is", "assignee", "label", "milestone"];
+    return [
+      "repository",
+      "assignee",
+      "label",
+      "is",
+      "title",
+      "linked-pull-requests",
+      "milestone",
+      "type", // DONE
+      "reviewers",
+      "parent-issue",
+      "sub-issues-progress",
+      // Boolean modifiers which take a field name
+      "no",
+      "has",
+    ];
   }
 
   getCustomFields(): string[] {
@@ -199,6 +228,27 @@ class IssueWrapper {
 
   url(): string {
     return this.issue.url;
+  }
+
+  type(): string {
+    return this.issue.type?.name || "Issue";
+  }
+
+  repo(): string | undefined {
+    return this.issue.repository?.name;
+  }
+
+  repoNameWithOwner(): string | undefined {
+    return this.issue.repository?.full_name;
+  }
+
+  projectFields(): Map<string, string> {
+    // Return the custom fields of the issue
+    if ("projectFields" in this.issue) {
+      return this.issue.projectFields;
+    }
+    // For REST API issues, projectFields are not available
+    return new Map<string, string>();
   }
 
   // Render / Memory Functions
@@ -262,6 +312,28 @@ export class IssueList {
 
   [Symbol.iterator]() {
     return this.issues[Symbol.iterator]();
+  }
+
+  applyFilter(viewFilter: ProjectViewFilter) {
+    // Apply the view filter to the issues
+    this.issues = this.issues.filter((wrapper) => {
+      if (!viewFilter.checkType(wrapper.type())) {
+        return false;
+      }
+
+      if (!viewFilter.checkRepo(wrapper.repoNameWithOwner())) {
+        return false;
+      }
+
+      for (const field of viewFilter.getCustomFields()) {
+        const value = wrapper.projectFields().get(field);
+        if (!viewFilter.checkField(field, value)) {
+          return false;
+        }
+      }
+
+      return true;
+    });
   }
 
   header(): string {
@@ -531,6 +603,8 @@ export class IssueList {
       projectNumber: params.projectNumber,
       typeFilter: view.getFilterType(),
     });
+
+    issues.applyFilter(view);
 
     issues.sourceOfTruth.url += `/views/${params.projectViewNumber}`;
     issues.sourceOfTruth.title += ` - ${view.getName()}`;
