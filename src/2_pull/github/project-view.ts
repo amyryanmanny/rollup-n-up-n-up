@@ -107,7 +107,10 @@ export class ProjectView {
 
   getCustomFields(): string[] {
     const defaultFields = ProjectView.defaultFields();
-    return Array.from(this.filters.keys()).filter((key) => {
+    return Array.from([
+      ...this.filters.keys(),
+      ...this.excludeFilters.keys(),
+    ]).filter((key) => {
       return !defaultFields.includes(key);
     });
   }
