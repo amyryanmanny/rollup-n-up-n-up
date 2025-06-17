@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "prepare": "husky",
+    "build-actions": "bun run build-render",
     "build-render": "bun build ./src/1_trigger/action-render.ts --target node --outfile ./dist/render/index.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
