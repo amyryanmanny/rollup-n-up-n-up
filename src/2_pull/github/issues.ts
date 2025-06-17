@@ -1,12 +1,8 @@
 import type { RestEndpointMethodTypes } from "@octokit/rest";
 
 import { GitHubClient } from "./client";
-import { getMemory } from "../../3_transform/memory";
-import {
-  splitMarkdownByHeaders,
-  stripHtml,
-  toSnakeCase,
-} from "../../util/string";
+import { getMemory } from "@transform/memory";
+import { splitMarkdownByHeaders, stripHtml, toSnakeCase } from "@util/string";
 
 import {
   listIssuesForProject,

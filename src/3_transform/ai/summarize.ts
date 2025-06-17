@@ -7,8 +7,8 @@ import { summary } from "@actions/core";
 import { SUMMARY_ENV_VAR } from "@actions/core/lib/summary";
 import { context } from "@actions/github";
 
-import { getToken } from "../../octokit";
-import { getConfig } from "../../util/secrets";
+import { getToken } from "@util/octokit";
+import { getConfig } from "@config";
 
 const DEFAULT_MODEL_NAME = "openai/gpt-4.1";
 const DEFAULT_MAX_TOKENS = 800;

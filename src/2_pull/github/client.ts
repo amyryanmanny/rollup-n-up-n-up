@@ -1,6 +1,6 @@
 import { IssueList } from "./issues";
 
-import { getOctokit } from "../../octokit";
+import { getOctokit } from "@util/octokit";
 
 export class GitHubClient {
   // The Client class is a wrapper around the GitHub API client.

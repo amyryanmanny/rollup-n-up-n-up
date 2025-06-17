@@ -1,6 +1,7 @@
-import { renderTemplate } from "../4_template/render";
 import { setOutput, summary } from "@actions/core";
-import { getConfig } from "../util/secrets";
+
+import { getConfig } from "@config";
+import { renderTemplate } from "@template/render";
 
 const template = getConfig("template") || "main.md.vto";
 

@@ -2,7 +2,7 @@ import { Octokit } from "@octokit/rest";
 import { createAppAuth } from "@octokit/auth-app";
 import { paginateGraphQL } from "@octokit/plugin-paginate-graphql";
 
-import { getGitHubSecrets, type GitHubSecretKind } from "./util/secrets/github";
+import { getGitHubSecrets, type GitHubSecretKind } from "./config/github";
 
 const OctokitWithPlugins = Octokit.plugin(paginateGraphQL);
 type OctokitType = InstanceType<typeof OctokitWithPlugins>;

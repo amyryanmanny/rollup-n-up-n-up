@@ -23,6 +23,17 @@
     // Some stricter flags (disabled by default)
     "noUnusedLocals": true,
     "noUnusedParameters": false,
-    "noPropertyAccessFromIndexSignature": false
-  }
+    "noPropertyAccessFromIndexSignature": false,
+
+    // Module absolute resolution shortcuts
+    "baseUrl": "./src",
+    "paths": {
+      "@trigger/*": ["1_trigger/*"],
+      "@pull/*": ["2_pull/*"],
+      "@transform/*": ["3_transform/*"],
+      "@template/*": ["4_template/*"],
+      "@util/*": ["util/*"],
+      "@config": ["util/config/index.ts"],
+    },
+  },
 }

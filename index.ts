@@ -1,4 +1,4 @@
-import { getOctokit } from "./src/octokit";
+import { getOctokit } from "@util/octokit";
 
 const octokit = getOctokit();
 
