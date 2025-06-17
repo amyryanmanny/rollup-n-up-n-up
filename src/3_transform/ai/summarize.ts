@@ -53,6 +53,10 @@ async function runPrompt(prompt: string): Promise<string> {
     const modelName = getConfig("MODEL_NAME") || DEFAULT_MODEL_NAME;
     const maxTokens = Number(getConfig("MAX_TOKENS")) || DEFAULT_MAX_TOKENS;
 
+    if (modelName.startsWith("xai/")) {
+      throw new Error("xai models are not supported");
+    }
+
     const token = await getToken();
 
     const endpoint = getEndpoint(token.kind);
