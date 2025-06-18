@@ -1,3 +1,5 @@
+import { DefaultDict } from "@util/collections";
+
 import type { GitHubClient } from "./client";
 
 export type GetProjectViewParameters = {
@@ -18,34 +20,34 @@ export class ProjectView {
   private _number: number | undefined;
   private _filterQuery: string;
 
-  private filters: Map<string, string[]>;
-  private excludeFilters: Map<string, string[]>;
+  private filters: DefaultDict<string, string[]>;
+  private excludeFilters: DefaultDict<string, string[]>;
 
   constructor(params: ProjectViewParameters) {
     this._name = params.name;
     this._number = params.number;
     this._filterQuery = params.filterQuery;
 
-    this.filters = new Map<string, string[]>();
-    this.excludeFilters = new Map<string, string[]>();
+    this.filters = new DefaultDict<string, string[]>(() => []);
+    this.excludeFilters = new DefaultDict<string, string[]>(() => []);
 
     // Parse the filter string. Only split on spaces outside of quotes
     params.filterQuery.match(/(?:[^\s"]+|"[^"]*")+/g)?.forEach((f) => {
-      const [key, value] = f.split(":");
+      const [key, value] = f.split(":").map((s) => s.trim());
       if (key && value) {
         const values = value.split(",").map((v) => {
           if (v.startsWith('"') && v.endsWith('"')) {
             // Remove quotes from the value
-            v = v.slice(1, -1).trim();
+            v = v.slice(1, -1);
           }
           return v.trim();
         });
         if (key.startsWith("-")) {
           // Exclude filter
-          this.excludeFilters.set(key.trim().slice(1), values);
+          this.excludeFilters.get(key.slice(1)).push(...values);
         } else {
           // Regular filter
-          this.filters.set(key.trim(), values);
+          this.filters.get(key).push(...values);
         }
       }
     });
