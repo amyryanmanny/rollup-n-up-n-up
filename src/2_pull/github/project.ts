@@ -1,4 +1,5 @@
 import { GitHubClient } from "./client";
+import type { ProjectIssueComment } from "./comment";
 
 export type ListIssuesForProjectParameters = {
   organization: string;
@@ -27,13 +28,6 @@ export type ProjectIssue = {
   };
   comments: Array<ProjectIssueComment>;
   projectFields: Map<string, string>;
-};
-
-export type ProjectIssueComment = {
-  author: string;
-  body: string;
-  createdAt: Date;
-  url: string;
 };
 
 const slugifyProjectFieldName = (field: string): string => {
