@@ -290,6 +290,7 @@ export class IssueList {
   applyFilter(view: ProjectView) {
     // Filter the issues
     this.issues = this.issues.filter((wrapper) => {
+      // First check against default fields
       if (!view.checkType(wrapper.type)) {
         return false;
       }
@@ -298,7 +299,8 @@ export class IssueList {
         return false;
       }
 
-      for (const field of view.getCustomFields()) {
+      // Next check against all the custom Project Fields
+      for (const field of view.customFields) {
         const value = wrapper.projectFields.get(field);
         if (!view.checkField(field, value)) {
           return false;
@@ -309,15 +311,14 @@ export class IssueList {
     });
 
     // Scope the Source of Truth to the view
-    const viewNumber = view.getNumber();
-    if (viewNumber) {
-      this.sourceOfTruth.url += `/views/${viewNumber}`;
+    if (view.number) {
+      this.sourceOfTruth.url += `/views/${view.number}`;
     } else {
       this.sourceOfTruth.url += `?filterQuery=${encodeURIComponent(
-        view.getFilterQuery(),
+        view.filterQuery,
       )}`;
     }
-    this.sourceOfTruth.title += ` (${view.getName()})`;
+    this.sourceOfTruth.title += ` (${view.name})`;
   }
 
   get header(): string {

@@ -10,25 +10,27 @@ export type GetProjectViewParameters = {
 type ProjectViewParameters = {
   name: string;
   number?: number;
-  filter: string;
+  filterQuery: string;
 };
 
 export class ProjectView {
-  private name: string;
-  private number: number | undefined;
+  private _name: string;
+  private _number: number | undefined;
+  private _filterQuery: string;
 
   private filters: Map<string, string[]>;
   private excludeFilters: Map<string, string[]>;
 
   constructor(params: ProjectViewParameters) {
-    this.name = params.name;
-    this.number = params.number;
+    this._name = params.name;
+    this._number = params.number;
+    this._filterQuery = params.filterQuery;
 
     this.filters = new Map<string, string[]>();
     this.excludeFilters = new Map<string, string[]>();
 
     // Parse the filter string. Only split on spaces outside of quotes
-    params.filter.match(/(?:[^\s"]+|"[^"]*")+/g)?.forEach((f) => {
+    params.filterQuery.match(/(?:[^\s"]+|"[^"]*")+/g)?.forEach((f) => {
       const [key, value] = f.split(":");
       if (key && value) {
         const values = value.split(",").map((v) => {
@@ -49,14 +51,30 @@ export class ProjectView {
     });
   }
 
-  getName(): string {
-    return this.name;
+  // Properties
+  get name(): string {
+    return this._name;
   }
 
-  getNumber(): number | undefined {
-    return this.number;
+  get number(): number | undefined {
+    return this._number;
   }
 
+  get filterQuery(): string {
+    return this._filterQuery;
+  }
+
+  get customFields(): string[] {
+    const defaultFields = ProjectView.defaultFields();
+    return Array.from([
+      ...this.filters.keys(),
+      ...this.excludeFilters.keys(),
+    ]).filter((key) => {
+      return !defaultFields.includes(key);
+    });
+  }
+
+  // Helpers
   getFilterType(): string[] | undefined {
     return this.filters.get("type");
   }
@@ -104,16 +122,6 @@ export class ProjectView {
       "has",
     ];
   }
-
-  getCustomFields(): string[] {
-    const defaultFields = ProjectView.defaultFields();
-    return Array.from([
-      ...this.filters.keys(),
-      ...this.excludeFilters.keys(),
-    ]).filter((key) => {
-      return !defaultFields.includes(key);
-    });
-  }
 }
 
 export async function getProjectView(
@@ -151,6 +159,6 @@ export async function getProjectView(
   return new ProjectView({
     name: response.organization.projectV2.view.name,
     number: params.projectViewNumber,
-    filter: response.organization.projectV2.view.filter,
+    filterQuery: response.organization.projectV2.view.filter,
   });
 }
