@@ -47666,7 +47666,7 @@ class Memory {
 
 // src/util/string.ts
 var toSnakeCase = (str) => {
-  return str.replace(/([a-z])([A-Z])/g, "$1_$2").replace(/\s+/g, "_").toLowerCase();
+  return str.replace(":", "").replace(/([a-z])([A-Z])/g, "$1_$2").replace(/\s+/g, "_").toLowerCase();
 };
 var splitMarkdownByHeaders = (markdown) => {
   const headerRegex = /^#+\s+(.*)$/gm;
@@ -47683,6 +47683,24 @@ var splitMarkdownByHeaders = (markdown) => {
   }
   if (lastHeader !== null) {
     sections.set(lastHeader, markdown.slice(lastIndex).trim());
+  }
+  return sections;
+};
+var splitMarkdownByBoldedText = (markdown) => {
+  const boldTextRegex = /\*\*(.*?)\*\*/g;
+  const sections = new Map;
+  let match;
+  let lastBoldText = null;
+  let lastIndex = 0;
+  while ((match = boldTextRegex.exec(markdown)) !== null) {
+    if (lastBoldText !== null) {
+      sections.set(lastBoldText, markdown.slice(lastIndex, match.index).trim());
+    }
+    lastBoldText = toSnakeCase(match[1].trim());
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastBoldText !== null) {
+    sections.set(lastBoldText, markdown.slice(lastIndex).trim());
   }
   return sections;
 };
@@ -47810,16 +47828,18 @@ async function listIssuesForProject(client, params) {
 
 // src/2_pull/github/project-view.ts
 class ProjectView {
-  name;
-  number;
+  _name;
+  _number;
+  _filterQuery;
   filters;
   excludeFilters;
   constructor(params) {
-    this.name = params.name;
-    this.number = params.number;
+    this._name = params.name;
+    this._number = params.number;
+    this._filterQuery = params.filterQuery;
     this.filters = new Map;
     this.excludeFilters = new Map;
-    params.filter.match(/(?:[^\s"]+|"[^"]*")+/g)?.forEach((f2) => {
+    params.filterQuery.match(/(?:[^\s"]+|"[^"]*")+/g)?.forEach((f2) => {
       const [key, value] = f2.split(":");
       if (key && value) {
         const values = value.split(",").map((v2) => {
@@ -47836,11 +47856,23 @@ class ProjectView {
       }
     });
   }
-  getName() {
-    return this.name;
+  get name() {
+    return this._name;
   }
-  getNumber() {
-    return this.number;
+  get number() {
+    return this._number;
+  }
+  get filterQuery() {
+    return this._filterQuery;
+  }
+  get customFields() {
+    const defaultFields = ProjectView.defaultFields();
+    return Array.from([
+      ...this.filters.keys(),
+      ...this.excludeFilters.keys()
+    ]).filter((key) => {
+      return !defaultFields.includes(key);
+    });
   }
   getFilterType() {
     return this.filters.get("type");
@@ -47882,15 +47914,6 @@ class ProjectView {
       "has"
     ];
   }
-  getCustomFields() {
-    const defaultFields = ProjectView.defaultFields();
-    return Array.from([
-      ...this.filters.keys(),
-      ...this.excludeFilters.keys()
-    ]).filter((key) => {
-      return !defaultFields.includes(key);
-    });
-  }
 }
 async function getProjectView(client, params) {
   const query = `
@@ -47913,7 +47936,7 @@ async function getProjectView(client, params) {
   return new ProjectView({
     name: response.organization.projectV2.view.name,
     number: params.projectViewNumber,
-    filter: response.organization.projectV2.view.filter
+    filterQuery: response.organization.projectV2.view.filter
   });
 }
 
@@ -47924,10 +47947,12 @@ class CommentWrapper {
   comment;
   issueTitle;
   sections;
+  boldedSections;
   constructor(issueTitle, comment) {
     this.issueTitle = issueTitle;
     this.comment = comment;
     this.sections = splitMarkdownByHeaders(comment.body);
+    this.boldedSections = splitMarkdownByBoldedText(comment.body);
   }
   static empty() {
     return new CommentWrapper("", {
@@ -47957,17 +47982,28 @@ class CommentWrapper {
   }
   getSection(name) {
     const section = this.sections.get(toSnakeCase(name));
-    if (section === undefined) {
-      return;
+    if (section !== undefined) {
+      return stripHtml(section).trim();
     }
-    return stripHtml(section).trim();
+    const boldedSection = this.boldedSections.get(toSnakeCase(name));
+    if (boldedSection !== undefined) {
+      return stripHtml(boldedSection).trim();
+    }
+    return;
   }
   get update() {
-    const section = this.getSection("update");
-    if (section) {
-      return section.trim();
+    const updateSection = this.getSection("update");
+    if (updateSection) {
+      return updateSection;
     }
     return this.body;
+  }
+  get trendingReason() {
+    const trendingReason = this.getSection("trending_reason");
+    if (trendingReason) {
+      return trendingReason;
+    }
+    return this.update;
   }
   remember(bankIndex = 0) {
     this.memory.remember(`## Comment on ${this.issueTitle}:
@@ -48055,6 +48091,9 @@ ${this.body}`);
       if (comment.getSection("update") !== undefined) {
         return true;
       }
+      if (comment.getSection("trending_reason") !== undefined) {
+        return true;
+      }
       return false;
     };
     const updates = comments.filter(filterUpdates);
@@ -48083,7 +48122,7 @@ class IssueList {
       if (!view.checkRepo(wrapper.repoNameWithOwner)) {
         return false;
       }
-      for (const field of view.getCustomFields()) {
+      for (const field of view.customFields) {
         const value = wrapper.projectFields.get(field);
         if (!view.checkField(field, value)) {
           return false;
@@ -48091,11 +48130,12 @@ class IssueList {
       }
       return true;
     });
-    const viewNumber = view.getNumber();
-    if (viewNumber) {
-      this.sourceOfTruth.url += `/views/${viewNumber}`;
+    if (view.number) {
+      this.sourceOfTruth.url += `/views/${view.number}`;
+    } else {
+      this.sourceOfTruth.url += `?filterQuery=${encodeURIComponent(view.filterQuery)}`;
     }
-    this.sourceOfTruth.title += ` (${view.getName()})`;
+    this.sourceOfTruth.title += ` (${view.name})`;
   }
   get header() {
     return `[${this.sourceOfTruth.title}](${this.sourceOfTruth.url})`;
@@ -48130,7 +48170,7 @@ class IssueList {
       }
       view = new ProjectView({
         name: "Custom Query",
-        filter: params.customQuery
+        filterQuery: params.customQuery
       });
     } else {
       view = await getProjectView(client, params);
