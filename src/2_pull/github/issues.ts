@@ -2,7 +2,12 @@ import type { RestEndpointMethodTypes } from "@octokit/rest";
 
 import { GitHubClient } from "./client";
 import { getMemory } from "@transform/memory";
-import { splitMarkdownByHeaders, stripHtml, toSnakeCase } from "@util/string";
+import {
+  splitMarkdownByBoldedText,
+  splitMarkdownByHeaders,
+  stripHtml,
+  toSnakeCase,
+} from "@util/string";
 
 import {
   listIssuesForProject,
@@ -43,12 +48,14 @@ class CommentWrapper {
   private issueTitle: string;
 
   private sections: Map<string, string>;
+  private boldedSections: Map<string, string>;
 
   constructor(issueTitle: string, comment: Comment) {
     this.issueTitle = issueTitle;
     this.comment = comment;
 
     this.sections = splitMarkdownByHeaders(comment.body);
+    this.boldedSections = splitMarkdownByBoldedText(comment.body);
   }
 
   static empty(): CommentWrapper {
@@ -94,20 +101,34 @@ class CommentWrapper {
   getSection(name: string): string | undefined {
     // Get the section by name
     const section = this.sections.get(toSnakeCase(name));
-    if (section === undefined) {
-      return undefined;
+    if (section !== undefined) {
+      return stripHtml(section).trim();
     }
-    return stripHtml(section).trim();
+    const boldedSection = this.boldedSections.get(toSnakeCase(name));
+    if (boldedSection !== undefined) {
+      return stripHtml(boldedSection).trim();
+    }
+    return undefined;
   }
 
   get update(): string {
     // Get the update section
-    const section = this.getSection("update");
-    if (section) {
-      return section.trim();
+    const updateSection = this.getSection("update");
+    if (updateSection) {
+      return updateSection;
     }
     // If no update section, return the body
     return this.body;
+  }
+
+  get trendingReason(): string {
+    // Get the trending reason section
+    const trendingReason = this.getSection("trending_reason");
+    if (trendingReason) {
+      return trendingReason;
+    }
+    // If no trending reason section, return the Update
+    return this.update;
   }
 
   // Render / Memory Functions
@@ -236,6 +257,10 @@ class IssueWrapper {
         // If the comment has an "update" header, it's considered an update
         return true;
       }
+      if (comment.getSection("trending_reason") !== undefined) {
+        // If the comment has a "trending_reason" header / bolded section, it's considered an update
+        return true;
+      }
 
       return false;
     };
@@ -287,6 +312,10 @@ export class IssueList {
     const viewNumber = view.getNumber();
     if (viewNumber) {
       this.sourceOfTruth.url += `/views/${viewNumber}`;
+    } else {
+      this.sourceOfTruth.url += `?filterQuery=${encodeURIComponent(
+        view.getFilterQuery(),
+      )}`;
     }
     this.sourceOfTruth.title += ` (${view.getName()})`;
   }
@@ -347,7 +376,7 @@ export class IssueList {
       }
       view = new ProjectView({
         name: "Custom Query",
-        filter: params.customQuery,
+        filterQuery: params.customQuery,
       });
     } else {
       view = await getProjectView(client, params);

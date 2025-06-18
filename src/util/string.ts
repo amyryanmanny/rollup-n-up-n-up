@@ -1,6 +1,7 @@
 export const toSnakeCase = (str: string): string => {
   // Convert a string to snake_case
   return str
+    .replace(":", "") // Remove colons
     .replace(/([a-z])([A-Z])/g, "$1_$2") // Add underscore before uppercase letters
     .replace(/\s+/g, "_") // Replace spaces with underscores
     .toLowerCase(); // Convert to lowercase
@@ -26,6 +27,31 @@ export const splitMarkdownByHeaders = (
 
   if (lastHeader !== null) {
     sections.set(lastHeader, markdown.slice(lastIndex).trim());
+  }
+
+  return sections;
+};
+
+export const splitMarkdownByBoldedText = (
+  markdown: string,
+): Map<string, string> => {
+  // TODO: Generalize these two functions with a Regex input
+  const boldTextRegex = /\*\*(.*?)\*\*/g;
+  const sections = new Map<string, string>();
+  let match: RegExpExecArray | null;
+  let lastBoldText: string | null = null;
+  let lastIndex = 0;
+
+  while ((match = boldTextRegex.exec(markdown)) !== null) {
+    if (lastBoldText !== null) {
+      sections.set(lastBoldText, markdown.slice(lastIndex, match.index).trim());
+    }
+    lastBoldText = toSnakeCase(match[1].trim());
+    lastIndex = match.index + match[0].length;
+  }
+
+  if (lastBoldText !== null) {
+    sections.set(lastBoldText, markdown.slice(lastIndex).trim());
   }
 
   return sections;
