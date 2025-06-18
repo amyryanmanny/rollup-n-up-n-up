@@ -1,14 +1,28 @@
 # Contributing
 
-## Bun
+## Getting Started
 
-This repo uses Bun as the package manager, primarily for the Typescript interpreter features, and because the name is cute.
+### 1. Bun
+
+This repo uses Bun as the package manager, primarily for the Typescript interpreter features.
 
 Follow the [official guide to Install Bun](https://bun.sh/docs/installation#installing) on your machine.
 
-## Secrets
+### 2. Secrets
 
 Locally, the secrets can be populated from a `.env` file. Typically you will use a PAT for testing, but GitHub App authentication is also supported. If you provide both, it will use the App. See `.env.example` for key names.
+
+### 3. Hello World
+
+```sh
+bun install
+```
+
+Edit `./templates/main.md.vto`.
+
+```sh
+bun run local
+```
 
 ## Husky
 
