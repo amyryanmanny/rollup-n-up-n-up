@@ -7,17 +7,25 @@ export const toSnakeCase = (str: string): string => {
     .toLowerCase(); // Convert to lowercase
 };
 
-export const splitMarkdownByHeaders = (
+export const stripHtml = (s: string): string => {
+  // Remove HTML comments from the markdown - from Liquidjs
+  return s.replace(
+    /<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>|<.*?>|<!--[\s\S]*?-->/g,
+    "",
+  );
+};
+
+const splitMarkdownByRegex = (
   markdown: string,
+  regex: RegExp,
 ): Map<string, string> => {
   // Thanks Copilot
-  const headerRegex = /^#+\s+(.*)$/gm;
   const sections = new Map<string, string>();
   let match: RegExpExecArray | null;
   let lastHeader: string | null = null;
   let lastIndex = 0;
 
-  while ((match = headerRegex.exec(markdown)) !== null) {
+  while ((match = regex.exec(markdown)) !== null) {
     if (lastHeader !== null) {
       sections.set(lastHeader, markdown.slice(lastIndex, match.index).trim());
     }
@@ -32,35 +40,14 @@ export const splitMarkdownByHeaders = (
   return sections;
 };
 
+export const splitMarkdownByHeaders = (
+  markdown: string,
+): Map<string, string> => {
+  return splitMarkdownByRegex(markdown, /^#+\s+(.*)$/gm);
+};
+
 export const splitMarkdownByBoldedText = (
   markdown: string,
 ): Map<string, string> => {
-  // TODO: Generalize these two functions with a Regex input
-  const boldTextRegex = /\*\*(.*?)\*\*/g;
-  const sections = new Map<string, string>();
-  let match: RegExpExecArray | null;
-  let lastBoldText: string | null = null;
-  let lastIndex = 0;
-
-  while ((match = boldTextRegex.exec(markdown)) !== null) {
-    if (lastBoldText !== null) {
-      sections.set(lastBoldText, markdown.slice(lastIndex, match.index).trim());
-    }
-    lastBoldText = toSnakeCase(match[1].trim());
-    lastIndex = match.index + match[0].length;
-  }
-
-  if (lastBoldText !== null) {
-    sections.set(lastBoldText, markdown.slice(lastIndex).trim());
-  }
-
-  return sections;
-};
-
-export const stripHtml = (s: string): string => {
-  // Remove HTML comments from the markdown
-  return s.replace(
-    /<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>|<.*?>|<!--[\s\S]*?-->/g,
-    "",
-  );
+  return splitMarkdownByRegex(markdown, /\*\*(.*?)\*\*/g);
 };
