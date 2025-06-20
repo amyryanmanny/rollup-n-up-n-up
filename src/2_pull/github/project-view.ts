@@ -1,6 +1,7 @@
 import { DefaultDict } from "@util/collections";
 
 import type { GitHubClient } from "./client";
+import type { ProjectField } from "./project";
 
 export type GetProjectViewParameters = {
   organization: string;
@@ -81,29 +82,84 @@ export class ProjectView {
     return this.filters.get("type");
   }
 
-  checkField(field: string, value: string | undefined): boolean {
-    const included = this.filters.get(field);
-    const excluded = this.excludeFilters.get(field);
+  checkField(fieldName: string, field: ProjectField | undefined): boolean {
+    let strValue: string | null = null;
+    if (field === undefined || field.value === null) {
+      strValue = null;
+    } else if (field.kind === "SingleSelect") {
+      strValue = field.value;
+    } else if (field.kind === "Date") {
+      // For Date filters, the format is:
+      //   date:>=2025-06-16 or date:<=2025-06-22
+      return this.checkDateField(fieldName, field.date);
+    }
 
-    if (included && (value === undefined || !included.includes(value!))) {
+    const included = this.filters.get(fieldName);
+    const excluded = this.excludeFilters.get(fieldName);
+
+    if (
+      included.length &&
+      (strValue === null || !included.includes(strValue))
+    ) {
       return false;
     }
-    if (excluded && excluded.includes(value!)) {
+    if (excluded.length && strValue !== null && excluded.includes(strValue)) {
       return false;
     }
     return true;
   }
 
+  checkDateField(field: string, date: Date | null): boolean {
+    // Check if the date is within the range specified in the filter
+    const filter = this.filters.get(field);
+    if (!filter) {
+      return true; // No filter means all dates are valid
+    } else if (date === null) {
+      return false; // Null dates are not valid
+    }
+
+    const dateString = date.toISOString().split("T")[0]; // Format as YYYY-MM-DD
+
+    for (const condition of filter) {
+      if (condition.startsWith(">=")) {
+        const targetDate = condition.slice(2).trim();
+        if (dateString < targetDate) {
+          return false;
+        }
+      } else if (condition.startsWith("<=")) {
+        const targetDate = condition.slice(2).trim();
+        if (dateString > targetDate) {
+          return false;
+        }
+      } else if (condition.startsWith("=")) {
+        const targetDate = condition.slice(1).trim();
+        if (dateString !== targetDate) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
   checkType(type: string): boolean {
-    return this.checkField("type", type);
+    return this.checkField("type", {
+      kind: "SingleSelect",
+      value: type,
+    });
   }
 
   checkOpen(is: string): boolean {
-    return this.checkField("is", is);
+    return this.checkField("is", {
+      kind: "SingleSelect",
+      value: is,
+    });
   }
 
   checkRepo(repo: string | undefined): boolean {
-    return this.checkField("repo", repo);
+    return this.checkField("repo", {
+      kind: "SingleSelect",
+      value: repo ?? null,
+    });
   }
 
   static defaultFields(): string[] {

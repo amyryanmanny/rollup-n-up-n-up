@@ -6,6 +6,7 @@ import { getMemory } from "@transform/memory";
 import {
   listIssuesForProject,
   type ListIssuesForProjectParameters,
+  type ProjectField,
   type ProjectIssue,
 } from "./project";
 import {
@@ -66,13 +67,22 @@ class IssueWrapper {
     return this.issue.repository?.full_name;
   }
 
-  get projectFields(): Map<string, string> {
-    // Return the custom fields of the issue
+  get _projectFields(): Map<string, ProjectField> {
+    // Return the projectFields of the issue
     if ("projectFields" in this.issue) {
       return this.issue.projectFields;
     }
-    // For REST API issues, projectFields are not available
-    return new Map<string, string>();
+    // For REST API issues, projectFields are undefined
+    return new Map<string, ProjectField>();
+  }
+
+  get projectFields(): Map<string, string> {
+    // Return the projectFields of the issue, mapped back to string representation
+    return new Map(
+      Array.from(this._projectFields.entries()).map(([name, field]) => {
+        return [name, field.value ?? ""];
+      }),
+    );
   }
 
   // Render / Memory Functions
@@ -180,7 +190,7 @@ export class IssueList {
 
       // Next check against all the custom Project Fields
       for (const field of view.customFields) {
-        const value = wrapper.projectFields.get(field);
+        const value = wrapper._projectFields.get(field);
         if (!view.checkField(field, value)) {
           return false;
         }
