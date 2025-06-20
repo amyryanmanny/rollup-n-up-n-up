@@ -36492,49 +36492,12 @@ function mod_default(options = {}) {
 // src/4_template/filters.ts
 var exports_filters = {};
 __export(exports_filters, {
-  stub: () => stub
+  toSnakeCase: () => toSnakeCase,
+  summarizeToSentence: () => summarizeToSentence,
+  stripToSentence: () => stripToSentence,
+  stripHtml: () => stripHtml,
+  accessible: () => accessible
 });
-function stub(text) {
-  return `stub-${text}`;
-}
-
-// src/4_template/plugins/index.ts
-var exports_plugins = {};
-__export(exports_plugins, {
-  hoist: () => hoist_default
-});
-
-// src/4_template/plugins/hoist.ts
-function hoist_default() {
-  return (env) => {
-    env.tags.push(mark);
-    env.tags.push(hoist);
-  };
-}
-function formatMarker(val) {
-  return `"__MARK_${val}"`;
-}
-function mark(env, code, outputVar, tokens) {
-  if (!code.startsWith("mark ")) {
-    return;
-  }
-  const markerName = code.replace(/^mark\s+/, "");
-  const marker = env.compileFilters(tokens, formatMarker(markerName), env.options.autoescape);
-  return `${outputVar} += ${marker};`;
-}
-function hoist(env, code, outputVar, tokens) {
-  if (!code.startsWith("hoist ")) {
-    return;
-  }
-  const match = code.match(/^hoist\s+([\w]+)\s*=\s*([\s\S]+)$/);
-  if (!match) {
-    throw new Error(`Invalid hoist tag: ${code}`);
-  }
-  const [, markerName, variable] = match;
-  const marker = env.compileFilters(tokens, formatMarker(markerName), env.options.autoescape);
-  const val = env.compileFilters(tokens, variable, env.options.autoescape);
-  return `${outputVar} = ${outputVar}.replace(${marker}, ${val});`;
-}
 
 // src/3_transform/ai/summarize.ts
 import fs from "fs";
@@ -47525,6 +47488,7 @@ function getOctokit() {
 }
 
 // src/3_transform/ai/summarize.ts
+var DEFAULT_SYSTEM_PROMPT = "You are a helpful assistant summarizing GitHub Discussions, Issues, and Comments into a concise rollup for less technical audiences.";
 var DEFAULT_MODEL_NAME = "openai/gpt-4.1";
 var DEFAULT_MAX_TOKENS = 800;
 function getEndpoint(tokenKind) {
@@ -47552,11 +47516,14 @@ function loadPrompt(input) {
   }
   return promptFileOrInput;
 }
-async function runPrompt(prompt) {
+async function runPrompt(params) {
+  const { prompt, systemPrompt, modelName, maxTokens } = {
+    prompt: params.prompt,
+    systemPrompt: params.systemPrompt || DEFAULT_SYSTEM_PROMPT,
+    modelName: params.modelName || DEFAULT_MODEL_NAME,
+    maxTokens: Number(params.maxTokens) || DEFAULT_MAX_TOKENS
+  };
   try {
-    const systemPrompt = "You are a helpful assistant summarizing Issues and Comments into a concise rollup.";
-    const modelName = getConfig("MODEL_NAME") || DEFAULT_MODEL_NAME;
-    const maxTokens = Number(getConfig("MAX_TOKENS")) || DEFAULT_MAX_TOKENS;
     if (modelName.startsWith("xai/")) {
       throw new Error("xai models are not supported");
     }
@@ -47604,8 +47571,122 @@ async function summarize(promptInput, content) {
     console.debug(`Hydrated Prompt:
 ${hydratedPrompt}`);
   }
-  const output = await runPrompt(hydratedPrompt);
+  const output = await runPrompt({
+    prompt: hydratedPrompt,
+    systemPrompt: getConfig("SYSTEM_PROMPT"),
+    modelName: getConfig("MODEL_NAME"),
+    maxTokens: getConfig("MAX_TOKENS")
+  });
   return output;
+}
+
+// src/util/string.ts
+var splitMarkdownByRegex = (markdown, regex) => {
+  const sections = new Map;
+  let match;
+  let lastHeader = null;
+  let lastIndex = 0;
+  while ((match = regex.exec(markdown)) !== null) {
+    if (lastHeader !== null) {
+      sections.set(lastHeader, markdown.slice(lastIndex, match.index).trim());
+    }
+    lastHeader = toSnakeCase(match[1].trim());
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastHeader !== null) {
+    sections.set(lastHeader, markdown.slice(lastIndex).trim());
+  }
+  return sections;
+};
+var splitMarkdownByHeaders = (markdown) => {
+  return splitMarkdownByRegex(markdown, /^#+\s+(.*)$/gm);
+};
+var splitMarkdownByBoldedText = (markdown) => {
+  return splitMarkdownByRegex(markdown, /\*\*(.*?)\*\*/g);
+};
+var stripHtml = (s2) => {
+  return s2.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>|<.*?>|<!--[\s\S]*?-->/g, "");
+};
+var toSnakeCase = (str) => {
+  return str.replace(":", "").replace(/([a-z])([A-Z])/g, "$1_$2").replace(/\s+/g, "_").toLowerCase();
+};
+
+// src/4_template/filters.ts
+function accessible(markdown) {
+  const colorMap = {
+    "\uD83D\uDD34": "red",
+    "\uD83D\uDFE5": "red",
+    "\uD83D\uDFE0": "orange",
+    "\uD83D\uDFE7": "orange",
+    "\uD83D\uDFE1": "yellow",
+    "\uD83D\uDFE8": "yellow",
+    "\uD83D\uDFE2": "green",
+    "\uD83D\uDFE9": "green",
+    "\uD83D\uDD35": "blue",
+    "\uD83D\uDFE6": "blue",
+    "\uD83D\uDFE3": "purple",
+    "\uD83D\uDFEA": "purple",
+    "\uD83D\uDFE4": "brown",
+    "⚪️": "white",
+    "⬜️": "white",
+    "⚫️": "black",
+    "⬛️": "black"
+  };
+  const emojiRegex = new RegExp(Object.keys(colorMap).join("|"), "g");
+  markdown = markdown.replace(emojiRegex, (emoji) => `${emoji} (${colorMap[emoji]})`);
+  return markdown;
+}
+function stripToSentence(markdown) {
+  return markdown.replace(/[\s-]+/g, " ").trim();
+}
+async function summarizeToSentence(markdown) {
+  if (!markdown.trim().includes(`
+`)) {
+    return markdown.trim();
+  }
+  return await runPrompt({
+    prompt: markdown,
+    systemPrompt: "Summarize the following content into a single sentence. Try to sacrifice as little meaning as possible.",
+    maxTokens: 100
+  });
+}
+
+// src/4_template/plugins/index.ts
+var exports_plugins = {};
+__export(exports_plugins, {
+  hoist: () => hoist_default
+});
+
+// src/4_template/plugins/hoist.ts
+function hoist_default() {
+  return (env) => {
+    env.tags.push(mark);
+    env.tags.push(hoist);
+  };
+}
+function formatMarker(val) {
+  return `"__MARK_${val}"`;
+}
+function mark(env, code, outputVar, tokens) {
+  if (!code.startsWith("mark ")) {
+    return;
+  }
+  const markerName = code.replace(/^mark\s+/, "");
+  const marker = env.compileFilters(tokens, formatMarker(markerName), env.options.autoescape);
+  return `${outputVar} += ${marker};`;
+}
+function hoist(env, code, outputVar, tokens) {
+  if (!code.startsWith("hoist ")) {
+    return;
+  }
+  const match = code.match(/^hoist\s+([\w]+)\s*=\s*([\s\S]+)$/);
+  if (!match) {
+    throw new Error(`Invalid hoist tag: ${code}`);
+  }
+  const [, markerName, variable] = match;
+  const marker = env.compileFilters(tokens, formatMarker(markerName), env.options.autoescape);
+  const val = env.compileFilters(tokens, variable, env.options.autoescape);
+  return `${outputVar} = ${outputVar}.replace(${marker}, ${val});`;
 }
 
 // src/3_transform/memory.ts
@@ -47664,50 +47745,6 @@ class Memory {
   }
 }
 
-// src/util/string.ts
-var toSnakeCase = (str) => {
-  return str.replace(":", "").replace(/([a-z])([A-Z])/g, "$1_$2").replace(/\s+/g, "_").toLowerCase();
-};
-var splitMarkdownByHeaders = (markdown) => {
-  const headerRegex = /^#+\s+(.*)$/gm;
-  const sections = new Map;
-  let match;
-  let lastHeader = null;
-  let lastIndex = 0;
-  while ((match = headerRegex.exec(markdown)) !== null) {
-    if (lastHeader !== null) {
-      sections.set(lastHeader, markdown.slice(lastIndex, match.index).trim());
-    }
-    lastHeader = toSnakeCase(match[1].trim());
-    lastIndex = match.index + match[0].length;
-  }
-  if (lastHeader !== null) {
-    sections.set(lastHeader, markdown.slice(lastIndex).trim());
-  }
-  return sections;
-};
-var splitMarkdownByBoldedText = (markdown) => {
-  const boldTextRegex = /\*\*(.*?)\*\*/g;
-  const sections = new Map;
-  let match;
-  let lastBoldText = null;
-  let lastIndex = 0;
-  while ((match = boldTextRegex.exec(markdown)) !== null) {
-    if (lastBoldText !== null) {
-      sections.set(lastBoldText, markdown.slice(lastIndex, match.index).trim());
-    }
-    lastBoldText = toSnakeCase(match[1].trim());
-    lastIndex = match.index + match[0].length;
-  }
-  if (lastBoldText !== null) {
-    sections.set(lastBoldText, markdown.slice(lastIndex).trim());
-  }
-  return sections;
-};
-var stripHtml = (s2) => {
-  return s2.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>|<.*?>|<!--[\s\S]*?-->/g, "");
-};
-
 // src/2_pull/github/project.ts
 var slugifyProjectFieldName = (field) => {
   return field.toLowerCase().replace(/\s+/g, "-");
@@ -47764,6 +47801,14 @@ async function listIssuesForProject(client, params) {
                           }
                         }
                       }
+                      ... on ProjectV2ItemFieldDateValue {
+                        date
+                        field {
+                          ... on ProjectV2Field {
+                            name
+                          }
+                        }
+                      }
                     }
                   }
                 }
@@ -47808,10 +47853,29 @@ async function listIssuesForProject(client, params) {
       })),
       projectFields: edge.node.fieldValues.edges.reduce((acc, fieldEdge) => {
         const fieldNode = fieldEdge.node;
-        if (fieldNode && fieldNode.__typename === "ProjectV2ItemFieldSingleSelectValue") {
+        if (fieldNode && fieldNode.field) {
+          let field;
+          switch (fieldNode.__typename) {
+            case "ProjectV2ItemFieldSingleSelectValue":
+              field = {
+                kind: "SingleSelect",
+                value: fieldNode.name
+              };
+              break;
+            case "ProjectV2ItemFieldDateValue": {
+              const date = fieldNode.date;
+              field = {
+                kind: "Date",
+                value: date,
+                date: date ? new Date(date) : null
+              };
+              break;
+            }
+            default:
+              return acc;
+          }
           const fieldName = slugifyProjectFieldName(fieldNode.field.name);
-          const fieldValue = fieldNode.name;
-          acc.set(fieldName, fieldValue);
+          acc.set(fieldName, field);
         }
         return acc;
       }, new Map)
@@ -47826,6 +47890,23 @@ async function listIssuesForProject(client, params) {
   };
 }
 
+// src/util/collections.ts
+class DefaultDict extends Map {
+  defaultFn;
+  constructor(defaultFn) {
+    super();
+    this.defaultFn = defaultFn;
+  }
+  get(key) {
+    if (this.has(key)) {
+      return super.get(key);
+    }
+    const val = this.defaultFn(key);
+    this.set(key, val);
+    return val;
+  }
+}
+
 // src/2_pull/github/project-view.ts
 class ProjectView {
   _name;
@@ -47837,21 +47918,21 @@ class ProjectView {
     this._name = params.name;
     this._number = params.number;
     this._filterQuery = params.filterQuery;
-    this.filters = new Map;
-    this.excludeFilters = new Map;
+    this.filters = new DefaultDict(() => []);
+    this.excludeFilters = new DefaultDict(() => []);
     params.filterQuery.match(/(?:[^\s"]+|"[^"]*")+/g)?.forEach((f2) => {
-      const [key, value] = f2.split(":");
+      const [key, value] = f2.split(":").map((s2) => s2.trim());
       if (key && value) {
         const values = value.split(",").map((v2) => {
           if (v2.startsWith('"') && v2.endsWith('"')) {
-            v2 = v2.slice(1, -1).trim();
+            v2 = v2.slice(1, -1);
           }
           return v2.trim();
         });
         if (key.startsWith("-")) {
-          this.excludeFilters.set(key.trim().slice(1), values);
+          this.excludeFilters.get(key.slice(1)).push(...values);
         } else {
-          this.filters.set(key.trim(), values);
+          this.filters.get(key).push(...values);
         }
       }
     });
@@ -47877,25 +47958,70 @@ class ProjectView {
   getFilterType() {
     return this.filters.get("type");
   }
-  checkField(field, value) {
-    const included = this.filters.get(field);
-    const excluded = this.excludeFilters.get(field);
-    if (included && (value === undefined || !included.includes(value))) {
+  checkField(fieldName, field) {
+    let strValue = null;
+    if (field === undefined || field.value === null) {
+      strValue = null;
+    } else if (field.kind === "SingleSelect") {
+      strValue = field.value;
+    } else if (field.kind === "Date") {
+      return this.checkDateField(fieldName, field.date);
+    }
+    const included = this.filters.get(fieldName);
+    const excluded = this.excludeFilters.get(fieldName);
+    if (included.length && (strValue === null || !included.includes(strValue))) {
       return false;
     }
-    if (excluded && excluded.includes(value)) {
+    if (excluded.length && strValue !== null && excluded.includes(strValue)) {
       return false;
     }
     return true;
   }
+  checkDateField(field, date) {
+    const filter = this.filters.get(field);
+    if (!filter) {
+      return true;
+    } else if (date === null) {
+      return false;
+    }
+    const dateString = date.toISOString().split("T")[0];
+    for (const condition of filter) {
+      if (condition.startsWith(">=")) {
+        const targetDate = condition.slice(2).trim();
+        if (dateString < targetDate) {
+          return false;
+        }
+      } else if (condition.startsWith("<=")) {
+        const targetDate = condition.slice(2).trim();
+        if (dateString > targetDate) {
+          return false;
+        }
+      } else if (condition.startsWith("=")) {
+        const targetDate = condition.slice(1).trim();
+        if (dateString !== targetDate) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
   checkType(type3) {
-    return this.checkField("type", type3);
+    return this.checkField("type", {
+      kind: "SingleSelect",
+      value: type3
+    });
   }
   checkOpen(is) {
-    return this.checkField("is", is);
+    return this.checkField("is", {
+      kind: "SingleSelect",
+      value: is
+    });
   }
   checkRepo(repo) {
-    return this.checkField("repo", repo);
+    return this.checkField("repo", {
+      kind: "SingleSelect",
+      value: repo ?? null
+    });
   }
   static defaultFields() {
     return [
@@ -47940,7 +48066,7 @@ async function getProjectView(client, params) {
   });
 }
 
-// src/2_pull/github/issues.ts
+// src/2_pull/github/comment.ts
 class CommentWrapper {
   memory = getMemory();
   static UPDATE_MARKER = RegExp(/<(!--\s*UPDATE\s*--)>/g);
@@ -48020,6 +48146,7 @@ ${this.comment.body}`, bankIndex);
   }
 }
 
+// src/2_pull/github/issues.ts
 class IssueWrapper {
   memory = getMemory();
   issue;
@@ -48047,11 +48174,16 @@ class IssueWrapper {
   get repoNameWithOwner() {
     return this.issue.repository?.full_name;
   }
-  get projectFields() {
+  get _projectFields() {
     if ("projectFields" in this.issue) {
       return this.issue.projectFields;
     }
     return new Map;
+  }
+  get projectFields() {
+    return new Map(Array.from(this._projectFields.entries()).map(([name, field]) => {
+      return [name, field.value ?? ""];
+    }));
   }
   remember() {
     this.memory.remember(`## ${this.header}:
@@ -48123,7 +48255,7 @@ class IssueList {
         return false;
       }
       for (const field of view.customFields) {
-        const value = wrapper.projectFields.get(field);
+        const value = wrapper._projectFields.get(field);
         if (!view.checkField(field, value)) {
           return false;
         }
