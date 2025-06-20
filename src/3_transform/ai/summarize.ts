@@ -1,3 +1,4 @@
+// TODO: This file needs a refactor, it's pretty confusing
 import fs from "fs";
 
 import ModelClient, { isUnexpected } from "@azure-rest/ai-inference";
@@ -7,11 +8,20 @@ import { summary } from "@actions/core";
 import { SUMMARY_ENV_VAR } from "@actions/core/lib/summary";
 import { context } from "@actions/github";
 
-import { getToken } from "@util/octokit";
 import { getConfig } from "@config";
+import { getToken } from "@util/octokit";
 
+const DEFAULT_SYSTEM_PROMPT =
+  "You are a helpful assistant summarizing GitHub Discussions, Issues, and Comments into a concise rollup for less technical audiences.";
 const DEFAULT_MODEL_NAME = "openai/gpt-4.1";
 const DEFAULT_MAX_TOKENS = 800;
+
+export type PromptParameters = {
+  prompt: string;
+  systemPrompt?: string;
+  modelName?: string;
+  maxTokens?: string | number;
+};
 
 function getEndpoint(tokenKind: string): string {
   const customEndpoint = getConfig("MODEL_ENDPOINT") || "";
@@ -44,15 +54,15 @@ function loadPrompt(input: string): string {
   return promptFileOrInput;
 }
 
-async function runPrompt(prompt: string): Promise<string> {
+export async function runPrompt(params: PromptParameters): Promise<string> {
+  const { prompt, systemPrompt, modelName, maxTokens } = {
+    prompt: params.prompt,
+    systemPrompt: params.systemPrompt || DEFAULT_SYSTEM_PROMPT,
+    modelName: params.modelName || DEFAULT_MODEL_NAME,
+    maxTokens: Number(params.maxTokens) || DEFAULT_MAX_TOKENS,
+  };
+
   try {
-    // Load system prompt with default value
-    const systemPrompt =
-      "You are a helpful assistant summarizing Issues and Comments into a concise rollup.";
-
-    const modelName = getConfig("MODEL_NAME") || DEFAULT_MODEL_NAME;
-    const maxTokens = Number(getConfig("MAX_TOKENS")) || DEFAULT_MAX_TOKENS;
-
     if (modelName.startsWith("xai/")) {
       throw new Error("xai models are not supported");
     }
@@ -110,6 +120,7 @@ export async function summarize(
   const prompt = loadPrompt(promptInput);
 
   const contentMarker = RegExp(/\{\{\s*CONTENT\s*\}\}/);
+  // TODO: Use systemPrompt instead of doing this
   const hydratedPrompt = prompt.replace(contentMarker, content);
 
   if (SUMMARY_ENV_VAR in process.env) {
@@ -119,7 +130,13 @@ export async function summarize(
     console.debug(`Hydrated Prompt:\n${hydratedPrompt}`);
   }
 
-  const output = await runPrompt(hydratedPrompt);
+  const output = await runPrompt({
+    prompt: hydratedPrompt,
+    // TODO: Concat the system prompt with the default one
+    systemPrompt: getConfig("SYSTEM_PROMPT"),
+    modelName: getConfig("MODEL_NAME"),
+    maxTokens: getConfig("MAX_TOKENS"),
+  });
 
   return output;
 }
