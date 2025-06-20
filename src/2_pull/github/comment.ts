@@ -123,4 +123,9 @@ export class CommentWrapper {
     this.remember(memoryBankIndex);
     return this.update;
   }
+
+  renderTrendingReason(memoryBankIndex: number = 0): string {
+    this.remember(memoryBankIndex);
+    return this.trendingReason;
+  }
 }

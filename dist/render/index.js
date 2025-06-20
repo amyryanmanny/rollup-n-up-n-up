@@ -48144,6 +48144,10 @@ ${this.comment.body}`, bankIndex);
     this.remember(memoryBankIndex);
     return this.update;
   }
+  renderTrendingReason(memoryBankIndex = 0) {
+    this.remember(memoryBankIndex);
+    return this.trendingReason;
+  }
 }
 
 // src/2_pull/github/issues.ts
