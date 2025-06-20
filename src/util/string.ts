@@ -1,20 +1,3 @@
-export const toSnakeCase = (str: string): string => {
-  // Convert a string to snake_case
-  return str
-    .replace(":", "") // Remove colons
-    .replace(/([a-z])([A-Z])/g, "$1_$2") // Add underscore before uppercase letters
-    .replace(/\s+/g, "_") // Replace spaces with underscores
-    .toLowerCase(); // Convert to lowercase
-};
-
-export const stripHtml = (s: string): string => {
-  // Remove HTML comments from the markdown - from Liquidjs
-  return s.replace(
-    /<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>|<.*?>|<!--[\s\S]*?-->/g,
-    "",
-  );
-};
-
 const splitMarkdownByRegex = (
   markdown: string,
   regex: RegExp,
@@ -50,4 +33,21 @@ export const splitMarkdownByBoldedText = (
   markdown: string,
 ): Map<string, string> => {
   return splitMarkdownByRegex(markdown, /\*\*(.*?)\*\*/g);
+};
+
+export const stripHtml = (s: string): string => {
+  // Remove HTML comments from the markdown - from Liquidjs
+  return s.replace(
+    /<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>|<.*?>|<!--[\s\S]*?-->/g,
+    "",
+  );
+};
+
+export const toSnakeCase = (str: string): string => {
+  // Convert a string to snake_case
+  return str
+    .replace(":", "") // Remove colons
+    .replace(/([a-z])([A-Z])/g, "$1_$2") // Add underscore before uppercase letters
+    .replace(/\s+/g, "_") // Replace spaces with underscores
+    .toLowerCase(); // Convert to lowercase
 };
