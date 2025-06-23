@@ -4,12 +4,14 @@
   "type": "module",
   "scripts": {
     "prepare": "husky",
-    "build-actions": "bun run build-render",
+    "build-actions": "bun run build-render && bun run build-push",
     "build-render": "bun build ./src/1_trigger/action-render.ts --target node --outfile ./dist/render/index.js",
+    "build-push": "bun build ./src/5_push/action-push.ts --target node --outfile ./dist/push/index.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "start": "bun run index.ts",
-    "local": "bun run ./src/1_trigger/local.ts"
+    "render": "bun run ./src/1_trigger/local.ts",
+    "push": "bun run ./src/5_push/local.ts"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,json,css,scss,md}": [

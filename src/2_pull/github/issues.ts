@@ -1,3 +1,4 @@
+// TODO: Depluralize filename
 import type { RestEndpointMethodTypes } from "@octokit/rest";
 
 import { GitHubClient } from "./client";

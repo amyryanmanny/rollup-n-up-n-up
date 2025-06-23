@@ -32,6 +32,7 @@
       "@pull/*": ["2_pull/*"],
       "@transform/*": ["3_transform/*"],
       "@template/*": ["4_template/*"],
+      "@push/*": ["5_push/*"],
       "@util/*": ["util/*"],
       "@config": ["util/config/index.ts"],
     },

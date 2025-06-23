@@ -1,0 +1,17 @@
+name: "RollupNup Push"
+description: "Push a Markdown string to a location using the internal client"
+author: "amyryanmanny"
+inputs:
+  title:
+    description: "The title of the Markdown string"
+    required: false
+  body:
+    description: "The Markdown string to push"
+    required: true
+  push:
+    description: "The locations to push to"
+    required: true
+outputs: {}
+runs:
+  using: node20
+  main: "../dist/push/index.js"
