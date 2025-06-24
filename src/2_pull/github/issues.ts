@@ -177,7 +177,8 @@ export class IssueList {
     return this.issues[Symbol.iterator]();
   }
 
-  applyFilter(view: ProjectView) {
+  // Issue Filtering / Grouping / Sorting
+  filter(view: ProjectView) {
     // Filter the issues
     this.issues = this.issues.filter((wrapper) => {
       // First check against default fields
@@ -278,7 +279,7 @@ export class IssueList {
       projectNumber: params.projectNumber,
       typeFilter: view.getFilterType(),
     });
-    issueList.applyFilter(view);
+    issueList.filter(view);
 
     return issueList;
   }
