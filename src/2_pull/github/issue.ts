@@ -53,6 +53,7 @@ class IssueWrapper {
   }
 
   get body(): string {
+    this.remember();
     return this.issue.body || "";
   }
 
@@ -86,16 +87,6 @@ class IssueWrapper {
     );
   }
 
-  // Render / Memory Functions
-  remember() {
-    this.memory.remember(`## ${this.header}:\n\n${this.body}`);
-  }
-
-  renderBody(): string {
-    this.remember();
-    return this.body;
-  }
-
   // Comment Functions
   get comments(): CommentWrapper[] {
     // TODO: Memoize
@@ -104,7 +95,7 @@ class IssueWrapper {
     const comments = issue.comments;
     if (typeof comments == "number") {
       // For REST API issues, comments is a number
-      // TODO: Fetch the comments for the issue
+      // TODO: Fetch the comments for the issue - figure out async. Use CommentList
       throw new Error(
         "Fetching last update for REST API issues is not implemented yet.",
       );
@@ -133,28 +124,20 @@ class IssueWrapper {
   }
 
   latestUpdate(): CommentWrapper {
-    const comments = this.comments;
-
     const filterUpdates = (comment: CommentWrapper) => {
-      // Check if the comment body contains the update marker
-      if (CommentWrapper.UPDATE_MARKER.test(comment.dirtyBody)) {
+      if (comment.hasUpdateMarker) {
+        // Check if the comment body contains the update sentinel
         // SIDE_EFFECT: Remove the update marker from the body
         comment.removeUpdateMarker();
         return true;
       }
-
-      if (comment.getSection("update") !== undefined) {
-        // If the comment has an "update" header, it's considered an update
+      if (comment.findUpdate() !== undefined) {
+        // If it has one of the defined update sections, it's considered an update
         return true;
       }
-      if (comment.getSection("trending_reason") !== undefined) {
-        // If the comment has a "trending_reason" header / bolded section, it's considered an update
-        return true;
-      }
-
       return false;
     };
-    const updates = comments.filter(filterUpdates);
+    const updates = this.comments.filter(filterUpdates);
 
     if (updates.length === 0) {
       return this.latestComment();
@@ -163,9 +146,26 @@ class IssueWrapper {
     const latestUpdate = updates[0];
     return latestUpdate;
   }
+
+  // Render / Memory Functions
+  private get rendered(): string {
+    // Issues are Level 3
+    return `### ${this.header}\n\n${this.body}\n\n`;
+  }
+
+  remember() {
+    this.memory.remember(this.rendered);
+  }
+
+  render(): string {
+    this.remember();
+    return this.rendered;
+  }
 }
 
 export class IssueList {
+  private memory = getMemory();
+
   private sourceOfTruth: SourceOfTruth;
   private issues: IssueWrapper[];
 
@@ -212,6 +212,7 @@ export class IssueList {
     this.sourceOfTruth.title += ` (${view.name})`;
   }
 
+  // Properties
   get header(): string {
     return `[${this.sourceOfTruth.title}](${this.sourceOfTruth.url})`;
   }
@@ -282,5 +283,20 @@ export class IssueList {
     issueList.filter(view);
 
     return issueList;
+  }
+
+  // Render / Memory Functions
+  get rendered(): string {
+    // IssueLists are Level 2
+    return `## ${this.header}\n\n${this.issues.map((issue) => issue.render()).join("\n")}`;
+  }
+
+  remember() {
+    this.memory.remember(this.rendered);
+  }
+
+  render(): string {
+    this.remember();
+    return this.rendered;
   }
 }

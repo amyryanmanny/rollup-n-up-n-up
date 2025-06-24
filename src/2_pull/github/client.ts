@@ -1,4 +1,4 @@
-import { IssueList } from "./issues";
+import { IssueList } from "./issue";
 
 import { getOctokit } from "@util/octokit";
 

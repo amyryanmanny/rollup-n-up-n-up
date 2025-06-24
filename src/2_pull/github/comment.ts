@@ -51,14 +51,19 @@ export class CommentWrapper {
     return this.comment.author;
   }
 
-  get dirtyBody(): string {
-    // Return the raw body of the comment
-    return this.comment.body;
-  }
-
   get body(): string {
+    this.remember();
     // Return processed body of the comment
     return stripHtml(this.comment.body).trim();
+  }
+
+  get update(): string {
+    const update = this.findUpdate();
+    if (update) {
+      return update;
+    }
+    // If no update section, just return the body
+    return this.body;
   }
 
   get createdAt(): Date {
@@ -66,6 +71,11 @@ export class CommentWrapper {
   }
 
   // Helpers
+  get hasUpdateMarker(): boolean {
+    // Check if the comment body contains the update marker
+    return CommentWrapper.UPDATE_MARKER.test(this.comment.body);
+  }
+
   removeUpdateMarker() {
     this.comment.body = this.comment.body.replaceAll(
       CommentWrapper.UPDATE_MARKER,
@@ -73,8 +83,8 @@ export class CommentWrapper {
     );
   }
 
-  getSection(name: string): string | undefined {
-    // Get the section by name
+  section(name: string): string | undefined {
+    // Get a section of the body by name
     const section = this.sections.get(toSnakeCase(name));
     if (section !== undefined) {
       return stripHtml(section).trim();
@@ -86,46 +96,30 @@ export class CommentWrapper {
     return undefined;
   }
 
-  get update(): string {
-    // Get the update section
-    const updateSection = this.getSection("update");
-    if (updateSection) {
-      return updateSection;
+  findUpdate(): string | undefined {
+    // TODO: Configurable
+    // Find the update section in the comment
+    for (const sections of ["update"]) {
+      const section = this.section(sections);
+      if (section !== undefined) {
+        return section;
+      }
     }
-    // If no update section, return the body
-    return this.body;
-  }
-
-  get trendingReason(): string {
-    // Get the trending reason section
-    const trendingReason = this.getSection("trending_reason");
-    if (trendingReason) {
-      return trendingReason;
-    }
-    // If no trending reason section, return the Update
-    return this.update;
+    return undefined;
   }
 
   // Render / Memory Functions
-  remember(bankIndex: number = 0) {
-    this.memory.remember(
-      `## Comment on ${this.issueTitle}:\n\n${this.comment.body}`,
-      bankIndex,
-    );
+  private get rendered(): string {
+    // IssueComments are Level 4
+    return `#### ${this.header}\n\n${this.body}\n\n`;
   }
 
-  renderBody(memoryBankIndex: number = 0): string {
-    this.remember(memoryBankIndex);
-    return this.body;
+  remember() {
+    this.memory.remember(this.rendered);
   }
 
-  renderUpdate(memoryBankIndex: number = 0): string {
-    this.remember(memoryBankIndex);
-    return this.update;
-  }
-
-  renderTrendingReason(memoryBankIndex: number = 0): string {
-    this.remember(memoryBankIndex);
-    return this.trendingReason;
+  render(): string {
+    this.remember();
+    return this.rendered;
   }
 }
