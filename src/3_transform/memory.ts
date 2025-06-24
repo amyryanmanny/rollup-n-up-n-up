@@ -1,3 +1,4 @@
+import { DefaultDict } from "@util/collections";
 import { summarize } from "./ai/summarize";
 
 // Singleton
@@ -11,22 +12,20 @@ export function getMemory(): Memory {
 }
 
 class Memory {
-  private banks: Map<number, string[]>;
+  private banks: DefaultDict<number, string[]>;
 
   constructor() {
-    this.banks = new Map<number, string[]>();
+    this.banks = new DefaultDict<number, string[]>(() => []);
   }
 
-  remember(item: string, bankIndex: number = 0): void {
-    if (!item || item.trim() === "") {
+  remember(item: string, memoryBank: number = 0): void {
+    if (item.trim() === "") {
       return;
     }
 
-    if (!this.banks.has(bankIndex)) {
-      this.banks.set(bankIndex, []);
-    }
-    const bank = this.banks.get(bankIndex)!;
+    const bank = this.banks.get(memoryBank);
 
+    // Don't remember the same item twice
     if (bank.includes(item)) {
       return;
     }
@@ -34,11 +33,8 @@ class Memory {
     bank.push(item);
   }
 
-  private getBank(bankIndex: number = 0): string[] {
-    if (!this.banks.has(bankIndex)) {
-      return [];
-    }
-    const bank = this.banks.get(bankIndex)!;
+  private getBank(memoryBank: number = 0): string[] {
+    const bank = this.banks.get(memoryBank);
     return bank.slice();
   }
 
@@ -47,20 +43,21 @@ class Memory {
     return bank.join("\n\n");
   }
 
-  async renderSummary(prompt: string, memoryBank: number = 0): Promise<string> {
+  async summarize(prompt: string, memoryBank: number = 0): Promise<string> {
     const content = this.getBankContent(memoryBank);
     if (!content || content.trim() === "") {
-      return "No content to summarize. Check you have 'render'ed or 'remember'ered content.";
+      // TODO: Point to a doc explaining how memory works
+      return "No content to summarize.";
     }
 
     return await summarize(prompt, content);
   }
 
-  headbonk(bankIndex?: number): void {
-    if (bankIndex === undefined) {
+  headbonk(memoryBank?: number): void {
+    if (memoryBank === undefined) {
       this.banks.clear();
-    } else if (this.banks.has(bankIndex)) {
-      this.banks.delete(bankIndex);
+    } else if (this.banks.has(memoryBank)) {
+      this.banks.delete(memoryBank);
     }
   }
 }
