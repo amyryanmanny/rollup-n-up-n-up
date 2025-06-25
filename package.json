@@ -14,7 +14,7 @@
     "push": "bun run ./src/5_push/local.ts"
   },
   "lint-staged": {
-    "*.{js,jsx,ts,tsx,json,css,scss,md}": [
+    "*.{ts,tsx,json,md}": [
       "eslint --fix"
     ]
   },
