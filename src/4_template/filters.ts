@@ -1,6 +1,6 @@
 import { runPrompt } from "@transform/ai/summarize";
 
-export { stripHtml, toSnakeCase } from "@util/string";
+export { stripHtml, toSnakeCase, title } from "@util/string";
 
 export function accessible(markdown: string): string {
   // Inject accessibility features into the markdown

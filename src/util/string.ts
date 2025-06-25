@@ -51,3 +51,12 @@ export const toSnakeCase = (str: string): string => {
     .replace(/\s+/g, "_") // Replace spaces with underscores
     .toLowerCase(); // Convert to lowercase
 };
+
+export const title = (s: string): string => {
+  // Convert a string to title case
+  return s
+    .toLowerCase()
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
