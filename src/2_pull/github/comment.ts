@@ -51,10 +51,14 @@ export class CommentWrapper {
     return this.comment.author;
   }
 
-  get body(): string {
-    this.remember();
+  private get _body(): string {
     // Return processed body of the comment
     return stripHtml(this.comment.body).trim();
+  }
+
+  get body(): string {
+    this.remember();
+    return this._body;
   }
 
   get update(): string {
@@ -111,7 +115,7 @@ export class CommentWrapper {
   // Render / Memory Functions
   private get rendered(): string {
     // IssueComments are Level 4
-    return `#### ${this.header}\n\n${this.body}\n\n`;
+    return `#### ${this.header}\n\n${this._body}\n\n`;
   }
 
   remember() {

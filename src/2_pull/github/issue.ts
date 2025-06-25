@@ -54,9 +54,13 @@ class IssueWrapper {
     return this.issue.url;
   }
 
+  private get _body(): string {
+    return this.issue.body || "";
+  }
+
   get body(): string {
     this.remember();
-    return this.issue.body || "";
+    return this._body;
   }
 
   get type(): string {
@@ -95,8 +99,8 @@ class IssueWrapper {
     return projectField ?? "";
   }
 
-  private get _projectFields(): Map<string, ProjectField> {
-    // Return the projectFields of the issue
+  get _projectFields(): Map<string, ProjectField> {
+    // Internal method - Return the projectFields of the issue
     if ("projectFields" in this.issue) {
       return this.issue.projectFields;
     }
@@ -176,7 +180,7 @@ class IssueWrapper {
   // Render / Memory Functions
   private get rendered(): string {
     // Issues are Level 3
-    return `### ${this.header}\n\n${this.body}\n\n`;
+    return `### ${this.header}\n\n${this._body}\n\n`;
   }
 
   remember() {
