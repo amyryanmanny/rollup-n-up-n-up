@@ -26752,8 +26752,8 @@ function parsePushConfigs(config) {
     if (!configLine.trim() || !configLine.includes(":")) {
       return;
     }
-    const [type, url] = configLine.split(":").map((s) => s.trim());
-    return { type, url };
+    const [type, ...url] = configLine.split(":").map((s) => s.trim());
+    return { type, url: url.join(":") };
   }).filter((config2) => config2 !== undefined);
 }
 var client = new GitHubPushClient;
