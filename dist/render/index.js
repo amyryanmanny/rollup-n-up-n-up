@@ -36493,6 +36493,7 @@ function mod_default(options = {}) {
 var exports_filters = {};
 __export(exports_filters, {
   toSnakeCase: () => toSnakeCase,
+  title: () => title,
   summarizeToSentence: () => summarizeToSentence,
   stripToSentence: () => stripToSentence,
   stripHtml: () => stripHtml,
@@ -47610,6 +47611,9 @@ var stripHtml = (s2) => {
 var toSnakeCase = (str) => {
   return str.replace(":", "").replace(/([a-z])([A-Z])/g, "$1_$2").replace(/\s+/g, "_").toLowerCase();
 };
+var title = (s2) => {
+  return s2.toLowerCase().split(" ").map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
+};
 
 // src/4_template/filters.ts
 function accessible(markdown) {
@@ -47689,6 +47693,23 @@ function hoist(env, code, outputVar, tokens) {
   return `${outputVar} = ${outputVar}.replace(${marker}, ${val});`;
 }
 
+// src/util/collections.ts
+class DefaultDict extends Map {
+  defaultFn;
+  constructor(defaultFn) {
+    super();
+    this.defaultFn = defaultFn;
+  }
+  get(key) {
+    if (this.has(key)) {
+      return super.get(key);
+    }
+    const val = this.defaultFn(key);
+    this.set(key, val);
+    return val;
+  }
+}
+
 // src/3_transform/memory.ts
 var memory;
 function getMemory() {
@@ -47701,26 +47722,20 @@ function getMemory() {
 class Memory {
   banks;
   constructor() {
-    this.banks = new Map;
+    this.banks = new DefaultDict(() => []);
   }
-  remember(item, bankIndex = 0) {
-    if (!item || item.trim() === "") {
+  remember(item, memoryBank = 0) {
+    if (item.trim() === "") {
       return;
     }
-    if (!this.banks.has(bankIndex)) {
-      this.banks.set(bankIndex, []);
-    }
-    const bank = this.banks.get(bankIndex);
+    const bank = this.banks.get(memoryBank);
     if (bank.includes(item)) {
       return;
     }
     bank.push(item);
   }
-  getBank(bankIndex = 0) {
-    if (!this.banks.has(bankIndex)) {
-      return [];
-    }
-    const bank = this.banks.get(bankIndex);
+  getBank(memoryBank = 0) {
+    const bank = this.banks.get(memoryBank);
     return bank.slice();
   }
   getBankContent(bankIndex = 0) {
@@ -47729,20 +47744,53 @@ class Memory {
 
 `);
   }
-  async renderSummary(prompt, memoryBank = 0) {
+  async summarize(prompt, memoryBank = 0) {
     const content = this.getBankContent(memoryBank);
     if (!content || content.trim() === "") {
-      return "No content to summarize. Check you have 'render'ed or 'remember'ered content.";
+      return "No content to summarize.";
     }
     return await summarize(prompt, content);
   }
-  headbonk(bankIndex) {
-    if (bankIndex === undefined) {
+  headbonk(memoryBank) {
+    if (memoryBank === undefined) {
       this.banks.clear();
-    } else if (this.banks.has(bankIndex)) {
-      this.banks.delete(bankIndex);
+    } else if (this.banks.has(memoryBank)) {
+      this.banks.delete(memoryBank);
     }
   }
+}
+
+// src/util/emoji.ts
+function emojiCompare(a2, b2) {
+  const emojiPriority = [
+    "\uD83D\uDD34",
+    "\uD83D\uDFE5",
+    "\uD83D\uDFE0",
+    "\uD83D\uDFE7",
+    "\uD83D\uDFE1",
+    "\uD83D\uDFE8",
+    "\uD83D\uDFE2",
+    "\uD83D\uDFE9",
+    "\uD83D\uDD35",
+    "\uD83D\uDFE6",
+    "\uD83D\uDFE3",
+    "\uD83D\uDFEA",
+    "\uD83D\uDFE4",
+    "⚪️",
+    "⬜️",
+    "⚫️",
+    "⬛️"
+  ];
+  for (let i2 = 0;i2 < emojiPriority.length; i2++) {
+    const emoji = emojiPriority[i2];
+    if (a2.includes(emoji) && !b2.includes(emoji)) {
+      return -1;
+    }
+    if (!a2.includes(emoji) && b2.includes(emoji)) {
+      return 1;
+    }
+  }
+  return;
 }
 
 // src/2_pull/github/project.ts
@@ -47888,23 +47936,6 @@ async function listIssuesForProject(client, params) {
     title: response.organization.projectV2.title,
     url: `https://github.com/orgs/${params.organization}/projects/${params.projectNumber}`
   };
-}
-
-// src/util/collections.ts
-class DefaultDict extends Map {
-  defaultFn;
-  constructor(defaultFn) {
-    super();
-    this.defaultFn = defaultFn;
-  }
-  get(key) {
-    if (this.has(key)) {
-      return super.get(key);
-    }
-    const val = this.defaultFn(key);
-    this.set(key, val);
-    return val;
-  }
 }
 
 // src/2_pull/github/project-view.ts
@@ -48094,19 +48125,30 @@ class CommentWrapper {
   get author() {
     return this.comment.author;
   }
-  get dirtyBody() {
-    return this.comment.body;
+  get _body() {
+    return stripHtml(this.comment.body).trim();
   }
   get body() {
-    return stripHtml(this.comment.body).trim();
+    this.remember();
+    return this._body;
+  }
+  get update() {
+    const update = this.findUpdate();
+    if (update) {
+      return update;
+    }
+    return this.body;
   }
   get createdAt() {
     return this.comment.createdAt;
   }
+  get hasUpdateMarker() {
+    return CommentWrapper.UPDATE_MARKER.test(this.comment.body);
+  }
   removeUpdateMarker() {
     this.comment.body = this.comment.body.replaceAll(CommentWrapper.UPDATE_MARKER, "");
   }
-  getSection(name) {
+  section(name) {
     const section = this.sections.get(toSnakeCase(name));
     if (section !== undefined) {
       return stripHtml(section).trim();
@@ -48117,40 +48159,32 @@ class CommentWrapper {
     }
     return;
   }
-  get update() {
-    const updateSection = this.getSection("update");
-    if (updateSection) {
-      return updateSection;
+  findUpdate() {
+    for (const sections of ["update"]) {
+      const section = this.section(sections);
+      if (section !== undefined) {
+        return section;
+      }
     }
-    return this.body;
+    return;
   }
-  get trendingReason() {
-    const trendingReason = this.getSection("trending_reason");
-    if (trendingReason) {
-      return trendingReason;
-    }
-    return this.update;
-  }
-  remember(bankIndex = 0) {
-    this.memory.remember(`## Comment on ${this.issueTitle}:
+  get rendered() {
+    return `#### ${this.header}
 
-${this.comment.body}`, bankIndex);
+${this._body}
+
+`;
   }
-  renderBody(memoryBankIndex = 0) {
-    this.remember(memoryBankIndex);
-    return this.body;
+  remember() {
+    this.memory.remember(this.rendered);
   }
-  renderUpdate(memoryBankIndex = 0) {
-    this.remember(memoryBankIndex);
-    return this.update;
-  }
-  renderTrendingReason(memoryBankIndex = 0) {
-    this.remember(memoryBankIndex);
-    return this.trendingReason;
+  render() {
+    this.remember();
+    return this.rendered;
   }
 }
 
-// src/2_pull/github/issues.ts
+// src/2_pull/github/issue.ts
 class IssueWrapper {
   memory = getMemory();
   issue;
@@ -48166,8 +48200,12 @@ class IssueWrapper {
   get url() {
     return this.issue.url;
   }
-  get body() {
+  get _body() {
     return this.issue.body || "";
+  }
+  get body() {
+    this.remember();
+    return this._body;
   }
   get type() {
     return this.issue.type?.name || "Issue";
@@ -48177,6 +48215,25 @@ class IssueWrapper {
   }
   get repoNameWithOwner() {
     return this.issue.repository?.full_name;
+  }
+  field(fieldName) {
+    switch (fieldName) {
+      case "title":
+        return this.title;
+      case "url":
+        return this.url;
+      case "body":
+        return this.body;
+      case "type":
+        return this.type;
+      case "repo":
+        return this.repo ?? "";
+      case "full_name":
+      case "repoNameWithOwner":
+        return this.repoNameWithOwner ?? "";
+    }
+    const projectField = this._projectFields.get(fieldName)?.value;
+    return projectField ?? "";
   }
   get _projectFields() {
     if ("projectFields" in this.issue) {
@@ -48188,15 +48245,6 @@ class IssueWrapper {
     return new Map(Array.from(this._projectFields.entries()).map(([name, field]) => {
       return [name, field.value ?? ""];
     }));
-  }
-  remember() {
-    this.memory.remember(`## ${this.header}:
-
-${this.body}`);
-  }
-  renderBody() {
-    this.remember();
-    return this.body;
   }
   get comments() {
     const issue = this.issue;
@@ -48218,30 +48266,41 @@ ${this.body}`);
     return latestComment;
   }
   latestUpdate() {
-    const comments = this.comments;
     const filterUpdates = (comment) => {
-      if (CommentWrapper.UPDATE_MARKER.test(comment.dirtyBody)) {
+      if (comment.hasUpdateMarker) {
         comment.removeUpdateMarker();
         return true;
       }
-      if (comment.getSection("update") !== undefined) {
-        return true;
-      }
-      if (comment.getSection("trending_reason") !== undefined) {
+      if (comment.findUpdate() !== undefined) {
         return true;
       }
       return false;
     };
-    const updates = comments.filter(filterUpdates);
+    const updates = this.comments.filter(filterUpdates);
     if (updates.length === 0) {
       return this.latestComment();
     }
     const latestUpdate = updates[0];
     return latestUpdate;
   }
+  get rendered() {
+    return `### ${this.header}
+
+${this._body}
+
+`;
+  }
+  remember() {
+    this.memory.remember(this.rendered);
+  }
+  render() {
+    this.remember();
+    return this.rendered;
+  }
 }
 
 class IssueList {
+  memory = getMemory();
   sourceOfTruth;
   issues;
   get length() {
@@ -48250,7 +48309,7 @@ class IssueList {
   [Symbol.iterator]() {
     return this.issues[Symbol.iterator]();
   }
-  applyFilter(view) {
+  filter(view) {
     this.issues = this.issues.filter((wrapper) => {
       if (!view.checkType(wrapper.type)) {
         return false;
@@ -48273,6 +48332,46 @@ class IssueList {
     }
     this.sourceOfTruth.title += ` (${view.name})`;
   }
+  sort(fieldName, direction = "asc") {
+    this.issues.sort((a2, b2) => {
+      const aValue = a2.field(fieldName);
+      const bValue = b2.field(fieldName);
+      if (aValue < bValue) {
+        return direction === "asc" ? -1 : 1;
+      }
+      if (aValue > bValue) {
+        return direction === "asc" ? 1 : -1;
+      }
+      return 0;
+    });
+    return this;
+  }
+  sortByEmoji(fieldName) {
+    this.issues.sort((a2, b2) => {
+      const aValue = a2.field(fieldName);
+      const bValue = b2.field(fieldName);
+      return emojiCompare(aValue, bValue) ?? aValue.localeCompare(bValue);
+    });
+    return this;
+  }
+  groupBy(fieldName) {
+    const groups = new Map;
+    for (const issue of this.issues) {
+      const key = issue.field(fieldName);
+      if (!groups.has(key)) {
+        groups.set(key, new IssueList([], {
+          title: this.sourceOfTruth.title.slice(),
+          url: this.sourceOfTruth.url.slice(),
+          groupKey: key || title("No " + fieldName)
+        }));
+      }
+      groups.get(key).issues.push(issue);
+    }
+    return Array.from(groups.entries()).sort(([a2], [b2]) => emojiCompare(a2, b2) ?? a2.localeCompare(b2)).map(([, group]) => group);
+  }
+  overallStatus(fieldName) {
+    return this.issues.map((issue) => issue.field(fieldName)).sort((a2, b2) => emojiCompare(a2, b2) ?? a2.localeCompare(b2))[0];
+  }
   get header() {
     return `[${this.sourceOfTruth.title}](${this.sourceOfTruth.url})`;
   }
@@ -48282,6 +48381,12 @@ class IssueList {
   get url() {
     return this.sourceOfTruth.url;
   }
+  get groupKey() {
+    if (!this.sourceOfTruth.groupKey) {
+      throw new Error("Don't use groupKey without a groupBy.");
+    }
+    return this.sourceOfTruth.groupKey;
+  }
   constructor(issues, sourceOfTruth) {
     this.sourceOfTruth = sourceOfTruth;
     this.issues = issues.map((issue) => new IssueWrapper(issue));
@@ -48290,13 +48395,13 @@ class IssueList {
     const response = await client.octokit.rest.issues.listForRepo(params);
     const issues = response.data;
     const url = `https://github.com/${params.owner}/${params.repo}`;
-    const title = `Issues from ${params.owner}/${params.repo}`;
-    return new IssueList(issues, { title, url });
+    const title2 = `Issues from ${params.owner}/${params.repo}`;
+    return new IssueList(issues, { title: title2, url });
   }
   static async forProject(client, params) {
     const response = await listIssuesForProject(client, params);
-    const { issues, title, url } = response;
-    return new IssueList(issues, { title, url });
+    const { issues, title: title2, url } = response;
+    return new IssueList(issues, { title: title2, url });
   }
   static async forProjectView(client, params) {
     let view;
@@ -48316,8 +48421,21 @@ class IssueList {
       projectNumber: params.projectNumber,
       typeFilter: view.getFilterType()
     });
-    issueList.applyFilter(view);
+    issueList.filter(view);
     return issueList;
+  }
+  get rendered() {
+    return `## ${this.header}
+
+${this.issues.map((issue) => issue.render()).join(`
+`)}`;
+  }
+  remember() {
+    this.memory.remember(this.rendered);
+  }
+  render() {
+    this.remember();
+    return this.rendered;
   }
 }
 
