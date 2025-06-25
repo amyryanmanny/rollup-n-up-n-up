@@ -26524,6 +26524,124 @@ async function updateIssue(client, params) {
   return response.data;
 }
 
+// src/5_push/github/discussion.ts
+async function getRepositoryId(client, owner, repo) {
+  const query = `
+    query ($owner: String!, $repo: String!) {
+      repository(owner: $owner, name: $repo) {
+        id
+      }
+    }
+  `;
+  const response = await client.octokit.graphql(query, { owner, repo });
+  return response.repository.id;
+}
+async function getDiscussionByTitle(client, owner, repo, title) {
+  const query = `
+    query ($owner: String!, $repo: String!, $cursor: String) {
+      repository(owner: $owner, name: $repo) {
+        discussions(first: 100, after: $cursor) {
+          nodes {
+            id
+            number
+            title
+            body
+            url
+          }
+          pageInfo {
+            endCursor
+            hasNextPage
+          }
+        }
+      }
+    }
+  `;
+  const response = await client.octokit.graphql.paginate(query, {
+    owner,
+    repo
+  });
+  return response.repository.discussions.nodes.find((discussion) => discussion.title === title);
+}
+async function getDiscussionCategoryId(client, owner, repo, categoryName) {
+  const discussionCategoryQuery = `
+    query ($owner: String!, $repo: String!, $cursor: String) {
+      repository(owner: $owner, name: $repo) {
+        discussionCategories(first: 100, after: $cursor) {
+          nodes {
+            id
+            name
+            slug
+          }
+          pageInfo {
+            endCursor
+            hasNextPage
+          }
+        }
+      }
+    }
+  `;
+  const response = await client.octokit.graphql.paginate(discussionCategoryQuery, { repo, owner });
+  const categoryId = response.repository.discussionCategories.nodes.map((category) => ({
+    id: category.id,
+    slug: category.slug
+  })).find((category) => category.slug === categoryName)?.id;
+  if (!categoryId) {
+    throw new Error(`Discussion category "${categoryName}" not found in repository ${owner}/${repo}`);
+  }
+  return categoryId;
+}
+async function createDiscussion(client, owner, repo, categoryId, title, body) {
+  const mutation = `
+    mutation ($repositoryId: ID!, $categoryId: ID!, $title: String!, $body: String!) {
+      createDiscussion(input: {
+        repositoryId: $repositoryId,
+        categoryId: $categoryId,
+        title: $title,
+        body: $body
+      }) {
+        discussion {
+          id
+          number
+          title
+          body
+          url
+        }
+      }
+    }
+  `;
+  const repositoryId = await getRepositoryId(client, owner, repo);
+  const response = await client.octokit.graphql(mutation, {
+    repositoryId,
+    categoryId,
+    title,
+    body
+  });
+  return response.createDiscussion.discussion;
+}
+async function updateDiscussion(client, discussionId, body) {
+  const mutation = `
+    mutation ($discussionId: ID!, $body: String!) {
+      updateDiscussion(input: {
+        discussionId: $discussionId,
+        body: $body
+      }) {
+        discussion {
+          id
+          number
+          title
+          body
+          url
+        }
+      }
+    }
+  `;
+  const response = await client.octokit.graphql(mutation, {
+    discussionId,
+    body
+  });
+  return response.updateDiscussion.discussion;
+}
+
 // src/5_push/github/client.ts
 class GitHubPushClient {
   octokit = getOctokit();
@@ -26536,6 +26654,11 @@ class GitHubPushClient {
         return this.pushToIssue(url, title, body);
       case "issue-comment":
         return this.pushToIssueComment(url, body);
+      case "discussion":
+        if (!title) {
+          throw new Error("Title is required for discussion push type.");
+        }
+        return this.pushToDiscussion(url, title, body);
       default:
         throw new Error(`Unsupported push type: ${type}`);
     }
@@ -26588,6 +26711,25 @@ class GitHubPushClient {
       issue_number,
       body
     });
+  }
+  async pushToDiscussion(url, title, body) {
+    const match = url.match(/https:\/\/github\.com\/([^/]+)\/([^/]+)\/discussions(?:\/categories\/([^/]+))?/);
+    if (!match) {
+      throw new Error(`Invalid GitHub URL: ${url}`);
+    }
+    const [, owner, repo, categoryName] = match;
+    if (!owner || !repo) {
+      throw new Error(`Invalid GitHub URL: ${url}`);
+    }
+    if (!categoryName) {
+      throw new Error(`Category name is required. Ex: .../discussions/categories/reporting-dogfooding`);
+    }
+    const existingDiscussion = await getDiscussionByTitle(this, owner, repo, title);
+    if (existingDiscussion) {
+      return updateDiscussion(this, existingDiscussion.id, body);
+    }
+    const categoryId = await getDiscussionCategoryId(this, owner, repo, categoryName);
+    return await createDiscussion(this, owner, repo, categoryId, title, body);
   }
 }
 

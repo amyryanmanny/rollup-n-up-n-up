@@ -48120,10 +48120,10 @@ class CommentWrapper {
     });
   }
   get header() {
-    return `[${this.issueTitle}](${this.comment.url})`;
+    return `[${this.issueTitle}](${this.url})`;
   }
-  get author() {
-    return this.comment.author;
+  get url() {
+    return this.comment.url;
   }
   get _body() {
     return stripHtml(this.comment.body).trim();
@@ -48138,6 +48138,9 @@ class CommentWrapper {
       return update;
     }
     return this.body;
+  }
+  get author() {
+    return this.comment.author;
   }
   get createdAt() {
     return this.comment.createdAt;
