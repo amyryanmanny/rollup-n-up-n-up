@@ -10,4 +10,4 @@ outputs:
     description: "The markdown file rendered as a string from the template."
 runs:
   using: node20
-  main: "../dist/render/index.js"
+  main: "../../dist/render/index.js"

@@ -14,4 +14,4 @@ inputs:
 outputs: {}
 runs:
   using: node20
-  main: "../dist/push/index.js"
+  main: "../../dist/push/index.js"
