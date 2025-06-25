@@ -1,5 +1,11 @@
 import { getOctokit } from "@util/octokit";
 import { getIssueByTitle, createIssue, updateIssue } from "./issue";
+import {
+  createDiscussion,
+  getDiscussionByTitle,
+  getDiscussionCategoryId,
+  updateDiscussion,
+} from "./discussion";
 
 export type PushTarget = {
   type: PushType;
@@ -31,6 +37,11 @@ export class GitHubPushClient {
         return this.pushToIssue(url, title, body);
       case "issue-comment":
         return this.pushToIssueComment(url, body);
+      case "discussion":
+        if (!title) {
+          throw new Error("Title is required for discussion push type.");
+        }
+        return this.pushToDiscussion(url, title, body);
       default:
         throw new Error(`Unsupported push type: ${type}`);
     }
@@ -109,5 +120,44 @@ export class GitHubPushClient {
       issue_number,
       body,
     });
+  }
+
+  async pushToDiscussion(url: string, title: string, body: string) {
+    // Handle repo path, including /discussions subpath
+    const match = url.match(
+      /https:\/\/github\.com\/([^/]+)\/([^/]+)\/discussions(?:\/categories\/([^/]+))?/,
+    );
+    if (!match) {
+      throw new Error(`Invalid GitHub URL: ${url}`);
+    }
+    const [, owner, repo, categoryName] = match;
+
+    if (!owner || !repo) {
+      throw new Error(`Invalid GitHub URL: ${url}`);
+    }
+    if (!categoryName) {
+      throw new Error(
+        `Category name is required. Ex: .../discussions/categories/reporting-dogfooding`,
+      );
+    }
+
+    const existingDiscussion = await getDiscussionByTitle(
+      this,
+      owner,
+      repo,
+      title,
+    );
+    if (existingDiscussion) {
+      // If the discussion already exists, update the body
+      return updateDiscussion(this, existingDiscussion.id, body);
+    }
+
+    const categoryId = await getDiscussionCategoryId(
+      this,
+      owner,
+      repo,
+      categoryName,
+    );
+    return await createDiscussion(this, owner, repo, categoryId, title, body);
   }
 }
