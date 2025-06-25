@@ -1,8 +1,8 @@
-// TODO: Depluralize filename
 import type { RestEndpointMethodTypes } from "@octokit/rest";
 
 import { GitHubClient } from "./client";
 import { getMemory } from "@transform/memory";
+import { emojiCompare } from "@util/emoji";
 
 import {
   listIssuesForProject,
@@ -16,6 +16,7 @@ import {
   type GetProjectViewParameters,
 } from "./project-view";
 import { CommentWrapper, type Comment } from "./comment";
+import { title } from "@util/string";
 
 // Interface
 type ListIssuesForRepoParameters =
@@ -24,6 +25,7 @@ type ListIssuesForRepoParameters =
 type SourceOfTruth = {
   title: string;
   url: string;
+  groupKey?: string; // When using a groupBy
 };
 
 type Issue = RestIssue | ProjectIssue;
@@ -69,7 +71,31 @@ class IssueWrapper {
     return this.issue.repository?.full_name;
   }
 
-  get _projectFields(): Map<string, ProjectField> {
+  // Fields
+  field(fieldName: string): string {
+    // Return the value of the field by name
+    switch (fieldName) {
+      case "title":
+        return this.title;
+      case "url":
+        return this.url;
+      case "body":
+        return this.body;
+      case "type":
+        return this.type;
+      case "repo":
+        return this.repo ?? "";
+      case "full_name":
+      case "repoNameWithOwner":
+        return this.repoNameWithOwner ?? "";
+    }
+
+    // Fallback to projectFields
+    const projectField = this._projectFields.get(fieldName)?.value;
+    return projectField ?? "";
+  }
+
+  private get _projectFields(): Map<string, ProjectField> {
     // Return the projectFields of the issue
     if ("projectFields" in this.issue) {
       return this.issue.projectFields;
@@ -212,6 +238,71 @@ export class IssueList {
     this.sourceOfTruth.title += ` (${view.name})`;
   }
 
+  sort(fieldName: string, direction: "asc" | "desc" = "asc"): IssueList {
+    // Sort the issues by the given field name
+    this.issues.sort((a, b) => {
+      const aValue = a.field(fieldName);
+      const bValue = b.field(fieldName);
+
+      if (aValue < bValue) {
+        return direction === "asc" ? -1 : 1;
+      }
+      if (aValue > bValue) {
+        return direction === "asc" ? 1 : -1;
+      }
+      return 0;
+    });
+
+    return this; // Allow method chaining
+  }
+
+  sortByEmoji(fieldName: string): IssueList {
+    // Sort the issues by the given field name
+    // The field is expected to be a status containing an emoji
+    // Red comes first
+    this.issues.sort((a, b) => {
+      const aValue = a.field(fieldName);
+      const bValue = b.field(fieldName);
+
+      // If both have the same emoji or neither has it, sort alphabetically
+      return emojiCompare(aValue, bValue) ?? aValue.localeCompare(bValue);
+    });
+
+    return this;
+  }
+
+  groupBy(fieldName: string): IssueList[] {
+    // Group the issues by the given field name
+    const groups = new Map<string, IssueList>();
+
+    for (const issue of this.issues) {
+      const key = issue.field(fieldName);
+      if (!groups.has(key)) {
+        groups.set(
+          key,
+          new IssueList([], {
+            title: this.sourceOfTruth.title.slice(),
+            url: this.sourceOfTruth.url.slice(),
+            groupKey: key || title("No " + fieldName),
+          }),
+        );
+      }
+      groups.get(key)!.issues.push(issue);
+    }
+
+    return Array.from(groups.entries())
+      .sort(([a], [b]) => emojiCompare(a, b) ?? a.localeCompare(b))
+      .map(([, group]) => group);
+  }
+
+  overallStatus(fieldName: string): string {
+    // TODO: Custom sort order in case they don't use emoji
+    // Get the max status emoji from the issues
+    return this.issues
+      .map((issue) => issue.field(fieldName))
+      .sort((a, b) => emojiCompare(a, b) ?? a.localeCompare(b))[0];
+  }
+
   // Properties
   get header(): string {
     return `[${this.sourceOfTruth.title}](${this.sourceOfTruth.url})`;
@@ -223,6 +314,13 @@ export class IssueList {
 
   get url(): string {
     return this.sourceOfTruth.url;
+  }
+
+  get groupKey(): string {
+    if (!this.sourceOfTruth.groupKey) {
+      throw new Error("Don't use groupKey without a groupBy.");
+    }
+    return this.sourceOfTruth.groupKey;
   }
 
   // Constructors
