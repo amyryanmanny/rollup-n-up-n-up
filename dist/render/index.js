@@ -48503,4 +48503,5 @@ async function renderTemplate(templatePath) {
 var template = getConfig("template") || "main.md.vto";
 var md = await renderTemplate(template);
 import_core4.setOutput("md", md);
-import_core4.summary.addRaw(md, true).write();
+import_core4.summary.addRaw(`
+${md}`, true).write();

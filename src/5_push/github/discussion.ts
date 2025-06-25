@@ -1,7 +1,7 @@
 // TODO: Refactor GET requests to be in the @pull module
 import type { GitHubPushClient } from "./client";
 
-type Discussion = {
+export type Discussion = {
   id: string;
   number: number;
   title: string;

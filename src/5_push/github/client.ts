@@ -1,3 +1,5 @@
+import { summary, SUMMARY_ENV_VAR } from "@actions/core/lib/summary";
+
 import { getOctokit } from "@util/octokit";
 import { getIssueByTitle, createIssue, updateIssue } from "./issue";
 import {
@@ -5,6 +7,7 @@ import {
   getDiscussionByTitle,
   getDiscussionCategoryId,
   updateDiscussion,
+  type Discussion,
 } from "./discussion";
 
 export type PushTarget = {
@@ -141,6 +144,8 @@ export class GitHubPushClient {
       );
     }
 
+    let discussion: Discussion;
+
     const existingDiscussion = await getDiscussionByTitle(
       this,
       owner,
@@ -149,15 +154,31 @@ export class GitHubPushClient {
     );
     if (existingDiscussion) {
       // If the discussion already exists, update the body
-      return updateDiscussion(this, existingDiscussion.id, body);
+      discussion = await updateDiscussion(this, existingDiscussion.id, body);
+    } else {
+      const categoryId = await getDiscussionCategoryId(
+        this,
+        owner,
+        repo,
+        categoryName,
+      );
+      discussion = await createDiscussion(
+        this,
+        owner,
+        repo,
+        categoryId,
+        title,
+        body,
+      );
     }
 
-    const categoryId = await getDiscussionCategoryId(
-      this,
-      owner,
-      repo,
-      categoryName,
-    );
-    return await createDiscussion(this, owner, repo, categoryId, title, body);
+    if (SUMMARY_ENV_VAR in process.env) {
+      // If running on a GitHub Action, log the prompt for debugging
+      summary.addLink("Discussion Post Created!", discussion.url).write();
+    } else {
+      console.debug(`Discussion Post Created: ${discussion.url}`);
+    }
+
+    return discussion;
   }
 }

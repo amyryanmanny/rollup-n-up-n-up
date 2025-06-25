@@ -9,4 +9,4 @@ const template = getConfig("template") || "main.md.vto";
 const md = await renderTemplate(template);
 
 setOutput("md", md);
-summary.addRaw(md, true).write();
+summary.addRaw(`\n${md}`, true).write();

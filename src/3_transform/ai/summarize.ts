@@ -120,7 +120,7 @@ export async function summarize(
   const prompt = loadPrompt(promptInput);
 
   const contentMarker = RegExp(/\{\{\s*CONTENT\s*\}\}/);
-  // TODO: Use systemPrompt instead of doing this
+  // TODO: Use systemPrompt instead of hydrating
   const hydratedPrompt = prompt.replace(contentMarker, content);
 
   if (SUMMARY_ENV_VAR in process.env) {

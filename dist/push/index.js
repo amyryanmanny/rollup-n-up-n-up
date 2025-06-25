@@ -19871,6 +19871,9 @@ function getConfig(key) {
   return process.env[key];
 }
 
+// src/5_push/github/client.ts
+var import_summary = __toESM(require_summary(), 1);
+
 // node_modules/universal-user-agent/index.js
 function getUserAgent() {
   if (typeof navigator === "object" && "userAgent" in navigator) {
@@ -27382,12 +27385,20 @@ class GitHubPushClient {
     if (!categoryName) {
       throw new Error(`Category name is required. Ex: .../discussions/categories/reporting-dogfooding`);
     }
+    let discussion;
     const existingDiscussion = await getDiscussionByTitle(this, owner, repo, title);
     if (existingDiscussion) {
-      return updateDiscussion(this, existingDiscussion.id, body);
+      discussion = await updateDiscussion(this, existingDiscussion.id, body);
+    } else {
+      const categoryId = await getDiscussionCategoryId(this, owner, repo, categoryName);
+      discussion = await createDiscussion(this, owner, repo, categoryId, title, body);
     }
-    const categoryId = await getDiscussionCategoryId(this, owner, repo, categoryName);
-    return await createDiscussion(this, owner, repo, categoryId, title, body);
+    if (import_summary.SUMMARY_ENV_VAR in process.env) {
+      import_summary.summary.addLink("Discussion Post Created!", discussion.url).write();
+    } else {
+      console.debug(`Discussion Post Created: ${discussion.url}`);
+    }
+    return discussion;
   }
 }
 
