@@ -44,11 +44,11 @@ export class CommentWrapper {
 
   // Properties
   get header(): string {
-    return `[${this.issueTitle}](${this.comment.url})`;
+    return `[${this.issueTitle}](${this.url})`;
   }
 
-  get author(): string {
-    return this.comment.author;
+  get url(): string {
+    return this.comment.url;
   }
 
   private get _body(): string {
@@ -68,6 +68,10 @@ export class CommentWrapper {
     }
     // If no update section, just return the body
     return this.body;
+  }
+
+  get author(): string {
+    return this.comment.author;
   }
 
   get createdAt(): Date {
