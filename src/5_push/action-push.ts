@@ -34,8 +34,8 @@ function parsePushConfigs(config: string): PushTarget[] {
       if (!configLine.trim() || !configLine.includes(":")) {
         return undefined;
       }
-      const [type, url] = configLine.split(":").map((s) => s.trim());
-      return { type: type as PushType, url };
+      const [type, ...url] = configLine.split(":").map((s) => s.trim());
+      return { type: type as PushType, url: url.join(":") };
     })
     .filter((config) => config !== undefined);
 }
