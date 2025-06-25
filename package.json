@@ -26,6 +26,8 @@
     "@octokit/auth-app": "^7.2.1",
     "@octokit/plugin-paginate-graphql": "^6.0.0",
     "@octokit/rest": "^21.1.1",
+    "@types/strftime": "^0.9.8",
+    "strftime": "^0.10.3",
     "ventojs": "^1.12.16"
   },
   "devDependencies": {

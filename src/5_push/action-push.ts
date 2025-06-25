@@ -4,6 +4,7 @@ import {
   type PushTarget,
   type PushType,
 } from "./github/client";
+import strftime from "strftime";
 
 type PushInputs = {
   title?: string; // Optional title for the push
@@ -12,7 +13,11 @@ type PushInputs = {
 };
 
 function getPushInputs(): PushInputs {
-  const title = getConfig("TITLE");
+  const rawTitle = getConfig("TITLE");
+  // Format date fields in the title if necessary
+  // TODO: Timezone handling
+  const title = rawTitle ? strftime(rawTitle) : undefined;
+
   const body = getConfig("BODY");
   if (!body) {
     throw new Error('The "body" input is required. See docs.');
