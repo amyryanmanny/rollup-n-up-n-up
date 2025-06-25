@@ -138,4 +138,6 @@ out
 .env
 
 # Output
+templates/*
+!templates/main.md.vto
 output.md
