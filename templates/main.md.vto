@@ -6,14 +6,14 @@
 
 {{ set synapseInitiatives = await github.issuesForProjectView("github", 21922, 2) }}
 
-## {{ synapseInitiatives.header() }}
+## {{ synapseInitiatives.header }}
 
 <details><summary>Expand to read original updates!</summary>
 {{ for issue of synapseInitiatives }}
-### {{ issue.header() }}
+### {{ issue.header }}
 {{- set update = await issue.latestUpdate() -}}
-{{- update.renderBody() -}}
+{{- update.update -}}
 {{ /for }}
 </details>
 
-{{ hoist TLDR = await memory.renderSummary("TLDR_PROMPT") }}
+{{ hoist TLDR = await memory.summarize("TLDR_PROMPT") }}
