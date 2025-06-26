@@ -7,16 +7,18 @@ import {
 import strftime from "strftime";
 
 type PushInputs = {
-  title?: string; // Optional title for the push
-  body: string; // Required body for the push
-  pushConfig: string; // Configuration string for the push
+  targets: PushTarget[];
+  title?: string; // Title is optional - not all types require it
+  body: string;
 };
 
-function getPushInputs(): PushInputs {
-  const rawTitle = getConfig("TITLE");
-  // Format date fields in the title if necessary
-  // TODO: Timezone handling
-  const title = rawTitle ? strftime(rawTitle) : undefined;
+export function getPushInputs(): PushInputs {
+  let title = getConfig("TITLE");
+  if (title) {
+    // Format date fields in the title if necessary
+    // TODO: Timezone handling
+    title = strftime(title, new Date());
+  }
 
   const body = getConfig("BODY");
   if (!body) {
@@ -27,7 +29,12 @@ function getPushInputs(): PushInputs {
   if (!pushConfig) {
     throw new Error('The "push" input is required. See docs.');
   }
-  return { title, body, pushConfig };
+  const targets = parsePushConfigs(pushConfig);
+  if (targets.length === 0) {
+    throw new Error('No valid push targets found in the "push" input.');
+  }
+
+  return { title, body, targets };
 }
 
 function parsePushConfigs(config: string): PushTarget[] {
@@ -48,6 +55,5 @@ function parsePushConfigs(config: string): PushTarget[] {
 // Main function to execute the push
 const client = new GitHubPushClient();
 
-const { title, body, pushConfig } = getPushInputs();
-const targets = parsePushConfigs(pushConfig);
+const { targets, title, body } = getPushInputs();
 client.pushAll(targets, title, body);
