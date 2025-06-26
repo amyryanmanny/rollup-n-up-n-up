@@ -146,7 +146,7 @@ class IssueWrapper {
     const comments = this.comments;
 
     if (comments.length === 0) {
-      return CommentWrapper.empty();
+      return CommentWrapper.empty(this.url);
     }
 
     const latestComment = comments[0];

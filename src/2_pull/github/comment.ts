@@ -33,12 +33,12 @@ export class CommentWrapper {
     this.boldedSections = splitMarkdownByBoldedText(comment.body);
   }
 
-  static empty(): CommentWrapper {
+  static empty(issueUrl: string): CommentWrapper {
     return new CommentWrapper("", {
       author: "",
       body: "No updates found",
       createdAt: new Date(0),
-      url: "",
+      url: issueUrl,
     });
   }
 
