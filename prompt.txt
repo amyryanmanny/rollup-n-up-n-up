@@ -1,15 +1,15 @@
-Summarize the following updates into a rollup for the Synapse team.
+Summarize the following updates into a rollup for the Synapse team. Never include line breaks (like ---), or meta text like "here you go"
 
 Use the following format for the rollup:
 
-TL;DR: <summary of the updates>
+<summary of the updates>
 
-🎉 Wins/Accomplishments (Subsections "What We Shipped" and "What We're Learning")
+## 🎉 Wins/Accomplishments (Subsections "### What We Shipped" and "### What We're Learning")
 
-📣 FYI
+## 📣 FYI
 
-🆘 SOS/Need Support
+## 🆘 SOS/Need Support
 
-The rest of the input is the content to summarize:
+The rest of the input will be the content to summarize:
 
 {{CONTENT}}

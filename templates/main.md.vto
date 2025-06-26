@@ -1,18 +1,15 @@
-# Synapse Initiative Updates {{ today }}
+{{- set synapseInitiatives = await github.issuesForProjectView("github", 21922, 2) -}}
+# [Synapse Initiative Updates {{ today }}]({{ synapseInitiatives.url }})
 
-## TL;DR
+### TL;DR
 
 {{ mark TLDR }}
-
-{{ set synapseInitiatives = await github.issuesForProjectView("github", 21922, 2) }}
-
-## {{ synapseInitiatives.header }}
 
 <details><summary>Expand to read original updates!</summary>
 {{ for issue of synapseInitiatives }}
 ### {{ issue.header }}
-{{- set update = await issue.latestUpdate() -}}
-{{- update.update -}}
+{{ set update = await issue.latestUpdate() }}
+{{ update.update }}
 {{ /for }}
 </details>
 
