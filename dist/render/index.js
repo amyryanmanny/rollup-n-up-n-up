@@ -30059,51 +30059,6 @@ var import_core4 = __toESM(require_core(), 1);
 // src/util/config/index.ts
 var import_dotenv = __toESM(require_main2(), 1);
 var import_core = __toESM(require_core(), 1);
-
-// src/util/config/github.ts
-function getGitHubSecrets() {
-  const secrets = getGitHubAppSecrets() ?? getGitHubPatSecrets() ?? getGitHubDefaultSecrets();
-  if (secrets !== undefined) {
-    return secrets;
-  }
-  throw new Error("No GitHub secrets configured. Please set GITHUB_APP_*, or GITHUB_PAT_TOKEN.");
-}
-function getGitHubAppSecrets() {
-  const appId = getConfig("GITHUB_APP_ID");
-  const installationId = getConfig("GITHUB_APP_INSTALLATION_ID");
-  const privateKey = getConfig("GITHUB_APP_PRIVATE_KEY");
-  if (!appId || !installationId || !privateKey) {
-    return;
-  }
-  return {
-    kind: "app",
-    appId,
-    installationId: parseInt(installationId),
-    privateKey
-  };
-}
-function getGitHubPatSecrets() {
-  const token = getConfig("GITHUB_PAT_TOKEN");
-  if (!token) {
-    return;
-  }
-  return {
-    kind: "pat",
-    token
-  };
-}
-function getGitHubDefaultSecrets() {
-  const token = getConfig("GITHUB_TOKEN");
-  if (!token) {
-    return;
-  }
-  return {
-    kind: "default",
-    token
-  };
-}
-
-// src/util/config/index.ts
 function getConfig(key) {
   if (process.env.GITHUB_ACTIONS === "true") {
     const input = import_core.getInput(key);
@@ -40188,7 +40143,7 @@ var esm_default = createClient;
 // src/3_transform/ai/summarize.ts
 var import_core3 = __toESM(require_core(), 1);
 var import_summary = __toESM(require_summary(), 1);
-var import_github3 = __toESM(require_github(), 1);
+var import_github2 = __toESM(require_github(), 1);
 
 // node_modules/universal-user-agent/index.js
 function getUserAgent() {
@@ -47437,6 +47392,49 @@ function paginateGraphQL(octokit) {
   };
 }
 
+// src/util/config/github.ts
+function getGitHubSecrets() {
+  const secrets = getGitHubAppSecrets() ?? getGitHubPatSecrets() ?? getGitHubDefaultSecrets();
+  if (secrets !== undefined) {
+    return secrets;
+  }
+  throw new Error("No GitHub secrets configured. Please set GITHUB_APP_*, or GITHUB_PAT_TOKEN.");
+}
+function getGitHubAppSecrets() {
+  const appId = getConfig("GITHUB_APP_ID");
+  const installationId = getConfig("GITHUB_APP_INSTALLATION_ID");
+  const privateKey = getConfig("GITHUB_APP_PRIVATE_KEY");
+  if (!appId || !installationId || !privateKey) {
+    return;
+  }
+  return {
+    kind: "app",
+    appId,
+    installationId: parseInt(installationId),
+    privateKey
+  };
+}
+function getGitHubPatSecrets() {
+  const token = getConfig("GITHUB_PAT_TOKEN");
+  if (!token) {
+    return;
+  }
+  return {
+    kind: "pat",
+    token
+  };
+}
+function getGitHubDefaultSecrets() {
+  const token = getConfig("GITHUB_TOKEN");
+  if (!token) {
+    return;
+  }
+  return {
+    kind: "default",
+    token
+  };
+}
+
 // src/util/octokit.ts
 var OctokitWithPlugins = Octokit2.plugin(paginateGraphQL);
 var octokitInstance = null;
@@ -47499,7 +47497,7 @@ function getEndpoint(tokenKind) {
   }
   switch (tokenKind) {
     case "app":
-      return `https://models.github.ai/orgs/${import_github3.context.repo.owner}/inference`;
+      return `https://models.github.ai/orgs/${import_github2.context.repo.owner}/inference`;
     case "pat":
     case "default":
       return "https://models.github.ai/inference";
@@ -48500,7 +48498,7 @@ async function renderTemplate(templatePath) {
 }
 
 // src/1_trigger/action-render.ts
-var template = getConfig("template") || "main.md.vto";
+var template = getConfig("TEMPLATE") || "main.md.vto";
 var md = await renderTemplate(template);
 import_core4.setOutput("md", md);
 import_core4.summary.addRaw(`

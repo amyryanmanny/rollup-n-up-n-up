@@ -15,5 +15,3 @@ export function getConfig(key: string): string | undefined {
   dotenv.config();
   return process.env[key];
 }
-
-export { getGitHubSecrets } from "./github";

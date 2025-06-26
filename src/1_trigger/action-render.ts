@@ -3,7 +3,7 @@ import { setOutput, summary } from "@actions/core";
 import { getConfig } from "@config";
 import { renderTemplate } from "@template/render";
 
-const template = getConfig("template") || "main.md.vto";
+const template = getConfig("TEMPLATE") || "main.md.vto";
 
 // Render Template
 const md = await renderTemplate(template);
