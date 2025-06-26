@@ -48109,12 +48109,12 @@ class CommentWrapper {
     this.sections = splitMarkdownByHeaders(comment.body);
     this.boldedSections = splitMarkdownByBoldedText(comment.body);
   }
-  static empty() {
+  static empty(issueUrl) {
     return new CommentWrapper("", {
       author: "",
       body: "No updates found",
       createdAt: new Date(0),
-      url: ""
+      url: issueUrl
     });
   }
   get header() {
@@ -48261,7 +48261,7 @@ class IssueWrapper {
   latestComment() {
     const comments = this.comments;
     if (comments.length === 0) {
-      return CommentWrapper.empty();
+      return CommentWrapper.empty(this.url);
     }
     const latestComment = comments[0];
     return latestComment;
