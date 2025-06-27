@@ -1,3 +1,4 @@
+import path from "path";
 import vento from "ventojs";
 
 import * as filters from "./filters";
@@ -6,10 +7,13 @@ import * as plugins from "./plugins";
 import { GitHubClient } from "../2_pull/github/client";
 import { getMemory } from "../3_transform/memory";
 
+// TODO: Configurable templatesDir
+const templatesDir = path.join(process.cwd(), "templates");
+
 const env = vento({
   dataVarname: "global",
   autoDataVarname: true,
-  includes: process.cwd(),
+  includes: templatesDir,
   autoescape: true,
 });
 
