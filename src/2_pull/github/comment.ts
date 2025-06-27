@@ -18,6 +18,7 @@ export class CommentWrapper {
   private memory = getMemory();
 
   static UPDATE_MARKER = RegExp(/<(!--\s*UPDATE\s*--)>/g); // TODO: Custom marker as input
+  static NULL_UPDATE = "No updates found";
 
   private comment: Comment;
   private issueTitle: string;
@@ -36,7 +37,7 @@ export class CommentWrapper {
   static empty(issueUrl: string): CommentWrapper {
     return new CommentWrapper("", {
       author: "",
-      body: "No updates found",
+      body: CommentWrapper.NULL_UPDATE,
       createdAt: new Date(0),
       url: issueUrl,
     });
@@ -68,6 +69,14 @@ export class CommentWrapper {
     }
     // If no update section, just return the body
     return this.body;
+  }
+
+  get isEmpty(): boolean {
+    // Check if the comment is empty, or has no update
+    return (
+      this.comment.body.trim() === "" ||
+      this.comment.body === CommentWrapper.NULL_UPDATE
+    );
   }
 
   get author(): string {
