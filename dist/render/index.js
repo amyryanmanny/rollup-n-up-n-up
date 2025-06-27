@@ -48099,6 +48099,7 @@ async function getProjectView(client, params) {
 class CommentWrapper {
   memory = getMemory();
   static UPDATE_MARKER = RegExp(/<(!--\s*UPDATE\s*--)>/g);
+  static NULL_UPDATE = "No updates found";
   comment;
   issueTitle;
   sections;
@@ -48112,7 +48113,7 @@ class CommentWrapper {
   static empty(issueUrl) {
     return new CommentWrapper("", {
       author: "",
-      body: "No updates found",
+      body: CommentWrapper.NULL_UPDATE,
       createdAt: new Date(0),
       url: issueUrl
     });
@@ -48136,6 +48137,9 @@ class CommentWrapper {
       return update;
     }
     return this.body;
+  }
+  get isEmpty() {
+    return this.comment.body.trim() === "" || this.comment.body === CommentWrapper.NULL_UPDATE;
   }
   get author() {
     return this.comment.author;
@@ -48489,9 +48493,21 @@ var github = new GitHubClient;
 var memory2 = getMemory();
 var today = new Date().toISOString().split("T")[0];
 var globals = { github, memory: memory2, today };
+function debugTemplate(source) {
+  return `<details><summary>Template</summary>
+
+\`\`\`
+${source}
+\`\`\`
+
+</details>`;
+}
 async function renderTemplate(templatePath) {
   const template = await env.load(templatePath);
-  const result = await template(globals);
+  const result = await template({
+    ...globals,
+    debugTemplate: () => debugTemplate(template.source)
+  });
   memory2.headbonk();
   console.info(result.content);
   return result.content;
