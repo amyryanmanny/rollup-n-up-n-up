@@ -24,11 +24,13 @@ export function getPushConfig(): PushConfig {
 
   const pushConfig = getConfig("TARGETS");
   if (!pushConfig) {
-    throw new Error('The "push" input is required. See docs.');
+    throw new Error('The "targets" input is required. See docs.');
   }
   const targets = parsePushTargets(pushConfig);
   if (targets.length === 0) {
-    throw new Error('No valid push targets found in the "push" input.');
+    throw new Error(
+      'No valid push targets found in the "targets" input. See docs.',
+    );
   }
 
   return { title, body, targets };
