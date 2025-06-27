@@ -26,7 +26,6 @@
     "@octokit/auth-app": "^7.2.1",
     "@octokit/plugin-paginate-graphql": "^6.0.0",
     "@octokit/rest": "^21.1.1",
-    "@types/strftime": "^0.9.8",
     "strftime": "^0.10.3",
     "ventojs": "^1.12.16"
   },
@@ -34,6 +33,7 @@
     "@eslint/js": "^9.26.0",
     "@types/bun": "latest",
     "@types/pluralize": "^0.0.33",
+    "@types/strftime": "^0.9.8",
     "dotenv": "^16.5.0",
     "eslint": "^9.26.0",
     "eslint-config-prettier": "^10.1.3",
