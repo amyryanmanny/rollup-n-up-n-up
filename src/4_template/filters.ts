@@ -52,6 +52,7 @@ export async function summarizeToSentence(markdown: string): Promise<string> {
     prompt: markdown,
     systemPrompt:
       "Summarize the following content into a single sentence. Try to sacrifice as little meaning as possible.",
+    modelName: "openai/gpt-4.1-mini", // Use a lighter model for this task
     maxTokens: 100,
   });
 }
