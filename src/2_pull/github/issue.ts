@@ -137,7 +137,7 @@ class IssueWrapper {
       return b.createdAt.getTime() - a.createdAt.getTime();
     };
 
-    return comments
+    return (comments as Comment[])
       .sort(sortCommentsByDateDesc)
       .map((comment) => new CommentWrapper(issue.title, comment));
   }
@@ -155,6 +155,7 @@ class IssueWrapper {
 
   latestUpdate(): CommentWrapper {
     const filterUpdates = (comment: CommentWrapper) => {
+      // TODO: Pull out into its own module
       if (comment.hasUpdateMarker) {
         // Check if the comment body contains the update sentinel
         // SIDE_EFFECT: Remove the update marker from the body
