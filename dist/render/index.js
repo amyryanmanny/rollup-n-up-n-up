@@ -30070,6 +30070,9 @@ function getConfig(key) {
   return process.env[key];
 }
 
+// src/4_template/render.ts
+import path from "path";
+
 // node_modules/ventojs/esm/_dnt.shims.js
 var import_shim_deno = __toESM(require_dist2(), 1);
 var import_shim_deno2 = __toESM(require_dist2(), 1);
@@ -48477,10 +48480,11 @@ class GitHubClient {
 }
 
 // src/4_template/render.ts
+var templatesDir = path.join(process.cwd(), "templates");
 var env = mod_default({
   dataVarname: "global",
   autoDataVarname: true,
-  includes: process.cwd(),
+  includes: templatesDir,
   autoescape: true
 });
 for (const filter of Object.values(exports_filters)) {
