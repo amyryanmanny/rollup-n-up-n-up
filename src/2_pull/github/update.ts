@@ -28,9 +28,8 @@ export function findLatestUpdate(
 ): CommentWrapper | undefined {
   const config = getUpdateDetectionConfig();
 
-  console.log(JSON.stringify(config, null, 2));
-  for (const comment of comments) {
-    for (const strategy of config.strategies) {
+  for (const strategy of config.strategies) {
+    for (const comment of comments) {
       if (strategy.kind === "skip") {
         // If we've reached this strategy, we couldn't find an update
         // And we don't want to return the latest comment

@@ -1,10 +1,13 @@
 import type { GitHubClient } from "../client";
 import type { Issue } from "../issue";
 
+type IssueStateParam = "OPEN" | "CLOSED" | "ALL";
+type IssueState = Omit<IssueStateParam, "ALL">; // Doesn't work due to GraphQL weirdness
+
 export type ListIssuesForRepoParameters = {
   owner: string;
   repo: string;
-  state?: "open" | "closed" | "all";
+  state?: IssueState;
 };
 
 type ListIssuesForRepoResponse = {
@@ -17,11 +20,28 @@ export async function listIssuesForRepo(
   client: GitHubClient,
   params: ListIssuesForRepoParameters,
 ): Promise<ListIssuesForRepoResponse> {
+  // Compute state
+  const state = params.state?.trim().toUpperCase() || "OPEN";
+  let states: Array<IssueState>;
+  switch (state) {
+    case "OPEN":
+    case "CLOSED":
+      states = [state];
+      break;
+    case "ALL":
+      states = ["OPEN", "CLOSED"];
+      break;
+    default:
+      throw new Error(
+        `Unknown IssueState: ${state}. Choose OPEN, CLOSED, or ALL.`,
+      );
+  }
+
   const query = `
-    query paginate($owner: String!, $repo: String!, $cursor: String) {
+    query paginate($owner: String!, $repo: String!, $states: [IssueState!], $cursor: String) {
       repositoryOwner(login: $owner) {
         repository(name: $repo) {
-          issues(first: 100) {
+          issues(first: 100, states: $states, after: $cursor) {
             nodes {
               title
               body
@@ -52,6 +72,10 @@ export async function listIssuesForRepo(
                   url
                 }
               }
+            }
+            pageInfo {
+              endCursor
+              hasNextPage
             }
           }
         }
@@ -92,12 +116,17 @@ export async function listIssuesForRepo(
               }>;
             };
           }>;
+          pageInfo: {
+            endCursor: string;
+            hasNextPage: boolean;
+          };
         };
       };
     };
   }>(query, {
     owner: params.owner,
     repo: params.repo,
+    states: states,
   });
 
   const issues = response.repositoryOwner.repository.issues.nodes.map(

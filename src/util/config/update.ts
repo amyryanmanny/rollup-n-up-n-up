@@ -1,3 +1,4 @@
+// TODO: This file needs test cases bad
 import { getConfig } from "@util/config";
 
 import {
@@ -27,6 +28,7 @@ export function getUpdateDetectionConfig(): UpdateDetection {
         kind: "section",
         name: "Update",
       },
+      // { kind: "skip" },
     ];
   }
 

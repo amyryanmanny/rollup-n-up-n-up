@@ -47967,9 +47967,8 @@ function parseUpdateDetection(updateDetectionBlob) {
 var DEFAULT_MARKER = RegExp(/<(!--\s*UPDATE\s*--)>/g);
 function findLatestUpdate(comments) {
   const config = getUpdateDetectionConfig();
-  console.log(JSON.stringify(config, null, 2));
-  for (const comment of comments) {
-    for (const strategy of config.strategies) {
+  for (const strategy of config.strategies) {
+    for (const comment of comments) {
       if (strategy.kind === "skip") {
         return;
       }
@@ -48099,11 +48098,24 @@ ${this._body}
 
 // src/2_pull/github/graphql/repo.ts
 async function listIssuesForRepo(client, params) {
+  const state2 = params.state?.trim().toUpperCase() || "OPEN";
+  let states;
+  switch (state2) {
+    case "OPEN":
+    case "CLOSED":
+      states = [state2];
+      break;
+    case "ALL":
+      states = ["OPEN", "CLOSED"];
+      break;
+    default:
+      throw new Error(`Unknown IssueState: ${state2}. Choose OPEN, CLOSED, or ALL.`);
+  }
   const query = `
-    query paginate($owner: String!, $repo: String!, $cursor: String) {
+    query paginate($owner: String!, $repo: String!, $states: [IssueState!], $cursor: String) {
       repositoryOwner(login: $owner) {
         repository(name: $repo) {
-          issues(first: 100) {
+          issues(first: 100, states: $states, after: $cursor) {
             nodes {
               title
               body
@@ -48135,6 +48147,10 @@ async function listIssuesForRepo(client, params) {
                 }
               }
             }
+            pageInfo {
+              endCursor
+              hasNextPage
+            }
           }
         }
       }
@@ -48142,7 +48158,8 @@ async function listIssuesForRepo(client, params) {
   `;
   const response = await client.octokit.graphql.paginate(query, {
     owner: params.owner,
-    repo: params.repo
+    repo: params.repo,
+    states
   });
   const issues = response.repositoryOwner.repository.issues.nodes.map((issue) => ({
     title: issue.title,
