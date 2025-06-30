@@ -47619,7 +47619,7 @@ function emojiCompare(a2, b2) {
   return;
 }
 
-// src/2_pull/github/project.ts
+// src/2_pull/github/graphql/project.ts
 var slugifyProjectFieldName = (field) => {
   return field.toLowerCase().replace(/\s+/g, "-");
 };
@@ -47927,6 +47927,97 @@ async function getProjectView(client, params) {
   });
 }
 
+// src/2_pull/github/graphql/repo.ts
+async function listIssuesForRepo(client, params) {
+  const state2 = params.state?.trim().toUpperCase() || "OPEN";
+  let states;
+  switch (state2) {
+    case "OPEN":
+    case "CLOSED":
+      states = [state2];
+      break;
+    case "ALL":
+      states = ["OPEN", "CLOSED"];
+      break;
+    default:
+      throw new Error(`Unknown IssueState: ${state2}. Choose OPEN, CLOSED, or ALL.`);
+  }
+  const query = `
+    query paginate($owner: String!, $repo: String!, $states: [IssueState!], $cursor: String) {
+      repositoryOwner(login: $owner) {
+        repository(name: $repo) {
+          issues(first: 100, states: $states, after: $cursor) {
+            nodes {
+              title
+              body
+              url
+              number
+              assignees(first: 5) {
+                nodes {
+                  login
+                }
+              }
+              issueType {
+                name
+              }
+              repository {
+                name
+                owner {
+                  login
+                }
+                nameWithOwner
+              }
+              comments(last: 100) {
+                nodes {
+                  author {
+                    login
+                  }
+                  body
+                  createdAt
+                  url
+                }
+              }
+            }
+            pageInfo {
+              endCursor
+              hasNextPage
+            }
+          }
+        }
+      }
+    }
+  `;
+  const response = await client.octokit.graphql.paginate(query, {
+    owner: params.owner,
+    repo: params.repo,
+    states
+  });
+  const issues = response.repositoryOwner.repository.issues.nodes.map((issue) => ({
+    title: issue.title,
+    body: issue.body,
+    url: issue.url,
+    number: issue.number,
+    assignees: issue.assignees.nodes.map((assignee) => assignee.login),
+    type: issue.issueType?.name || "Issue",
+    repository: {
+      name: issue.repository.name,
+      owner: issue.repository.owner.login,
+      nameWithOwner: issue.repository.nameWithOwner
+    },
+    comments: issue.comments.nodes.map((comment) => ({
+      author: comment.author.login,
+      body: comment.body,
+      createdAt: new Date(comment.createdAt),
+      url: comment.url
+    }))
+  }));
+  return {
+    issues,
+    title: `Issues for ${params.owner}/${params.repo}`,
+    url: `https://github.com/${params.owner}/${params.repo}`
+  };
+}
+
 // src/util/config/update.ts
 function getUpdateDetectionConfig() {
   let strategies;
@@ -48096,97 +48187,6 @@ ${this._body}
   }
 }
 
-// src/2_pull/github/graphql/repo.ts
-async function listIssuesForRepo(client, params) {
-  const state2 = params.state?.trim().toUpperCase() || "OPEN";
-  let states;
-  switch (state2) {
-    case "OPEN":
-    case "CLOSED":
-      states = [state2];
-      break;
-    case "ALL":
-      states = ["OPEN", "CLOSED"];
-      break;
-    default:
-      throw new Error(`Unknown IssueState: ${state2}. Choose OPEN, CLOSED, or ALL.`);
-  }
-  const query = `
-    query paginate($owner: String!, $repo: String!, $states: [IssueState!], $cursor: String) {
-      repositoryOwner(login: $owner) {
-        repository(name: $repo) {
-          issues(first: 100, states: $states, after: $cursor) {
-            nodes {
-              title
-              body
-              url
-              number
-              assignees(first: 5) {
-                nodes {
-                  login
-                }
-              }
-              issueType {
-                name
-              }
-              repository {
-                name
-                owner {
-                  login
-                }
-                nameWithOwner
-              }
-              comments(last: 100) {
-                nodes {
-                  author {
-                    login
-                  }
-                  body
-                  createdAt
-                  url
-                }
-              }
-            }
-            pageInfo {
-              endCursor
-              hasNextPage
-            }
-          }
-        }
-      }
-    }
-  `;
-  const response = await client.octokit.graphql.paginate(query, {
-    owner: params.owner,
-    repo: params.repo,
-    states
-  });
-  const issues = response.repositoryOwner.repository.issues.nodes.map((issue) => ({
-    title: issue.title,
-    body: issue.body,
-    url: issue.url,
-    number: issue.number,
-    assignees: issue.assignees.nodes.map((assignee) => assignee.login),
-    type: issue.issueType?.name || "Issue",
-    repository: {
-      name: issue.repository.name,
-      owner: issue.repository.owner.login,
-      nameWithOwner: issue.repository.nameWithOwner
-    },
-    comments: issue.comments.nodes.map((comment) => ({
-      author: comment.author.login,
-      body: comment.body,
-      createdAt: new Date(comment.createdAt),
-      url: comment.url
-    }))
-  }));
-  return {
-    issues,
-    title: `Issues for ${params.owner}/${params.repo}`,
-    url: `https://github.com/${params.owner}/${params.repo}`
-  };
-}
-
 // src/2_pull/github/issue.ts
 class IssueWrapper {
   memory = getMemory();
@@ -48226,31 +48226,32 @@ class IssueWrapper {
     return this.issue.repository.nameWithOwner;
   }
   field(fieldName) {
-    switch (fieldName) {
-      case "title":
+    const insensitiveFieldName = fieldName.trim().toUpperCase().replace(/\s+/g, "").replace("_", "");
+    switch (insensitiveFieldName) {
+      case "TITLE":
         return this.title;
-      case "url":
+      case "URL":
         return this.url;
-      case "number":
+      case "NUMBER":
         return String(this.number);
-      case "body":
+      case "BODY":
         return this.body;
-      case "type":
+      case "TYPE":
         return this.type;
-      case "repo":
-      case "repository":
+      case "REPO":
+      case "REPOSITORY":
         return this.repo;
-      case "org":
-      case "organization":
-      case "owner":
+      case "ORG":
+      case "ORGANIZATION":
+      case "OWNER":
         return this.owner;
-      case "full_name":
-      case "nameWithOwner":
-      case "repoNameWithOwner":
+      case "FULLNAME":
+      case "NAMEWITHOWNER":
+      case "REPONAMEWITHOWNER":
         return this.repoNameWithOwner ?? "";
     }
     const projectField = this._projectFields.get(fieldName)?.value;
-    return projectField ?? "";
+    return projectField || "";
   }
   get _projectFields() {
     return this.issue.projectFields ?? new Map;
@@ -48300,6 +48301,7 @@ ${this._body}
   }
 }
 
+// src/2_pull/github/issue-list.ts
 class IssueList {
   memory = getMemory();
   sourceOfTruth;
@@ -48366,7 +48368,7 @@ class IssueList {
         groups.set(key, new IssueList([], {
           title: this.sourceOfTruth.title.slice(),
           url: this.sourceOfTruth.url.slice(),
-          groupKey: key || title("No " + fieldName)
+          groupKey: key || "No " + title(fieldName)
         }));
       }
       groups.get(key).issues.push(issue);
@@ -48374,7 +48376,7 @@ class IssueList {
     return Array.from(groups.entries()).sort(([a2], [b2]) => emojiCompare(a2, b2) ?? a2.localeCompare(b2)).map(([, group]) => group);
   }
   overallStatus(fieldName) {
-    return this.issues.map((issue) => issue.field(fieldName)).sort((a2, b2) => emojiCompare(a2, b2) ?? a2.localeCompare(b2))[0];
+    return this.issues.map((issue) => issue.field(fieldName) ?? "").sort((a2, b2) => emojiCompare(a2, b2) ?? a2.localeCompare(b2))[0];
   }
   get header() {
     return `[${this.sourceOfTruth.title}](${this.sourceOfTruth.url})`;
