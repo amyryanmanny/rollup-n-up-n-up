@@ -5,6 +5,9 @@ inputs:
   template:
     description: "The path to the Vento.js template file to render."
     required: true
+  update_detection:
+    description: "An ordered list of strategies to detect the update on an issue."
+    required: false
 outputs:
   md:
     description: "The markdown file rendered as a string from the template."

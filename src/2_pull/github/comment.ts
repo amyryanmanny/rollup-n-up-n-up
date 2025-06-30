@@ -17,7 +17,6 @@ export type Comment = {
 export class CommentWrapper {
   private memory = getMemory();
 
-  static UPDATE_MARKER = RegExp(/<(!--\s*UPDATE\s*--)>/g); // TODO: Custom marker as input
   static NULL_UPDATE = "No updates found";
 
   private comment: Comment;
@@ -62,13 +61,9 @@ export class CommentWrapper {
     return this._body;
   }
 
-  get update(): string {
-    const update = this.findUpdate();
-    if (update) {
-      return update;
-    }
-    // If no update section, just return the body
-    return this.body;
+  get update(): string | undefined {
+    this.remember();
+    return extractUpdate(this);
   }
 
   get isEmpty(): boolean {
@@ -88,16 +83,12 @@ export class CommentWrapper {
   }
 
   // Helpers
-  get hasUpdateMarker(): boolean {
-    // Check if the comment body contains the update marker
-    return CommentWrapper.UPDATE_MARKER.test(this.comment.body);
+  hasMarker(marker: RegExp): boolean {
+    return marker.test(this.comment.body);
   }
 
-  removeUpdateMarker() {
-    this.comment.body = this.comment.body.replaceAll(
-      CommentWrapper.UPDATE_MARKER,
-      "",
-    );
+  removeUpdateMarker(marker: RegExp): void {
+    this.comment.body = this.comment.body.replaceAll(marker, "");
   }
 
   section(name: string): string | undefined {
@@ -109,18 +100,6 @@ export class CommentWrapper {
     const boldedSection = this.boldedSections.get(toSnakeCase(name));
     if (boldedSection !== undefined) {
       return stripHtml(boldedSection).trim();
-    }
-    return undefined;
-  }
-
-  findUpdate(): string | undefined {
-    // TODO: Configurable
-    // Find the update section in the comment
-    for (const sections of ["update"]) {
-      const section = this.section(sections);
-      if (section !== undefined) {
-        return section;
-      }
     }
     return undefined;
   }

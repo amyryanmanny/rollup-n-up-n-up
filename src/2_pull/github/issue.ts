@@ -14,6 +14,7 @@ import {
   type GetProjectViewParameters,
 } from "./project-view";
 import { CommentWrapper, type Comment } from "./comment";
+import { findLatestUpdate } from "./update";
 import {
   listIssuesForRepo,
   type ListIssuesForRepoParameters,
@@ -168,28 +169,16 @@ class IssueWrapper {
   }
 
   latestUpdate(): CommentWrapper {
-    const filterUpdates = (comment: CommentWrapper) => {
-      // TODO: Pull out into its own module
-      if (comment.hasUpdateMarker) {
-        // Check if the comment body contains the update sentinel
-        // SIDE_EFFECT: Remove the update marker from the body
-        comment.removeUpdateMarker();
-        return true;
-      }
-      if (comment.findUpdate() !== undefined) {
-        // If it has one of the defined update sections, it's considered an update
-        return true;
-      }
-      return false;
-    };
-    const updates = this.comments.filter(filterUpdates);
+    const comments = this.comments;
 
-    if (updates.length === 0) {
-      return this.latestComment();
+    if (comments.length !== 0) {
+      const update = findLatestUpdate(comments);
+      if (update !== undefined) {
+        return update;
+      }
     }
 
-    const latestUpdate = updates[0];
-    return latestUpdate;
+    return CommentWrapper.empty(this.url);
   }
 
   // Render / Memory Functions
