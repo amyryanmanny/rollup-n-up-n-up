@@ -68,6 +68,7 @@ function getGitHubPatSecrets(): GitHubPatSecrets | undefined {
 }
 
 function getGitHubDefaultSecrets(): GitHubDefaultSecrets | undefined {
+  // Technically redundant, but I like PATs and GITHUB_TOKEN to be explicit
   const token = getConfig("GITHUB_TOKEN");
 
   if (!token) {

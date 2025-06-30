@@ -1,16 +1,59 @@
-name: "RollupNup Render"
-description: "Render a Vento.js template as a string using the internal client"
-author: "amyryanmanny"
+name: Rollup 'nUp 'nUp Render
+description: Render a Vento.js template as a string using the internal client
+author: amyryanmanny
+
 inputs:
+  # Authentication
+  # At least one of these auth strategies (App, PAT, or default) is required.
+  github_token:
+    description: |
+      GITHUB_TOKEN to authenticate with the GitHub API.
+      Should be explicitly set to {{ github.token }} if used.
+    required: false
+  github_pat_token:
+    description: GitHub Personal Access Token to authenticate with the GitHub API.
+    required: false
+  github_app_id:
+    description: GitHub App ID to authenticate with the GitHub API.
+    required: false
+  github_app_installation_id:
+    description: GitHub App Installation ID to authenticate with the GitHub API.
+    required: false
+  github_app_private_key:
+    description: GitHub App Private Key to authenticate with the GitHub API.
+    required: false
+
+  # AI Inference
+  model_endpoint:
+    description: |
+      The endpoint to use for AI inference.
+      Defaults to models.github.ai, with the org-specific path if using a GitHub App.
+    required: false
+    # default: https://models.github.ai/
+  model_name:
+    description: The model to use for rendering the template. Defaults to gpt-4.1.
+    required: false
+    default: openai/gpt-4.1
+  max_tokens:
+    description: The maximum number of tokens to generate in the response.
+    required: false
+    default: "4096"
+  # TODO: Prompts. Or just detect from the .prompt.yml files in the repo.
+
+  # Templating
   template:
-    description: "The path to the Vento.js template file to render."
+    description: The path to the Vento.js template file to render.
     required: true
   update_detection:
-    description: "An ordered list of strategies to detect the update on an issue."
+    description: >
+      An ordered list of strategies used to detect an update from issue comments (see docs for syntax).
     required: false
+
 outputs:
   md:
-    description: "The markdown file rendered as a string from the template."
+    description: >
+      The resulting markdown file from the template engine, rendered as a string.
+
 runs:
   using: node20
-  main: "../../dist/render/index.js"
+  main: ../../dist/render/index.js

@@ -1,17 +1,22 @@
-name: "RollupNup Push"
-description: "Push a Markdown string to a location using the internal client"
-author: "amyryanmanny"
+name: Rollup 'nUp 'nUp Push
+description: >
+  Push Markdown to a list of targets (Repo file, Issue, Discussion, etc) using the internal client
+author: amyryanmanny
+
 inputs:
   title:
-    description: "The title of the Markdown string"
+    description: The title of the document.
     required: false
   body:
-    description: "The Markdown string to push"
+    description: The Markdown string to push.
     required: true
   targets:
-    description: "The targets to push the string to"
+    description: The targets to push the string to (see docs for syntax).
     required: true
+
 outputs: {}
+# TODO: strftime'd title
+
 runs:
   using: node20
-  main: "../../dist/push/index.js"
+  main: ../../dist/push/index.js
