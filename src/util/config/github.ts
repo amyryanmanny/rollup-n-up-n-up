@@ -5,8 +5,8 @@ export type GitHubSecretKind = "app" | "pat" | "default";
 type GitHubAppSecrets = {
   kind: "app";
   appId: string;
-  privateKey: string;
   installationId: number;
+  privateKey: string;
 };
 
 type GitHubPatSecrets = {
