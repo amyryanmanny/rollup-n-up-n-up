@@ -73,7 +73,7 @@ export class IssueWrapper {
   }
 
   // Fields
-  field(fieldName: string): string | null {
+  field(fieldName: string): string {
     // Return the value of the field by name
     const insensitiveFieldName = fieldName
       .trim()
