@@ -1,7 +1,7 @@
 import { DefaultDict } from "@util/collections";
 
 import type { GitHubClient } from "./client";
-import type { ProjectField } from "./project";
+import type { ProjectField } from "./graphql/project";
 
 export type GetProjectViewParameters = {
   organization: string;

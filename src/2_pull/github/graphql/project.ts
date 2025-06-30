@@ -1,5 +1,5 @@
-import { GitHubClient } from "./client";
-import type { Issue } from "./issue";
+import { GitHubClient } from "../client";
+import type { Issue } from "../issue";
 
 export type ListIssuesForProjectParameters = {
   organization: string;
