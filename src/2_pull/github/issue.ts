@@ -95,36 +95,41 @@ class IssueWrapper {
   }
 
   // Fields
-  field(fieldName: string): string {
+  field(fieldName: string): string | null {
     // Return the value of the field by name
-    // TODO: Handle case insensitivity
-    switch (fieldName) {
-      case "title":
+    const insensitiveFieldName = fieldName
+      .trim()
+      .toUpperCase()
+      .replace(/\s+/g, "")
+      .replace("_", "");
+    switch (insensitiveFieldName) {
+      case "TITLE":
         return this.title;
-      case "url":
+      case "URL":
         return this.url;
-      case "number":
+      case "NUMBER":
         return String(this.number);
-      case "body":
+      case "BODY":
         return this.body;
-      case "type":
+      case "TYPE":
         return this.type;
-      case "repo":
-      case "repository":
+      case "REPO":
+      case "REPOSITORY":
         return this.repo;
-      case "org":
-      case "organization":
-      case "owner":
+      case "ORG":
+      case "ORGANIZATION":
+      case "OWNER":
         return this.owner;
-      case "full_name":
-      case "nameWithOwner":
-      case "repoNameWithOwner":
+      case "FULLNAME":
+      case "NAMEWITHOWNER":
+      case "REPONAMEWITHOWNER":
         return this.repoNameWithOwner ?? "";
     }
 
     // Fallback to projectFields
+    // TODO: Handle case insensitivity here too
     const projectField = this._projectFields.get(fieldName)?.value;
-    return projectField ?? "";
+    return projectField || "";
   }
 
   get _projectFields(): Map<string, ProjectField> {
