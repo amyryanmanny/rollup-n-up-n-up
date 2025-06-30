@@ -1,5 +1,5 @@
 import { GitHubClient } from "./client";
-import type { ProjectIssueComment } from "./comment";
+import type { Issue } from "./issue";
 
 export type ListIssuesForProjectParameters = {
   organization: string;
@@ -7,27 +7,9 @@ export type ListIssuesForProjectParameters = {
   typeFilter: string[] | undefined;
 };
 export type ListIssuesForProjectResponse = {
-  issues: ProjectIssue[];
+  issues: Issue[];
   title: string;
   url: string;
-};
-
-export type ProjectIssue = {
-  // Until Projects are added to the REST API we have to construct the type
-  // It's not worth making this a Partial, but maybe there should be a single supertype instead
-  title: string;
-  body: string;
-  url: string;
-  assignees: string[];
-  type: {
-    name?: string;
-  };
-  repository: {
-    name: string;
-    full_name: string;
-  };
-  comments: Array<ProjectIssueComment>;
-  projectFields: Map<string, ProjectField>;
 };
 
 export type ProjectField = ProjectFieldSingleSelect | ProjectFieldDate;
@@ -66,6 +48,9 @@ export async function listIssuesForProject(
                   __typename
                   ... on Issue {
                     title
+                    body
+                    url
+                    number
                     assignees(first: 5) {
                       nodes {
                         login
@@ -74,13 +59,14 @@ export async function listIssuesForProject(
                     issueType {
                       name
                     }
-                    body
-                    url
                     repository {
                       name
+                      owner {
+                        login
+                      }
                       nameWithOwner
                     }
-                    comments(last: 20) {
+                    comments(last: 100) {
                       nodes {
                         author {
                           login
@@ -140,6 +126,7 @@ export async function listIssuesForProject(
                 title: string;
                 body: string;
                 url: string;
+                number: number;
                 assignees: {
                   nodes: Array<{ login: string }>;
                 };
@@ -148,6 +135,9 @@ export async function listIssuesForProject(
                 } | null;
                 repository: {
                   name: string;
+                  owner: {
+                    login: string;
+                  };
                   nameWithOwner: string;
                 };
                 comments: {
@@ -198,13 +188,13 @@ export async function listIssuesForProject(
         title: content.title,
         body: content.body || "",
         url: content.url,
+        number: content.number,
         assignees: content.assignees.nodes.map((assignee) => assignee.login),
-        type: {
-          name: content.issueType?.name,
-        },
+        type: content.issueType?.name || "Issue",
         repository: {
           name: content.repository.name,
-          full_name: content.repository.nameWithOwner,
+          owner: content.repository.owner.login,
+          nameWithOwner: content.repository.nameWithOwner,
         },
         comments: content.comments.nodes.map((comment) => ({
           author: comment.author.login,
@@ -248,9 +238,10 @@ export async function listIssuesForProject(
       // So we can filter by Bug, Initiative
       (item) => {
         return (
+          // Unoptimized, but works for now
           params.typeFilter === undefined ||
           params.typeFilter.length === 0 ||
-          params.typeFilter.includes(item.type?.name || "")
+          params.typeFilter.includes(item.type)
         );
       },
     );

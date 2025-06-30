@@ -8,8 +8,8 @@ inputs:
   body:
     description: "The Markdown string to push"
     required: true
-  push:
-    description: "The locations to push to"
+  targets:
+    description: "The targets to push the string to"
     required: true
 outputs: {}
 runs:

@@ -5,14 +5,14 @@ import {
   stripHtml,
   toSnakeCase,
 } from "@util/string";
+import { extractUpdate } from "./update";
 
-export type ProjectIssueComment = {
+export type Comment = {
   author: string;
   body: string;
   createdAt: Date;
   url: string;
 };
-export type Comment = ProjectIssueComment;
 
 export class CommentWrapper {
   private memory = getMemory();
@@ -52,7 +52,7 @@ export class CommentWrapper {
     return this.comment.url;
   }
 
-  private get _body(): string {
+  get _body(): string {
     // Return processed body of the comment
     return stripHtml(this.comment.body).trim();
   }

@@ -1,14 +1,12 @@
-import type { RestEndpointMethodTypes } from "@octokit/rest";
-
 import { GitHubClient } from "./client";
 import { getMemory } from "@transform/memory";
 import { emojiCompare } from "@util/emoji";
+import { title } from "@util/string";
 
 import {
   listIssuesForProject,
   type ListIssuesForProjectParameters,
   type ProjectField,
-  type ProjectIssue,
 } from "./project";
 import {
   getProjectView,
@@ -16,21 +14,33 @@ import {
   type GetProjectViewParameters,
 } from "./project-view";
 import { CommentWrapper, type Comment } from "./comment";
-import { title } from "@util/string";
+import {
+  listIssuesForRepo,
+  type ListIssuesForRepoParameters,
+} from "./graphql/repo";
 
 // Interface
-type ListIssuesForRepoParameters =
-  RestEndpointMethodTypes["issues"]["listForRepo"]["parameters"];
-
 type SourceOfTruth = {
   title: string;
   url: string;
   groupKey?: string; // When using a groupBy
 };
 
-type Issue = RestIssue | ProjectIssue;
-type RestIssue =
-  RestEndpointMethodTypes["issues"]["listForRepo"]["response"]["data"][number];
+export type Issue = {
+  title: string;
+  body: string;
+  url: string;
+  number: number;
+  assignees: string[];
+  type: string;
+  repository: {
+    name: string;
+    owner: string;
+    nameWithOwner: string;
+  };
+  comments: Array<Comment>;
+  projectFields?: Map<string, ProjectField>;
+};
 
 class IssueWrapper {
   private memory = getMemory();
@@ -54,6 +64,10 @@ class IssueWrapper {
     return this.issue.url;
   }
 
+  get number(): number {
+    return this.issue.number;
+  }
+
   private get _body(): string {
     return this.issue.body || "";
   }
@@ -64,32 +78,45 @@ class IssueWrapper {
   }
 
   get type(): string {
-    return this.issue.type?.name || "Issue";
+    return this.issue.type;
   }
 
-  get repo(): string | undefined {
-    return this.issue.repository?.name;
+  get repo(): string {
+    return this.issue.repository.name;
   }
 
-  get repoNameWithOwner(): string | undefined {
-    return this.issue.repository?.full_name;
+  get owner(): string {
+    return this.issue.repository.owner;
+  }
+
+  get repoNameWithOwner(): string {
+    return this.issue.repository.nameWithOwner;
   }
 
   // Fields
   field(fieldName: string): string {
     // Return the value of the field by name
+    // TODO: Handle case insensitivity
     switch (fieldName) {
       case "title":
         return this.title;
       case "url":
         return this.url;
+      case "number":
+        return String(this.number);
       case "body":
         return this.body;
       case "type":
         return this.type;
       case "repo":
-        return this.repo ?? "";
+      case "repository":
+        return this.repo;
+      case "org":
+      case "organization":
+      case "owner":
+        return this.owner;
       case "full_name":
+      case "nameWithOwner":
       case "repoNameWithOwner":
         return this.repoNameWithOwner ?? "";
     }
@@ -100,12 +127,9 @@ class IssueWrapper {
   }
 
   get _projectFields(): Map<string, ProjectField> {
-    // Internal method - Return the projectFields of the issue
-    if ("projectFields" in this.issue) {
-      return this.issue.projectFields;
-    }
-    // For REST API issues, projectFields are undefined
-    return new Map<string, ProjectField>();
+    // Internal Method - return issue projectFields
+    // For Issues pulled from a Repo, projectFields are undefined
+    return this.issue.projectFields ?? new Map<string, ProjectField>();
   }
 
   get projectFields(): Map<string, string> {
@@ -122,35 +146,25 @@ class IssueWrapper {
     // TODO: Memoize
     const issue = this.issue;
 
-    const comments = issue.comments;
-    if (typeof comments == "number") {
-      // For REST API issues, comments is a number
-      // TODO: Fetch the comments for the issue - figure out async. Use CommentList
-      throw new Error(
-        "Fetching last update for REST API issues is not implemented yet.",
-      );
-    }
-
     // TODO: Create a CommentList to perform this logic
-    const sortCommentsByDateDesc = (a: Comment, b: Comment) => {
+    const sortCommentsByDateDesc = (a: CommentWrapper, b: CommentWrapper) => {
       // Sort comments by createdAt in descending order
       return b.createdAt.getTime() - a.createdAt.getTime();
     };
 
-    return (comments as Comment[])
-      .sort(sortCommentsByDateDesc)
-      .map((comment) => new CommentWrapper(issue.title, comment));
+    return (issue.comments as Comment[])
+      .map((comment) => new CommentWrapper(issue.title, comment))
+      .sort(sortCommentsByDateDesc); // Newest comments first
   }
 
   latestComment(): CommentWrapper {
     const comments = this.comments;
 
-    if (comments.length === 0) {
-      return CommentWrapper.empty(this.url);
+    if (comments.length !== 0) {
+      return comments[0];
     }
 
-    const latestComment = comments[0];
-    return latestComment;
+    return CommentWrapper.empty(this.url);
   }
 
   latestUpdate(): CommentWrapper {
@@ -200,12 +214,18 @@ export class IssueList {
   private sourceOfTruth: SourceOfTruth;
   private issues: IssueWrapper[];
 
+  // Some Array functions should fall through
   get length(): number {
     return this.issues.length;
   }
 
   [Symbol.iterator]() {
     return this.issues[Symbol.iterator]();
+  }
+
+  find(predicate: (issue: IssueWrapper) => boolean): IssueWrapper | undefined {
+    // Find an issue by a predicate
+    return this.issues.find(predicate);
   }
 
   // Issue Filtering / Grouping / Sorting
@@ -338,12 +358,8 @@ export class IssueList {
     client: GitHubClient,
     params: ListIssuesForRepoParameters,
   ): Promise<IssueList> {
-    const response = await client.octokit.rest.issues.listForRepo(params);
-    const issues = response.data;
-
-    const url = `https://github.com/${params.owner}/${params.repo}`;
-    const title = `Issues from ${params.owner}/${params.repo}`;
-
+    const response = await listIssuesForRepo(client, params);
+    const { issues, title, url } = response;
     return new IssueList(issues, { title, url });
   }
 
@@ -352,9 +368,7 @@ export class IssueList {
     params: ListIssuesForProjectParameters,
   ): Promise<IssueList> {
     const response = await listIssuesForProject(client, params);
-
     const { issues, title, url } = response;
-
     return new IssueList(issues, { title, url });
   }
 

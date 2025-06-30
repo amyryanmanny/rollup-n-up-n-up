@@ -1,3 +1,4 @@
+// TODO: Remove @octokit/rest for @octokit/core
 import { Octokit } from "@octokit/rest";
 import { createAppAuth } from "@octokit/auth-app";
 import { paginateGraphQL } from "@octokit/plugin-paginate-graphql";
