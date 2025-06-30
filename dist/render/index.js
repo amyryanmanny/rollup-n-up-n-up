@@ -26254,7 +26254,7 @@ var require_utils3 = __commonJS((exports) => {
   exports.getApiBaseUrl = getApiBaseUrl;
 });
 
-// node_modules/@octokit/core/node_modules/universal-user-agent/dist-node/index.js
+// node_modules/@actions/github/node_modules/@octokit/core/node_modules/universal-user-agent/dist-node/index.js
 var require_dist_node = __commonJS((exports) => {
   Object.defineProperty(exports, "__esModule", { value: true });
   function getUserAgent() {
@@ -26269,7 +26269,7 @@ var require_dist_node = __commonJS((exports) => {
   exports.getUserAgent = getUserAgent;
 });
 
-// node_modules/before-after-hook/lib/register.js
+// node_modules/@actions/github/node_modules/@octokit/core/node_modules/before-after-hook/lib/register.js
 var require_register = __commonJS((exports, module) => {
   module.exports = register;
   function register(state2, name, method, options) {
@@ -26295,7 +26295,7 @@ var require_register = __commonJS((exports, module) => {
   }
 });
 
-// node_modules/before-after-hook/lib/add.js
+// node_modules/@actions/github/node_modules/@octokit/core/node_modules/before-after-hook/lib/add.js
 var require_add = __commonJS((exports, module) => {
   module.exports = addHook;
   function addHook(state2, kind, name, hook) {
@@ -26333,7 +26333,7 @@ var require_add = __commonJS((exports, module) => {
   }
 });
 
-// node_modules/before-after-hook/lib/remove.js
+// node_modules/@actions/github/node_modules/@octokit/core/node_modules/before-after-hook/lib/remove.js
 var require_remove2 = __commonJS((exports, module) => {
   module.exports = removeHook;
   function removeHook(state2, name, method) {
@@ -26350,7 +26350,7 @@ var require_remove2 = __commonJS((exports, module) => {
   }
 });
 
-// node_modules/before-after-hook/index.js
+// node_modules/@actions/github/node_modules/@octokit/core/node_modules/before-after-hook/index.js
 var require_before_after_hook = __commonJS((exports, module) => {
   var register = require_register();
   var addHook = require_add();
@@ -27112,23 +27112,8 @@ var require_dist_node7 = __commonJS((exports, module) => {
   });
 });
 
-// node_modules/@octokit/graphql/node_modules/universal-user-agent/dist-node/index.js
-var require_dist_node8 = __commonJS((exports) => {
-  Object.defineProperty(exports, "__esModule", { value: true });
-  function getUserAgent() {
-    if (typeof navigator === "object" && "userAgent" in navigator) {
-      return navigator.userAgent;
-    }
-    if (typeof process === "object" && process.version !== undefined) {
-      return `Node.js/${process.version.substr(1)} (${process.platform}; ${process.arch})`;
-    }
-    return "<environment undetectable>";
-  }
-  exports.getUserAgent = getUserAgent;
-});
-
-// node_modules/@octokit/graphql/dist-node/index.js
-var require_dist_node9 = __commonJS((exports, module) => {
+// node_modules/@actions/github/node_modules/@octokit/core/node_modules/@octokit/graphql/dist-node/index.js
+var require_dist_node8 = __commonJS((exports, module) => {
   var __defProp2 = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
   var __getOwnPropNames2 = Object.getOwnPropertyNames;
@@ -27154,7 +27139,7 @@ var require_dist_node9 = __commonJS((exports, module) => {
   });
   module.exports = __toCommonJS(index_exports);
   var import_request3 = require_dist_node7();
-  var import_universal_user_agent = require_dist_node8();
+  var import_universal_user_agent = require_dist_node();
   var VERSION = "7.1.1";
   var import_request2 = require_dist_node7();
   var import_request = require_dist_node7();
@@ -27251,8 +27236,8 @@ var require_dist_node9 = __commonJS((exports, module) => {
   }
 });
 
-// node_modules/@octokit/auth-token/dist-node/index.js
-var require_dist_node10 = __commonJS((exports, module) => {
+// node_modules/@actions/github/node_modules/@octokit/core/node_modules/@octokit/auth-token/dist-node/index.js
+var require_dist_node9 = __commonJS((exports, module) => {
   var __defProp2 = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
   var __getOwnPropNames2 = Object.getOwnPropertyNames;
@@ -27314,8 +27299,8 @@ var require_dist_node10 = __commonJS((exports, module) => {
   };
 });
 
-// node_modules/@octokit/core/dist-node/index.js
-var require_dist_node11 = __commonJS((exports, module) => {
+// node_modules/@actions/github/node_modules/@octokit/core/dist-node/index.js
+var require_dist_node10 = __commonJS((exports, module) => {
   var __defProp2 = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
   var __getOwnPropNames2 = Object.getOwnPropertyNames;
@@ -27341,8 +27326,8 @@ var require_dist_node11 = __commonJS((exports, module) => {
   var import_universal_user_agent = require_dist_node();
   var import_before_after_hook = require_before_after_hook();
   var import_request = require_dist_node7();
-  var import_graphql = require_dist_node9();
-  var import_auth_token = require_dist_node10();
+  var import_graphql = require_dist_node8();
+  var import_auth_token = require_dist_node9();
   var VERSION = "5.2.1";
   var noop = () => {
   };
@@ -27442,7 +27427,7 @@ var require_dist_node11 = __commonJS((exports, module) => {
 });
 
 // node_modules/@octokit/plugin-rest-endpoint-methods/dist-node/index.js
-var require_dist_node12 = __commonJS((exports, module) => {
+var require_dist_node11 = __commonJS((exports, module) => {
   var __defProp2 = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
   var __getOwnPropNames2 = Object.getOwnPropertyNames;
@@ -29579,7 +29564,7 @@ var require_dist_node12 = __commonJS((exports, module) => {
 });
 
 // node_modules/@octokit/plugin-paginate-rest/dist-node/index.js
-var require_dist_node13 = __commonJS((exports, module) => {
+var require_dist_node12 = __commonJS((exports, module) => {
   var __defProp2 = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
   var __getOwnPropNames2 = Object.getOwnPropertyNames;
@@ -29983,9 +29968,9 @@ var require_utils4 = __commonJS((exports) => {
   exports.getOctokitOptions = exports.GitHub = exports.defaults = exports.context = undefined;
   var Context = __importStar2(require_context());
   var Utils = __importStar2(require_utils3());
-  var core_1 = require_dist_node11();
-  var plugin_rest_endpoint_methods_1 = require_dist_node12();
-  var plugin_paginate_rest_1 = require_dist_node13();
+  var core_1 = require_dist_node10();
+  var plugin_rest_endpoint_methods_1 = require_dist_node11();
+  var plugin_paginate_rest_1 = require_dist_node12();
   exports.context = new Context.Context;
   var baseUrl = Utils.getApiBaseUrl();
   exports.defaults = {
@@ -40562,7 +40547,7 @@ function withDefaults(oldDefaults, newDefaults) {
 }
 var endpoint = withDefaults(null, DEFAULTS);
 
-// node_modules/fast-content-type-parse/index.js
+// node_modules/@octokit/rest/node_modules/@octokit/core/node_modules/@octokit/request/node_modules/fast-content-type-parse/index.js
 var NullObject = function NullObject2() {
 };
 NullObject.prototype = Object.create(null);
@@ -40640,7 +40625,7 @@ class RequestError extends Error {
 }
 
 // node_modules/@octokit/rest/node_modules/@octokit/core/node_modules/@octokit/request/dist-bundle/index.js
-var VERSION2 = "0.0.0-development";
+var VERSION2 = "10.0.3";
 var defaults_default = {
   headers: {
     "user-agent": `octokit-request.js/${VERSION2} ${getUserAgent()}`
@@ -40944,7 +40929,7 @@ var createTokenAuth = function createTokenAuth2(token) {
 };
 
 // node_modules/@octokit/rest/node_modules/@octokit/core/dist-src/version.js
-var VERSION4 = "6.1.5";
+var VERSION4 = "7.0.2";
 
 // node_modules/@octokit/rest/node_modules/@octokit/core/dist-src/index.js
 var noop = () => {
@@ -41044,7 +41029,7 @@ class Octokit {
 }
 
 // node_modules/@octokit/plugin-request-log/dist-src/version.js
-var VERSION5 = "5.3.1";
+var VERSION5 = "6.0.0";
 
 // node_modules/@octokit/plugin-request-log/dist-src/index.js
 function requestLog(octokit) {
@@ -41075,15 +41060,17 @@ function normalizePaginatedListResponse(response) {
       data: []
     };
   }
-  const responseNeedsNormalization = "total_count" in response.data && !("url" in response.data);
+  const responseNeedsNormalization = (("total_count" in response.data) || ("total_commits" in response.data)) && !("url" in response.data);
   if (!responseNeedsNormalization)
     return response;
   const incompleteResults = response.data.incomplete_results;
   const repositorySelection = response.data.repository_selection;
   const totalCount = response.data.total_count;
+  const totalCommits = response.data.total_commits;
   delete response.data.incomplete_results;
   delete response.data.repository_selection;
   delete response.data.total_count;
+  delete response.data.total_commits;
   const namespaceKey = Object.keys(response.data)[0];
   const data = response.data[namespaceKey];
   response.data = data;
@@ -41094,6 +41081,7 @@ function normalizePaginatedListResponse(response) {
     response.data.repository_selection = repositorySelection;
   }
   response.data.total_count = totalCount;
+  response.data.total_commits = totalCommits;
   return response;
 }
 function iterator(octokit, route, parameters2) {
@@ -41111,6 +41099,16 @@ function iterator(octokit, route, parameters2) {
           const response = await requestMethod({ method, url, headers });
           const normalizedResponse = normalizePaginatedListResponse(response);
           url = ((normalizedResponse.headers.link || "").match(/<([^<>]+)>;\s*rel="next"/) || [])[1];
+          if (!url && "total_commits" in normalizedResponse.data) {
+            const parsedUrl = new URL(normalizedResponse.url);
+            const params = parsedUrl.searchParams;
+            const page = parseInt(params.get("page") || "1", 10);
+            const per_page = parseInt(params.get("per_page") || "250", 10);
+            if (page * per_page < normalizedResponse.data.total_commits) {
+              params.set("page", String(page + 1));
+              url = parsedUrl.toString();
+            }
+          }
           return { value: normalizedResponse };
         } catch (error) {
           if (error.status !== 409)
@@ -41164,7 +41162,7 @@ function paginateRest(octokit) {
 paginateRest.VERSION = VERSION6;
 
 // node_modules/@octokit/rest/node_modules/@octokit/plugin-rest-endpoint-methods/dist-src/version.js
-var VERSION7 = "13.5.0";
+var VERSION7 = "16.0.0";
 
 // node_modules/@octokit/rest/node_modules/@octokit/plugin-rest-endpoint-methods/dist-src/generated/endpoints.js
 var Endpoints = {
@@ -41638,6 +41636,9 @@ var Endpoints = {
     getGithubBillingUsageReportOrg: [
       "GET /organizations/{org}/settings/billing/usage"
     ],
+    getGithubBillingUsageReportUser: [
+      "GET /users/{username}/settings/billing/usage"
+    ],
     getGithubPackagesBillingOrg: ["GET /orgs/{org}/settings/billing/packages"],
     getGithubPackagesBillingUser: [
       "GET /users/{username}/settings/billing/packages"
@@ -41648,6 +41649,13 @@ var Endpoints = {
     getSharedStorageBillingUser: [
       "GET /users/{username}/settings/billing/shared-storage"
     ]
+  },
+  campaigns: {
+    createCampaign: ["POST /orgs/{org}/campaigns"],
+    deleteCampaign: ["DELETE /orgs/{org}/campaigns/{campaign_number}"],
+    getCampaignSummary: ["GET /orgs/{org}/campaigns/{campaign_number}"],
+    listOrgCampaigns: ["GET /orgs/{org}/campaigns"],
+    updateCampaign: ["PATCH /orgs/{org}/campaigns/{campaign_number}"]
   },
   checks: {
     create: ["POST /repos/{owner}/{repo}/check-runs"],
@@ -41927,10 +41935,9 @@ var Endpoints = {
     getCopilotSeatDetailsForUser: [
       "GET /orgs/{org}/members/{username}/copilot"
     ],
-    listCopilotSeats: ["GET /orgs/{org}/copilot/billing/seats"],
-    usageMetricsForOrg: ["GET /orgs/{org}/copilot/usage"],
-    usageMetricsForTeam: ["GET /orgs/{org}/team/{team_slug}/copilot/usage"]
+    listCopilotSeats: ["GET /orgs/{org}/copilot/billing/seats"]
   },
+  credentials: { revoke: ["POST /credentials/revoke"] },
   dependabot: {
     addSelectedRepoToOrgSecret: [
       "PUT /orgs/{org}/dependabot/secrets/{secret_name}/repositories/{repository_id}"
@@ -42467,183 +42474,6 @@ var Endpoints = {
     listOrgPrivateRegistries: ["GET /orgs/{org}/private-registries"],
     updateOrgPrivateRegistry: [
       "PATCH /orgs/{org}/private-registries/{secret_name}"
-    ]
-  },
-  projects: {
-    addCollaborator: [
-      "PUT /projects/{project_id}/collaborators/{username}",
-      {},
-      {
-        deprecated: "octokit.rest.projects.addCollaborator() is deprecated, see https://docs.github.com/rest/projects/collaborators#add-project-collaborator"
-      }
-    ],
-    createCard: [
-      "POST /projects/columns/{column_id}/cards",
-      {},
-      {
-        deprecated: "octokit.rest.projects.createCard() is deprecated, see https://docs.github.com/rest/projects/cards#create-a-project-card"
-      }
-    ],
-    createColumn: [
-      "POST /projects/{project_id}/columns",
-      {},
-      {
-        deprecated: "octokit.rest.projects.createColumn() is deprecated, see https://docs.github.com/rest/projects/columns#create-a-project-column"
-      }
-    ],
-    createForAuthenticatedUser: [
-      "POST /user/projects",
-      {},
-      {
-        deprecated: "octokit.rest.projects.createForAuthenticatedUser() is deprecated, see https://docs.github.com/rest/projects/projects#create-a-user-project"
-      }
-    ],
-    createForOrg: [
-      "POST /orgs/{org}/projects",
-      {},
-      {
-        deprecated: "octokit.rest.projects.createForOrg() is deprecated, see https://docs.github.com/rest/projects/projects#create-an-organization-project"
-      }
-    ],
-    createForRepo: [
-      "POST /repos/{owner}/{repo}/projects",
-      {},
-      {
-        deprecated: "octokit.rest.projects.createForRepo() is deprecated, see https://docs.github.com/rest/projects/projects#create-a-repository-project"
-      }
-    ],
-    delete: [
-      "DELETE /projects/{project_id}",
-      {},
-      {
-        deprecated: "octokit.rest.projects.delete() is deprecated, see https://docs.github.com/rest/projects/projects#delete-a-project"
-      }
-    ],
-    deleteCard: [
-      "DELETE /projects/columns/cards/{card_id}",
-      {},
-      {
-        deprecated: "octokit.rest.projects.deleteCard() is deprecated, see https://docs.github.com/rest/projects/cards#delete-a-project-card"
-      }
-    ],
-    deleteColumn: [
-      "DELETE /projects/columns/{column_id}",
-      {},
-      {
-        deprecated: "octokit.rest.projects.deleteColumn() is deprecated, see https://docs.github.com/rest/projects/columns#delete-a-project-column"
-      }
-    ],
-    get: [
-      "GET /projects/{project_id}",
-      {},
-      {
-        deprecated: "octokit.rest.projects.get() is deprecated, see https://docs.github.com/rest/projects/projects#get-a-project"
-      }
-    ],
-    getCard: [
-      "GET /projects/columns/cards/{card_id}",
-      {},
-      {
-        deprecated: "octokit.rest.projects.getCard() is deprecated, see https://docs.github.com/rest/projects/cards#get-a-project-card"
-      }
-    ],
-    getColumn: [
-      "GET /projects/columns/{column_id}",
-      {},
-      {
-        deprecated: "octokit.rest.projects.getColumn() is deprecated, see https://docs.github.com/rest/projects/columns#get-a-project-column"
-      }
-    ],
-    getPermissionForUser: [
-      "GET /projects/{project_id}/collaborators/{username}/permission",
-      {},
-      {
-        deprecated: "octokit.rest.projects.getPermissionForUser() is deprecated, see https://docs.github.com/rest/projects/collaborators#get-project-permission-for-a-user"
-      }
-    ],
-    listCards: [
-      "GET /projects/columns/{column_id}/cards",
-      {},
-      {
-        deprecated: "octokit.rest.projects.listCards() is deprecated, see https://docs.github.com/rest/projects/cards#list-project-cards"
-      }
-    ],
-    listCollaborators: [
-      "GET /projects/{project_id}/collaborators",
-      {},
-      {
-        deprecated: "octokit.rest.projects.listCollaborators() is deprecated, see https://docs.github.com/rest/projects/collaborators#list-project-collaborators"
-      }
-    ],
-    listColumns: [
-      "GET /projects/{project_id}/columns",
-      {},
-      {
-        deprecated: "octokit.rest.projects.listColumns() is deprecated, see https://docs.github.com/rest/projects/columns#list-project-columns"
-      }
-    ],
-    listForOrg: [
-      "GET /orgs/{org}/projects",
-      {},
-      {
-        deprecated: "octokit.rest.projects.listForOrg() is deprecated, see https://docs.github.com/rest/projects/projects#list-organization-projects"
-      }
-    ],
-    listForRepo: [
-      "GET /repos/{owner}/{repo}/projects",
-      {},
-      {
-        deprecated: "octokit.rest.projects.listForRepo() is deprecated, see https://docs.github.com/rest/projects/projects#list-repository-projects"
-      }
-    ],
-    listForUser: [
-      "GET /users/{username}/projects",
-      {},
-      {
-        deprecated: "octokit.rest.projects.listForUser() is deprecated, see https://docs.github.com/rest/projects/projects#list-user-projects"
-      }
-    ],
-    moveCard: [
-      "POST /projects/columns/cards/{card_id}/moves",
-      {},
-      {
-        deprecated: "octokit.rest.projects.moveCard() is deprecated, see https://docs.github.com/rest/projects/cards#move-a-project-card"
-      }
-    ],
-    moveColumn: [
-      "POST /projects/columns/{column_id}/moves",
-      {},
-      {
-        deprecated: "octokit.rest.projects.moveColumn() is deprecated, see https://docs.github.com/rest/projects/columns#move-a-project-column"
-      }
-    ],
-    removeCollaborator: [
-      "DELETE /projects/{project_id}/collaborators/{username}",
-      {},
-      {
-        deprecated: "octokit.rest.projects.removeCollaborator() is deprecated, see https://docs.github.com/rest/projects/collaborators#remove-user-as-a-collaborator"
-      }
-    ],
-    update: [
-      "PATCH /projects/{project_id}",
-      {},
-      {
-        deprecated: "octokit.rest.projects.update() is deprecated, see https://docs.github.com/rest/projects/projects#update-a-project"
-      }
-    ],
-    updateCard: [
-      "PATCH /projects/columns/cards/{card_id}",
-      {},
-      {
-        deprecated: "octokit.rest.projects.updateCard() is deprecated, see https://docs.github.com/rest/projects/cards#update-an-existing-project-card"
-      }
-    ],
-    updateColumn: [
-      "PATCH /projects/columns/{column_id}",
-      {},
-      {
-        deprecated: "octokit.rest.projects.updateColumn() is deprecated, see https://docs.github.com/rest/projects/columns#update-an-existing-project-column"
-      }
     ]
   },
   pulls: {
@@ -43256,36 +43086,8 @@ var Endpoints = {
     addOrUpdateMembershipForUserInOrg: [
       "PUT /orgs/{org}/teams/{team_slug}/memberships/{username}"
     ],
-    addOrUpdateProjectPermissionsInOrg: [
-      "PUT /orgs/{org}/teams/{team_slug}/projects/{project_id}",
-      {},
-      {
-        deprecated: "octokit.rest.teams.addOrUpdateProjectPermissionsInOrg() is deprecated, see https://docs.github.com/rest/teams/teams#add-or-update-team-project-permissions"
-      }
-    ],
-    addOrUpdateProjectPermissionsLegacy: [
-      "PUT /teams/{team_id}/projects/{project_id}",
-      {},
-      {
-        deprecated: "octokit.rest.teams.addOrUpdateProjectPermissionsLegacy() is deprecated, see https://docs.github.com/rest/teams/teams#add-or-update-team-project-permissions-legacy"
-      }
-    ],
     addOrUpdateRepoPermissionsInOrg: [
       "PUT /orgs/{org}/teams/{team_slug}/repos/{owner}/{repo}"
-    ],
-    checkPermissionsForProjectInOrg: [
-      "GET /orgs/{org}/teams/{team_slug}/projects/{project_id}",
-      {},
-      {
-        deprecated: "octokit.rest.teams.checkPermissionsForProjectInOrg() is deprecated, see https://docs.github.com/rest/teams/teams#check-team-permissions-for-a-project"
-      }
-    ],
-    checkPermissionsForProjectLegacy: [
-      "GET /teams/{team_id}/projects/{project_id}",
-      {},
-      {
-        deprecated: "octokit.rest.teams.checkPermissionsForProjectLegacy() is deprecated, see https://docs.github.com/rest/teams/teams#check-team-permissions-for-a-project-legacy"
-      }
     ],
     checkPermissionsForRepoInOrg: [
       "GET /orgs/{org}/teams/{team_slug}/repos/{owner}/{repo}"
@@ -43323,37 +43125,9 @@ var Endpoints = {
     listPendingInvitationsInOrg: [
       "GET /orgs/{org}/teams/{team_slug}/invitations"
     ],
-    listProjectsInOrg: [
-      "GET /orgs/{org}/teams/{team_slug}/projects",
-      {},
-      {
-        deprecated: "octokit.rest.teams.listProjectsInOrg() is deprecated, see https://docs.github.com/rest/teams/teams#list-team-projects"
-      }
-    ],
-    listProjectsLegacy: [
-      "GET /teams/{team_id}/projects",
-      {},
-      {
-        deprecated: "octokit.rest.teams.listProjectsLegacy() is deprecated, see https://docs.github.com/rest/teams/teams#list-team-projects-legacy"
-      }
-    ],
     listReposInOrg: ["GET /orgs/{org}/teams/{team_slug}/repos"],
     removeMembershipForUserInOrg: [
       "DELETE /orgs/{org}/teams/{team_slug}/memberships/{username}"
-    ],
-    removeProjectInOrg: [
-      "DELETE /orgs/{org}/teams/{team_slug}/projects/{project_id}",
-      {},
-      {
-        deprecated: "octokit.rest.teams.removeProjectInOrg() is deprecated, see https://docs.github.com/rest/teams/teams#remove-a-project-from-a-team"
-      }
-    ],
-    removeProjectLegacy: [
-      "DELETE /teams/{team_id}/projects/{project_id}",
-      {},
-      {
-        deprecated: "octokit.rest.teams.removeProjectLegacy() is deprecated, see https://docs.github.com/rest/teams/teams#remove-a-project-from-a-team-legacy"
-      }
     ],
     removeRepoInOrg: [
       "DELETE /orgs/{org}/teams/{team_slug}/repos/{owner}/{repo}"
@@ -43620,7 +43394,7 @@ function legacyRestEndpointMethods(octokit) {
 legacyRestEndpointMethods.VERSION = VERSION7;
 
 // node_modules/@octokit/rest/dist-src/version.js
-var VERSION8 = "21.1.1";
+var VERSION8 = "22.0.0";
 
 // node_modules/@octokit/rest/dist-src/index.js
 var Octokit2 = Octokit.plugin(requestLog, legacyRestEndpointMethods, paginateRest).defaults({
@@ -43927,6 +43701,56 @@ function withDefaults4(oldDefaults, newDefaults) {
 }
 var endpoint2 = withDefaults4(null, DEFAULTS2);
 
+// node_modules/fast-content-type-parse/index.js
+var NullObject3 = function NullObject4() {
+};
+NullObject3.prototype = Object.create(null);
+var paramRE2 = /; *([!#$%&'*+.^\w`|~-]+)=("(?:[\v\u0020\u0021\u0023-\u005b\u005d-\u007e\u0080-\u00ff]|\\[\v\u0020-\u00ff])*"|[!#$%&'*+.^\w`|~-]+) */gu;
+var quotedPairRE2 = /\\([\v\u0020-\u00ff])/gu;
+var mediaTypeRE2 = /^[!#$%&'*+.^\w|~-]+\/[!#$%&'*+.^\w|~-]+$/u;
+var defaultContentType2 = { type: "", parameters: new NullObject3 };
+Object.freeze(defaultContentType2.parameters);
+Object.freeze(defaultContentType2);
+function safeParse2(header) {
+  if (typeof header !== "string") {
+    return defaultContentType2;
+  }
+  let index = header.indexOf(";");
+  const type3 = index !== -1 ? header.slice(0, index).trim() : header.trim();
+  if (mediaTypeRE2.test(type3) === false) {
+    return defaultContentType2;
+  }
+  const result = {
+    type: type3.toLowerCase(),
+    parameters: new NullObject3
+  };
+  if (index === -1) {
+    return result;
+  }
+  let key;
+  let match;
+  let value;
+  paramRE2.lastIndex = index;
+  while (match = paramRE2.exec(header)) {
+    if (match.index !== index) {
+      return defaultContentType2;
+    }
+    index += match[0].length;
+    key = match[1].toLowerCase();
+    value = match[2];
+    if (value[0] === '"') {
+      value = value.slice(1, value.length - 1);
+      quotedPairRE2.test(value) && (value = value.replace(quotedPairRE2, "$1"));
+    }
+    result.parameters[key] = value;
+  }
+  if (index !== header.length) {
+    return defaultContentType2;
+  }
+  return result;
+}
+var $safeParse2 = safeParse2;
+
 // node_modules/@octokit/auth-app/node_modules/@octokit/request-error/dist-src/index.js
 class RequestError2 extends Error {
   name;
@@ -44067,7 +43891,7 @@ async function getResponseData2(response) {
   if (!contentType) {
     return response.text().catch(() => "");
   }
-  const mimetype = $safeParse(contentType);
+  const mimetype = $safeParse2(contentType);
   if (isJSONResponse2(mimetype)) {
     let text = "";
     try {
@@ -44561,7 +44385,7 @@ async function getResponseData3(response) {
   if (!contentType) {
     return response.text().catch(() => "");
   }
-  const mimetype = $safeParse(contentType);
+  const mimetype = $safeParse2(contentType);
   if (isJSONResponse3(mimetype)) {
     let text = "";
     try {
@@ -45055,7 +44879,7 @@ async function getResponseData4(response) {
   if (!contentType) {
     return response.text().catch(() => "");
   }
-  const mimetype = $safeParse(contentType);
+  const mimetype = $safeParse2(contentType);
   if (isJSONResponse4(mimetype)) {
     let text = "";
     try {
@@ -45549,7 +45373,7 @@ async function getResponseData5(response) {
   if (!contentType) {
     return response.text().catch(() => "");
   }
-  const mimetype = $safeParse(contentType);
+  const mimetype = $safeParse2(contentType);
   if (isJSONResponse5(mimetype)) {
     let text = "";
     try {
@@ -46043,7 +45867,7 @@ async function getResponseData6(response) {
   if (!contentType) {
     return response.text().catch(() => "");
   }
-  const mimetype = $safeParse(contentType);
+  const mimetype = $safeParse2(contentType);
   if (isJSONResponse6(mimetype)) {
     let text = "";
     try {
@@ -47813,6 +47637,9 @@ async function listIssuesForProject(client, params) {
                   __typename
                   ... on Issue {
                     title
+                    body
+                    url
+                    number
                     assignees(first: 5) {
                       nodes {
                         login
@@ -47821,13 +47648,14 @@ async function listIssuesForProject(client, params) {
                     issueType {
                       name
                     }
-                    body
-                    url
                     repository {
                       name
+                      owner {
+                        login
+                      }
                       nameWithOwner
                     }
-                    comments(last: 20) {
+                    comments(last: 100) {
                       nodes {
                         author {
                           login
@@ -47887,13 +47715,13 @@ async function listIssuesForProject(client, params) {
       title: content.title,
       body: content.body || "",
       url: content.url,
+      number: content.number,
       assignees: content.assignees.nodes.map((assignee) => assignee.login),
-      type: {
-        name: content.issueType?.name
-      },
+      type: content.issueType?.name || "Issue",
       repository: {
         name: content.repository.name,
-        full_name: content.repository.nameWithOwner
+        owner: content.repository.owner.login,
+        nameWithOwner: content.repository.nameWithOwner
       },
       comments: content.comments.nodes.map((comment) => ({
         author: comment.author.login,
@@ -47931,7 +47759,7 @@ async function listIssuesForProject(client, params) {
       }, new Map)
     };
   }).filter((item) => item !== null).filter((item) => {
-    return params.typeFilter === undefined || params.typeFilter.length === 0 || params.typeFilter.includes(item.type?.name || "");
+    return params.typeFilter === undefined || params.typeFilter.length === 0 || params.typeFilter.includes(item.type);
   });
   return {
     issues,
@@ -48099,10 +47927,98 @@ async function getProjectView(client, params) {
   });
 }
 
+// src/util/config/update.ts
+function getUpdateDetectionConfig() {
+  let strategies;
+  const updateDetectionConfig = getConfig("UPDATE_DETECTION");
+  if (updateDetectionConfig) {
+    strategies = parseUpdateDetection(updateDetectionConfig);
+    if (strategies.length === 0) {
+      throw new Error('No valid strategies found in the "update_detection" input. See docs.');
+    }
+  } else {
+    strategies = [
+      {
+        kind: "section",
+        name: "Update"
+      }
+    ];
+  }
+  strategies.unshift({
+    kind: "marker",
+    marker: DEFAULT_MARKER
+  });
+  return { strategies };
+}
+function parseUpdateDetection(updateDetectionBlob) {
+  return updateDetectionBlob.split(`
+`).map((configLine) => {
+    if (!configLine.trim()) {
+      return;
+    }
+    return {
+      kind: "section",
+      name: configLine.trim()
+    };
+  }).filter((config) => config !== undefined);
+}
+
+// src/2_pull/github/update.ts
+var DEFAULT_MARKER = RegExp(/<(!--\s*UPDATE\s*--)>/g);
+function findLatestUpdate(comments) {
+  const config = getUpdateDetectionConfig();
+  console.log(JSON.stringify(config, null, 2));
+  for (const comment of comments) {
+    for (const strategy of config.strategies) {
+      if (strategy.kind === "skip") {
+        return;
+      }
+      const update = extractUpdateWithStrategy(comment, strategy);
+      if (update !== undefined) {
+        return comment;
+      }
+    }
+  }
+  return comments[0];
+}
+function extractUpdate(comment) {
+  const config = getUpdateDetectionConfig();
+  for (const strategy of config.strategies) {
+    const update = extractUpdateWithStrategy(comment, strategy);
+    if (update !== undefined) {
+      return update;
+    }
+  }
+  return;
+}
+function extractUpdateWithStrategy(comment, strategy) {
+  switch (strategy.kind) {
+    case "marker": {
+      const { marker } = strategy;
+      if (comment.hasMarker(marker)) {
+        comment.removeUpdateMarker(marker);
+        return comment._body;
+      }
+      break;
+    }
+    case "section": {
+      const { name: sectionName } = strategy;
+      const section = comment.section(sectionName);
+      if (section !== undefined) {
+        return section;
+      }
+      break;
+    }
+    case "skip": {
+      break;
+    }
+  }
+  return;
+}
+
 // src/2_pull/github/comment.ts
 class CommentWrapper {
   memory = getMemory();
-  static UPDATE_MARKER = RegExp(/<(!--\s*UPDATE\s*--)>/g);
   static NULL_UPDATE = "No updates found";
   comment;
   issueTitle;
@@ -48136,11 +48052,8 @@ class CommentWrapper {
     return this._body;
   }
   get update() {
-    const update = this.findUpdate();
-    if (update) {
-      return update;
-    }
-    return this.body;
+    this.remember();
+    return extractUpdate(this);
   }
   get isEmpty() {
     return this.comment.body.trim() === "" || this.comment.body === CommentWrapper.NULL_UPDATE;
@@ -48151,11 +48064,11 @@ class CommentWrapper {
   get createdAt() {
     return this.comment.createdAt;
   }
-  get hasUpdateMarker() {
-    return CommentWrapper.UPDATE_MARKER.test(this.comment.body);
+  hasMarker(marker) {
+    return marker.test(this.comment.body);
   }
-  removeUpdateMarker() {
-    this.comment.body = this.comment.body.replaceAll(CommentWrapper.UPDATE_MARKER, "");
+  removeUpdateMarker(marker) {
+    this.comment.body = this.comment.body.replaceAll(marker, "");
   }
   section(name) {
     const section = this.sections.get(toSnakeCase(name));
@@ -48165,15 +48078,6 @@ class CommentWrapper {
     const boldedSection = this.boldedSections.get(toSnakeCase(name));
     if (boldedSection !== undefined) {
       return stripHtml(boldedSection).trim();
-    }
-    return;
-  }
-  findUpdate() {
-    for (const sections of ["update"]) {
-      const section = this.section(sections);
-      if (section !== undefined) {
-        return section;
-      }
     }
     return;
   }
@@ -48193,6 +48097,79 @@ ${this._body}
   }
 }
 
+// src/2_pull/github/graphql/repo.ts
+async function listIssuesForRepo(client, params) {
+  const query = `
+    query paginate($owner: String!, $repo: String!, $cursor: String) {
+      repositoryOwner(login: $owner) {
+        repository(name: $repo) {
+          issues(first: 100) {
+            nodes {
+              title
+              body
+              url
+              number
+              assignees(first: 5) {
+                nodes {
+                  login
+                }
+              }
+              issueType {
+                name
+              }
+              repository {
+                name
+                owner {
+                  login
+                }
+                nameWithOwner
+              }
+              comments(last: 100) {
+                nodes {
+                  author {
+                    login
+                  }
+                  body
+                  createdAt
+                  url
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+  const response = await client.octokit.graphql.paginate(query, {
+    owner: params.owner,
+    repo: params.repo
+  });
+  const issues = response.repositoryOwner.repository.issues.nodes.map((issue) => ({
+    title: issue.title,
+    body: issue.body,
+    url: issue.url,
+    number: issue.number,
+    assignees: issue.assignees.nodes.map((assignee) => assignee.login),
+    type: issue.issueType?.name || "Issue",
+    repository: {
+      name: issue.repository.name,
+      owner: issue.repository.owner.login,
+      nameWithOwner: issue.repository.nameWithOwner
+    },
+    comments: issue.comments.nodes.map((comment) => ({
+      author: comment.author.login,
+      body: comment.body,
+      createdAt: new Date(comment.createdAt),
+      url: comment.url
+    }))
+  }));
+  return {
+    issues,
+    title: `Issues for ${params.owner}/${params.repo}`,
+    url: `https://github.com/${params.owner}/${params.repo}`
+  };
+}
+
 // src/2_pull/github/issue.ts
 class IssueWrapper {
   memory = getMemory();
@@ -48209,6 +48186,9 @@ class IssueWrapper {
   get url() {
     return this.issue.url;
   }
+  get number() {
+    return this.issue.number;
+  }
   get _body() {
     return this.issue.body || "";
   }
@@ -48217,13 +48197,16 @@ class IssueWrapper {
     return this._body;
   }
   get type() {
-    return this.issue.type?.name || "Issue";
+    return this.issue.type;
   }
   get repo() {
-    return this.issue.repository?.name;
+    return this.issue.repository.name;
+  }
+  get owner() {
+    return this.issue.repository.owner;
   }
   get repoNameWithOwner() {
-    return this.issue.repository?.full_name;
+    return this.issue.repository.nameWithOwner;
   }
   field(fieldName) {
     switch (fieldName) {
@@ -48231,13 +48214,21 @@ class IssueWrapper {
         return this.title;
       case "url":
         return this.url;
+      case "number":
+        return String(this.number);
       case "body":
         return this.body;
       case "type":
         return this.type;
       case "repo":
-        return this.repo ?? "";
+      case "repository":
+        return this.repo;
+      case "org":
+      case "organization":
+      case "owner":
+        return this.owner;
       case "full_name":
+      case "nameWithOwner":
       case "repoNameWithOwner":
         return this.repoNameWithOwner ?? "";
     }
@@ -48245,10 +48236,7 @@ class IssueWrapper {
     return projectField ?? "";
   }
   get _projectFields() {
-    if ("projectFields" in this.issue) {
-      return this.issue.projectFields;
-    }
-    return new Map;
+    return this.issue.projectFields ?? new Map;
   }
   get projectFields() {
     return new Map(Array.from(this._projectFields.entries()).map(([name, field]) => {
@@ -48257,40 +48245,27 @@ class IssueWrapper {
   }
   get comments() {
     const issue = this.issue;
-    const comments = issue.comments;
-    if (typeof comments == "number") {
-      throw new Error("Fetching last update for REST API issues is not implemented yet.");
-    }
     const sortCommentsByDateDesc = (a2, b2) => {
       return b2.createdAt.getTime() - a2.createdAt.getTime();
     };
-    return comments.sort(sortCommentsByDateDesc).map((comment) => new CommentWrapper(issue.title, comment));
+    return issue.comments.map((comment) => new CommentWrapper(issue.title, comment)).sort(sortCommentsByDateDesc);
   }
   latestComment() {
     const comments = this.comments;
-    if (comments.length === 0) {
-      return CommentWrapper.empty(this.url);
+    if (comments.length !== 0) {
+      return comments[0];
     }
-    const latestComment = comments[0];
-    return latestComment;
+    return CommentWrapper.empty(this.url);
   }
   latestUpdate() {
-    const filterUpdates = (comment) => {
-      if (comment.hasUpdateMarker) {
-        comment.removeUpdateMarker();
-        return true;
+    const comments = this.comments;
+    if (comments.length !== 0) {
+      const update = findLatestUpdate(comments);
+      if (update !== undefined) {
+        return update;
       }
-      if (comment.findUpdate() !== undefined) {
-        return true;
-      }
-      return false;
-    };
-    const updates = this.comments.filter(filterUpdates);
-    if (updates.length === 0) {
-      return this.latestComment();
     }
-    const latestUpdate = updates[0];
-    return latestUpdate;
+    return CommentWrapper.empty(this.url);
   }
   get rendered() {
     return `### ${this.header}
@@ -48317,6 +48292,9 @@ class IssueList {
   }
   [Symbol.iterator]() {
     return this.issues[Symbol.iterator]();
+  }
+  find(predicate) {
+    return this.issues.find(predicate);
   }
   filter(view) {
     this.issues = this.issues.filter((wrapper) => {
@@ -48401,10 +48379,8 @@ class IssueList {
     this.issues = issues.map((issue) => new IssueWrapper(issue));
   }
   static async forRepo(client, params) {
-    const response = await client.octokit.rest.issues.listForRepo(params);
-    const issues = response.data;
-    const url = `https://github.com/${params.owner}/${params.repo}`;
-    const title2 = `Issues from ${params.owner}/${params.repo}`;
+    const response = await listIssuesForRepo(client, params);
+    const { issues, title: title2, url } = response;
     return new IssueList(issues, { title: title2, url });
   }
   static async forProject(client, params) {
