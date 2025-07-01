@@ -18,169 +18,6 @@ var __toESM = (mod, isNodeMode, target) => {
 var __commonJS = (cb, mod) => () => (mod || cb((mod = { exports: {} }).exports, mod), mod.exports);
 var __require = /* @__PURE__ */ createRequire(import.meta.url);
 
-// node_modules/@actions/core/lib/summary.js
-var require_summary = __commonJS((exports) => {
-  var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
-    function adopt(value) {
-      return value instanceof P ? value : new P(function(resolve) {
-        resolve(value);
-      });
-    }
-    return new (P || (P = Promise))(function(resolve, reject) {
-      function fulfilled(value) {
-        try {
-          step(generator.next(value));
-        } catch (e) {
-          reject(e);
-        }
-      }
-      function rejected(value) {
-        try {
-          step(generator["throw"](value));
-        } catch (e) {
-          reject(e);
-        }
-      }
-      function step(result) {
-        result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected);
-      }
-      step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-  };
-  Object.defineProperty(exports, "__esModule", { value: true });
-  exports.summary = exports.markdownSummary = exports.SUMMARY_DOCS_URL = exports.SUMMARY_ENV_VAR = undefined;
-  var os_1 = __require("os");
-  var fs_1 = __require("fs");
-  var { access, appendFile, writeFile } = fs_1.promises;
-  exports.SUMMARY_ENV_VAR = "GITHUB_STEP_SUMMARY";
-  exports.SUMMARY_DOCS_URL = "https://docs.github.com/actions/using-workflows/workflow-commands-for-github-actions#adding-a-job-summary";
-
-  class Summary {
-    constructor() {
-      this._buffer = "";
-    }
-    filePath() {
-      return __awaiter(this, undefined, undefined, function* () {
-        if (this._filePath) {
-          return this._filePath;
-        }
-        const pathFromEnv = process.env[exports.SUMMARY_ENV_VAR];
-        if (!pathFromEnv) {
-          throw new Error(`Unable to find environment variable for $${exports.SUMMARY_ENV_VAR}. Check if your runtime environment supports job summaries.`);
-        }
-        try {
-          yield access(pathFromEnv, fs_1.constants.R_OK | fs_1.constants.W_OK);
-        } catch (_a) {
-          throw new Error(`Unable to access summary file: '${pathFromEnv}'. Check if the file has correct read/write permissions.`);
-        }
-        this._filePath = pathFromEnv;
-        return this._filePath;
-      });
-    }
-    wrap(tag, content, attrs = {}) {
-      const htmlAttrs = Object.entries(attrs).map(([key, value]) => ` ${key}="${value}"`).join("");
-      if (!content) {
-        return `<${tag}${htmlAttrs}>`;
-      }
-      return `<${tag}${htmlAttrs}>${content}</${tag}>`;
-    }
-    write(options) {
-      return __awaiter(this, undefined, undefined, function* () {
-        const overwrite = !!(options === null || options === undefined ? undefined : options.overwrite);
-        const filePath = yield this.filePath();
-        const writeFunc = overwrite ? writeFile : appendFile;
-        yield writeFunc(filePath, this._buffer, { encoding: "utf8" });
-        return this.emptyBuffer();
-      });
-    }
-    clear() {
-      return __awaiter(this, undefined, undefined, function* () {
-        return this.emptyBuffer().write({ overwrite: true });
-      });
-    }
-    stringify() {
-      return this._buffer;
-    }
-    isEmptyBuffer() {
-      return this._buffer.length === 0;
-    }
-    emptyBuffer() {
-      this._buffer = "";
-      return this;
-    }
-    addRaw(text, addEOL = false) {
-      this._buffer += text;
-      return addEOL ? this.addEOL() : this;
-    }
-    addEOL() {
-      return this.addRaw(os_1.EOL);
-    }
-    addCodeBlock(code, lang) {
-      const attrs = Object.assign({}, lang && { lang });
-      const element = this.wrap("pre", this.wrap("code", code), attrs);
-      return this.addRaw(element).addEOL();
-    }
-    addList(items, ordered = false) {
-      const tag = ordered ? "ol" : "ul";
-      const listItems = items.map((item) => this.wrap("li", item)).join("");
-      const element = this.wrap(tag, listItems);
-      return this.addRaw(element).addEOL();
-    }
-    addTable(rows) {
-      const tableBody = rows.map((row) => {
-        const cells = row.map((cell) => {
-          if (typeof cell === "string") {
-            return this.wrap("td", cell);
-          }
-          const { header, data, colspan, rowspan } = cell;
-          const tag = header ? "th" : "td";
-          const attrs = Object.assign(Object.assign({}, colspan && { colspan }), rowspan && { rowspan });
-          return this.wrap(tag, data, attrs);
-        }).join("");
-        return this.wrap("tr", cells);
-      }).join("");
-      const element = this.wrap("table", tableBody);
-      return this.addRaw(element).addEOL();
-    }
-    addDetails(label, content) {
-      const element = this.wrap("details", this.wrap("summary", label) + content);
-      return this.addRaw(element).addEOL();
-    }
-    addImage(src, alt, options) {
-      const { width, height } = options || {};
-      const attrs = Object.assign(Object.assign({}, width && { width }), height && { height });
-      const element = this.wrap("img", null, Object.assign({ src, alt }, attrs));
-      return this.addRaw(element).addEOL();
-    }
-    addHeading(text, level) {
-      const tag = `h${level}`;
-      const allowedTag = ["h1", "h2", "h3", "h4", "h5", "h6"].includes(tag) ? tag : "h1";
-      const element = this.wrap(allowedTag, text);
-      return this.addRaw(element).addEOL();
-    }
-    addSeparator() {
-      const element = this.wrap("hr", null);
-      return this.addRaw(element).addEOL();
-    }
-    addBreak() {
-      const element = this.wrap("br", null);
-      return this.addRaw(element).addEOL();
-    }
-    addQuote(text, cite) {
-      const attrs = Object.assign({}, cite && { cite });
-      const element = this.wrap("blockquote", text, attrs);
-      return this.addRaw(element).addEOL();
-    }
-    addLink(text, href) {
-      const element = this.wrap("a", text, { href });
-      return this.addRaw(element).addEOL();
-    }
-  }
-  var _summary = new Summary;
-  exports.markdownSummary = _summary;
-  exports.summary = _summary;
-});
-
 // node_modules/dotenv/package.json
 var require_package = __commonJS((exports, module) => {
   module.exports = {
@@ -17736,6 +17573,169 @@ var require_oidc_utils = __commonJS((exports) => {
   exports.OidcClient = OidcClient;
 });
 
+// node_modules/@actions/core/lib/summary.js
+var require_summary = __commonJS((exports) => {
+  var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
+    function adopt(value) {
+      return value instanceof P ? value : new P(function(resolve) {
+        resolve(value);
+      });
+    }
+    return new (P || (P = Promise))(function(resolve, reject) {
+      function fulfilled(value) {
+        try {
+          step(generator.next(value));
+        } catch (e) {
+          reject(e);
+        }
+      }
+      function rejected(value) {
+        try {
+          step(generator["throw"](value));
+        } catch (e) {
+          reject(e);
+        }
+      }
+      function step(result) {
+        result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected);
+      }
+      step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+  };
+  Object.defineProperty(exports, "__esModule", { value: true });
+  exports.summary = exports.markdownSummary = exports.SUMMARY_DOCS_URL = exports.SUMMARY_ENV_VAR = undefined;
+  var os_1 = __require("os");
+  var fs_1 = __require("fs");
+  var { access, appendFile, writeFile } = fs_1.promises;
+  exports.SUMMARY_ENV_VAR = "GITHUB_STEP_SUMMARY";
+  exports.SUMMARY_DOCS_URL = "https://docs.github.com/actions/using-workflows/workflow-commands-for-github-actions#adding-a-job-summary";
+
+  class Summary {
+    constructor() {
+      this._buffer = "";
+    }
+    filePath() {
+      return __awaiter(this, undefined, undefined, function* () {
+        if (this._filePath) {
+          return this._filePath;
+        }
+        const pathFromEnv = process.env[exports.SUMMARY_ENV_VAR];
+        if (!pathFromEnv) {
+          throw new Error(`Unable to find environment variable for $${exports.SUMMARY_ENV_VAR}. Check if your runtime environment supports job summaries.`);
+        }
+        try {
+          yield access(pathFromEnv, fs_1.constants.R_OK | fs_1.constants.W_OK);
+        } catch (_a) {
+          throw new Error(`Unable to access summary file: '${pathFromEnv}'. Check if the file has correct read/write permissions.`);
+        }
+        this._filePath = pathFromEnv;
+        return this._filePath;
+      });
+    }
+    wrap(tag, content, attrs = {}) {
+      const htmlAttrs = Object.entries(attrs).map(([key, value]) => ` ${key}="${value}"`).join("");
+      if (!content) {
+        return `<${tag}${htmlAttrs}>`;
+      }
+      return `<${tag}${htmlAttrs}>${content}</${tag}>`;
+    }
+    write(options) {
+      return __awaiter(this, undefined, undefined, function* () {
+        const overwrite = !!(options === null || options === undefined ? undefined : options.overwrite);
+        const filePath = yield this.filePath();
+        const writeFunc = overwrite ? writeFile : appendFile;
+        yield writeFunc(filePath, this._buffer, { encoding: "utf8" });
+        return this.emptyBuffer();
+      });
+    }
+    clear() {
+      return __awaiter(this, undefined, undefined, function* () {
+        return this.emptyBuffer().write({ overwrite: true });
+      });
+    }
+    stringify() {
+      return this._buffer;
+    }
+    isEmptyBuffer() {
+      return this._buffer.length === 0;
+    }
+    emptyBuffer() {
+      this._buffer = "";
+      return this;
+    }
+    addRaw(text, addEOL = false) {
+      this._buffer += text;
+      return addEOL ? this.addEOL() : this;
+    }
+    addEOL() {
+      return this.addRaw(os_1.EOL);
+    }
+    addCodeBlock(code, lang) {
+      const attrs = Object.assign({}, lang && { lang });
+      const element = this.wrap("pre", this.wrap("code", code), attrs);
+      return this.addRaw(element).addEOL();
+    }
+    addList(items, ordered = false) {
+      const tag = ordered ? "ol" : "ul";
+      const listItems = items.map((item) => this.wrap("li", item)).join("");
+      const element = this.wrap(tag, listItems);
+      return this.addRaw(element).addEOL();
+    }
+    addTable(rows) {
+      const tableBody = rows.map((row) => {
+        const cells = row.map((cell) => {
+          if (typeof cell === "string") {
+            return this.wrap("td", cell);
+          }
+          const { header, data, colspan, rowspan } = cell;
+          const tag = header ? "th" : "td";
+          const attrs = Object.assign(Object.assign({}, colspan && { colspan }), rowspan && { rowspan });
+          return this.wrap(tag, data, attrs);
+        }).join("");
+        return this.wrap("tr", cells);
+      }).join("");
+      const element = this.wrap("table", tableBody);
+      return this.addRaw(element).addEOL();
+    }
+    addDetails(label, content) {
+      const element = this.wrap("details", this.wrap("summary", label) + content);
+      return this.addRaw(element).addEOL();
+    }
+    addImage(src, alt, options) {
+      const { width, height } = options || {};
+      const attrs = Object.assign(Object.assign({}, width && { width }), height && { height });
+      const element = this.wrap("img", null, Object.assign({ src, alt }, attrs));
+      return this.addRaw(element).addEOL();
+    }
+    addHeading(text, level) {
+      const tag = `h${level}`;
+      const allowedTag = ["h1", "h2", "h3", "h4", "h5", "h6"].includes(tag) ? tag : "h1";
+      const element = this.wrap(allowedTag, text);
+      return this.addRaw(element).addEOL();
+    }
+    addSeparator() {
+      const element = this.wrap("hr", null);
+      return this.addRaw(element).addEOL();
+    }
+    addBreak() {
+      const element = this.wrap("br", null);
+      return this.addRaw(element).addEOL();
+    }
+    addQuote(text, cite) {
+      const attrs = Object.assign({}, cite && { cite });
+      const element = this.wrap("blockquote", text, attrs);
+      return this.addRaw(element).addEOL();
+    }
+    addLink(text, href) {
+      const element = this.wrap("a", text, { href });
+      return this.addRaw(element).addEOL();
+    }
+  }
+  var _summary = new Summary;
+  exports.markdownSummary = _summary;
+  exports.summary = _summary;
+});
+
 // node_modules/@actions/core/lib/path-utils.js
 var require_path_utils = __commonJS((exports) => {
   var __createBinding = exports && exports.__createBinding || (Object.create ? function(o, m, k, k2) {
@@ -19813,7 +19813,7 @@ var require_strftime = __commonJS((exports, module) => {
 });
 
 // src/5_push/github/client.ts
-var import_summary = __toESM(require_summary(), 1);
+import path from "path";
 
 // node_modules/universal-user-agent/index.js
 function getUserAgent() {
@@ -27140,30 +27140,144 @@ async function updateDiscussion(client, discussionId, body) {
   return response.updateDiscussion.discussion;
 }
 
+// node_modules/@octokit/request-error/dist-src/index.js
+class RequestError7 extends Error {
+  name;
+  status;
+  request;
+  response;
+  constructor(message, statusCode, options) {
+    super(message);
+    this.name = "HttpError";
+    this.status = Number.parseInt(statusCode);
+    if (Number.isNaN(this.status)) {
+      this.status = 0;
+    }
+    if ("response" in options) {
+      this.response = options.response;
+    }
+    const requestCopy = Object.assign({}, options.request);
+    if (options.request.headers.authorization) {
+      requestCopy.headers = Object.assign({}, options.request.headers, {
+        authorization: options.request.headers.authorization.replace(/(?<! ) .*$/, " [REDACTED]")
+      });
+    }
+    requestCopy.url = requestCopy.url.replace(/\bclient_secret=\w+/g, "client_secret=[REDACTED]").replace(/\baccess_token=\w+/g, "access_token=[REDACTED]");
+    this.request = requestCopy;
+  }
+}
+
+// src/util/error.ts
+function isOctokitRequestError(error) {
+  return error instanceof RequestError7 || error.name === "HttpError";
+}
+
+// src/5_push/github/repo-file.ts
+async function checkRepoFile(client, params) {
+  try {
+    const response = await client.octokit.repos.getContent(params);
+    const data = response.data;
+    if (Array.isArray(data)) {
+      return { kind: "is-directory" };
+    }
+    if (data.type === "file") {
+      return {
+        kind: "exists",
+        sha: data.sha
+      };
+    }
+  } catch (error) {
+    if (isOctokitRequestError(error) && error.status === 404) {
+      return { kind: "not-found" };
+    }
+    throw error;
+  }
+  throw new Error(`Unexpected response type when checking repo-file: ${params.path}`);
+}
+async function createOrUpdateRepoFile(client, params) {
+  const checkResult = await checkRepoFile(client, {
+    owner: params.owner,
+    repo: params.repo,
+    path: params.path,
+    ref: params.branch
+  });
+  let sha;
+  if (checkResult.kind === "is-directory") {
+    throw new Error(`Cannot create a file at a directory path. Filename is missing: ${params.path}`);
+  } else if (checkResult.kind === "not-found") {
+    sha = undefined;
+  } else if (checkResult.kind === "exists") {
+    sha = checkResult.sha;
+  }
+  const response = await client.octokit.repos.createOrUpdateFileContents({
+    ...params,
+    sha
+  });
+  return response.data;
+}
+
+// src/util/log.ts
+var import_core3 = __toESM(require_core(), 1);
+var import_summary = __toESM(require_summary(), 1);
+function addLinkToSummary(message, url) {
+  if (import_summary.SUMMARY_ENV_VAR in process.env) {
+    import_core3.summary.addLink(message, url).write();
+  } else {
+    console.debug(`${message}: ${url}`);
+  }
+}
+
 // src/5_push/github/client.ts
 class GitHubPushClient {
   octokit = getOctokit();
+  async pushAll(targets, title, body) {
+    const results = await Promise.all(targets.map((t) => this.push(t.type, t.url, title, body)));
+    return results;
+  }
   async push(type, url, title, body) {
     switch (type) {
+      case "repo-file":
+        if (!title) {
+          throw new Error("Title is required for 'repo-file' target.");
+        }
+        return this.pushToRepoFile(url, title, body);
       case "issue":
         if (!title) {
-          throw new Error("Title is required for issue push type.");
+          throw new Error("Title is required for 'issue' target.");
         }
         return this.pushToIssue(url, title, body);
       case "issue-comment":
         return this.pushToIssueComment(url, body);
       case "discussion":
         if (!title) {
-          throw new Error("Title is required for discussion push type.");
+          throw new Error("Title is required for 'discussion' target.");
         }
         return this.pushToDiscussion(url, title, body);
       default:
-        throw new Error(`Unsupported push type: ${type}`);
+        throw new Error(`Unsupported target: ${type}`);
     }
   }
-  async pushAll(configs, title, body) {
-    const results = await Promise.all(configs.map((config) => this.push(config.type, config.url, title, body)));
-    return results;
+  async pushToRepoFile(url, filename, body) {
+    const match = url.match(/https:\/\/github\.com\/([^/]+)\/([^/]+)\/tree\/([^/]+)\/(.+)/);
+    if (!match) {
+      throw new Error(`Invalid GitHub URL: ${url}`);
+    }
+    const [, owner, repo, branch, directory] = match;
+    const content = Buffer.from(body).toString("base64");
+    const filePath = path.join(directory, filename);
+    const data = await createOrUpdateRepoFile(this, {
+      owner,
+      repo,
+      branch: branch !== "-" ? branch : undefined,
+      path: filePath,
+      message: `rollup-n-up-n-up generated: ${filename}`,
+      content
+    });
+    if (!data.content || !data.content.html_url) {
+      throw new Error(`Failed to create or update file: ${filePath} in ${owner}/${repo}`);
+    }
+    const repoFileUrl = data.content.html_url;
+    addLinkToSummary("Repo File Created / Updated", repoFileUrl);
   }
   async pushToIssue(url, title, body) {
     const match = url.match(/https:\/\/github\.com\/([^/]+)\/([^/]+)(?:\/issues\/\d+)?/);
@@ -27174,21 +27288,24 @@ class GitHubPushClient {
     if (!owner || !repo) {
       throw new Error(`Invalid GitHub URL: ${url}`);
     }
-    const issue = await getIssueByTitle(this, owner, repo, title);
-    if (issue !== undefined) {
-      return updateIssue(this, {
+    let issue;
+    const existingIssue = await getIssueByTitle(this, owner, repo, title);
+    if (existingIssue) {
+      issue = await updateIssue(this, {
         owner,
         repo,
-        issue_number: issue.number,
+        issue_number: existingIssue.number,
+        body
+      });
+    } else {
+      issue = await createIssue(this, {
+        owner,
+        repo,
+        title,
         body
       });
     }
-    return createIssue(this, {
-      owner,
-      repo,
-      title,
-      body
-    });
+    addLinkToSummary("Issue Created / Updated", issue.html_url);
   }
   async pushToIssueComment(url, body) {
     const match = url.match(/https:\/\/github\.com\/([^/]+)\/([^/]+)\/issues\/(\d+)/);
@@ -27203,12 +27320,13 @@ class GitHubPushClient {
     if (!owner || !repo || !issue_number) {
       throw new Error(`Invalid GitHub URL: ${url}`);
     }
-    return this.octokit.issues.createComment({
+    const comment = await this.octokit.issues.createComment({
       owner,
       repo,
       issue_number,
       body
     });
+    addLinkToSummary("Issue Comment Created", comment.data.html_url);
   }
   async pushToDiscussion(url, title, body) {
     const match = url.match(/https:\/\/github\.com\/([^/]+)\/([^/]+)\/discussions(?:\/categories\/([^/]+))?/);
@@ -27230,12 +27348,7 @@ class GitHubPushClient {
       const categoryId = await getDiscussionCategoryId(this, owner, repo, categoryName);
       discussion = await createDiscussion(this, owner, repo, categoryId, title, body);
     }
-    if (import_summary.SUMMARY_ENV_VAR in process.env) {
-      import_summary.summary.addLink("Discussion Post Created!", discussion.url).write();
-    } else {
-      console.debug(`Discussion Post Created: ${discussion.url}`);
-    }
-    return discussion;
+    addLinkToSummary("Discussion Post Created / Updated", discussion.url);
   }
 }
 

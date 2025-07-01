@@ -6,12 +6,12 @@ type IssueGetResponse =
 
 type IssueCreateParams =
   RestEndpointMethodTypes["issues"]["create"]["parameters"];
-type IssueCreateResponse =
+export type IssueCreateResponse =
   RestEndpointMethodTypes["issues"]["create"]["response"]["data"];
 
 type IssueUpdateParams =
   RestEndpointMethodTypes["issues"]["update"]["parameters"];
-type IssueUpdateResponse =
+export type IssueUpdateResponse =
   RestEndpointMethodTypes["issues"]["update"]["response"]["data"];
 
 export async function getIssueByTitle(

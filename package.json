@@ -25,6 +25,7 @@
     "@azure/core-auth": "latest",
     "@octokit/auth-app": "^7.2.1",
     "@octokit/plugin-paginate-graphql": "^6.0.0",
+    "@octokit/request-error": "^7.0.0",
     "@octokit/rest": "^22.0.0",
     "strftime": "^0.10.3",
     "ventojs": "^1.12.16"

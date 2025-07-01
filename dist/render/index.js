@@ -26842,7 +26842,7 @@ var require_once = __commonJS((exports, module) => {
   }
 });
 
-// node_modules/@octokit/request-error/dist-node/index.js
+// node_modules/@octokit/request/node_modules/@octokit/request-error/dist-node/index.js
 var require_dist_node6 = __commonJS((exports, module) => {
   var __create2 = Object.create;
   var __defProp2 = Object.defineProperty;
