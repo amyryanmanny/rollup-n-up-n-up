@@ -21,14 +21,12 @@ type SkipStrategy = {
   kind: "skip";
 };
 
-export const DEFAULT_MARKER = RegExp(/<(!--\s*UPDATE\s*--)>/g); // TODO: Custom marker as input
-
 export function findLatestUpdate(
   comments: CommentWrapper[],
 ): CommentWrapper | undefined {
-  const config = getUpdateDetectionConfig();
+  const { strategies } = getUpdateDetectionConfig();
 
-  for (const strategy of config.strategies) {
+  for (const strategy of strategies) {
     for (const comment of comments) {
       if (strategy.kind === "skip") {
         // If we've reached this strategy, we couldn't find an update
@@ -47,15 +45,15 @@ export function findLatestUpdate(
 
 // TODO: Memoize
 export function extractUpdate(comment: CommentWrapper): string | undefined {
-  const config = getUpdateDetectionConfig();
+  const { strategies } = getUpdateDetectionConfig();
 
-  for (const strategy of config.strategies) {
+  for (const strategy of strategies) {
     const update = extractUpdateWithStrategy(comment, strategy);
     if (update !== undefined) {
       return update;
     }
   }
-  return undefined;
+  return comment._body;
 }
 
 // TODO: Memoize
@@ -67,9 +65,7 @@ function extractUpdateWithStrategy(
     case "marker": {
       const { marker } = strategy as MarkerStrategy;
       if (comment.hasMarker(marker)) {
-        // SIDE_EFFECT: Remove the marker
-        comment.removeUpdateMarker(marker);
-        return comment._body; // Return the body after removing the marker
+        return comment._body;
       }
       break;
     }

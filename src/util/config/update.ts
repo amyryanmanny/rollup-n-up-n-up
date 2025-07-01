@@ -2,7 +2,6 @@
 import { getConfig } from "@util/config";
 
 import {
-  DEFAULT_MARKER,
   type UpdateDetectionStrategy,
   type UpdateDetectionKind,
 } from "@pull/github/update";
@@ -10,6 +9,8 @@ import {
 type UpdateDetection = {
   strategies: UpdateDetectionStrategy[];
 };
+
+const DEFAULT_MARKER = /<!--\s*UPDATE\s*-->/i; // Case insensitive with variable spacing
 
 export function getUpdateDetectionConfig(): UpdateDetection {
   let strategies: UpdateDetectionStrategy[];
@@ -32,8 +33,11 @@ export function getUpdateDetectionConfig(): UpdateDetection {
     ];
   }
 
-  // The marker strategy should always be first for now
-  strategies.unshift({
+  // The marker strategy should come after the sections for now
+  // TODO: Add a way to configure order, and possible Regex of this marker
+  let markerIndex = strategies.findLastIndex((s) => s.kind === "section");
+  if (markerIndex === -1) markerIndex = 0;
+  strategies.splice(markerIndex, 0, {
     kind: "marker",
     marker: DEFAULT_MARKER,
   });

@@ -87,10 +87,6 @@ export class CommentWrapper {
     return marker.test(this.comment.body);
   }
 
-  removeUpdateMarker(marker: RegExp): void {
-    this.comment.body = this.comment.body.replaceAll(marker, "");
-  }
-
   section(name: string): string | undefined {
     // Get a section of the body by name
     const section = this.sections.get(toSnakeCase(name));
