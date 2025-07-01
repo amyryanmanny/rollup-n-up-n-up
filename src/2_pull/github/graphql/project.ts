@@ -1,4 +1,4 @@
-import { GitHubClient } from "../client";
+import { getOctokit } from "@util/octokit";
 import type { Issue } from "../issue";
 
 export type ListIssuesForProjectParameters = {
@@ -6,7 +6,8 @@ export type ListIssuesForProjectParameters = {
   projectNumber: number;
   typeFilter: string[] | undefined;
 };
-export type ListIssuesForProjectResponse = {
+
+type ListIssuesForProjectResponse = {
   issues: Issue[];
   title: string;
   url: string;
@@ -32,9 +33,10 @@ const slugifyProjectFieldName = (field: string): string => {
 };
 
 export async function listIssuesForProject(
-  client: GitHubClient,
   params: ListIssuesForProjectParameters,
 ): Promise<ListIssuesForProjectResponse> {
+  const octokit = getOctokit();
+
   const query = `
     query paginate($organization: String!, $projectNumber: Int!, $cursor: String) {
       organization(login: $organization) {
@@ -113,7 +115,7 @@ export async function listIssuesForProject(
     }
   `;
 
-  const response = await client.octokit.graphql.paginate<{
+  const response = await octokit.graphql.paginate<{
     organization: {
       projectV2: {
         title: string;
@@ -144,7 +146,7 @@ export async function listIssuesForProject(
                   nodes: Array<{
                     author: {
                       login: string;
-                    };
+                    } | null;
                     body: string;
                     createdAt: string; // ISO 8601 date string
                     url: string;
@@ -177,8 +179,7 @@ export async function listIssuesForProject(
     projectNumber: params.projectNumber,
   });
 
-  const items = response.organization.projectV2.items;
-  const issues = items.edges
+  const issues = response.organization.projectV2.items.edges
     .map((edge) => {
       const content = edge.node.content;
       if (!content || content.__typename !== "Issue") {
@@ -197,7 +198,7 @@ export async function listIssuesForProject(
           nameWithOwner: content.repository.nameWithOwner,
         },
         comments: content.comments.nodes.map((comment) => ({
-          author: comment.author.login,
+          author: comment.author?.login || "Unknown",
           body: comment.body,
           createdAt: new Date(comment.createdAt),
           url: comment.url,

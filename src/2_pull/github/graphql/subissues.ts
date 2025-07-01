@@ -1,0 +1,141 @@
+import { getOctokit } from "@util/octokit";
+import type { Issue } from "../issue";
+
+export type ListSubissuesForIssueParameters = {
+  owner: string;
+  repo: string;
+  issueNumber: number;
+};
+
+type ListSubissuesForIssueResponse = {
+  subissues: Issue[];
+  title: string;
+  url: string;
+};
+
+export async function listSubissuesForIssue(
+  params: ListSubissuesForIssueParameters,
+): Promise<ListSubissuesForIssueResponse> {
+  const octokit = getOctokit();
+
+  const query = `
+    query paginate($owner: String!, $repo: String!, $issueNumber: Int!, $cursor: String) {
+      repositoryOwner(login: $owner) {
+        repository(name: $repo) {
+          issue(number: $issueNumber) {
+            title
+            url
+            subIssues(first: 100, after: $cursor) {
+              nodes {
+                title
+                body
+                url
+                number
+                assignees(first: 5) {
+                  nodes {
+                    login
+                  }
+                }
+                issueType {
+                  name
+                }
+                repository {
+                  name
+                  owner {
+                    login
+                  }
+                  nameWithOwner
+                }
+                comments(last: 100) {
+                  nodes {
+                    author {
+                      login
+                    }
+                    body
+                    createdAt
+                    url
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  const response = await octokit.graphql.paginate<{
+    repositoryOwner: {
+      repository: {
+        issue: {
+          title: string;
+          url: string;
+          subIssues: {
+            nodes: Array<{
+              title: string;
+              body: string;
+              url: string;
+              number: number;
+              assignees: {
+                nodes: Array<{
+                  login: string;
+                }>;
+              };
+              issueType: {
+                name: string;
+              } | null;
+              repository: {
+                name: string;
+                owner: {
+                  login: string;
+                };
+                nameWithOwner: string;
+              };
+              comments: {
+                nodes: Array<{
+                  author: {
+                    login: string;
+                  } | null;
+                  body: string;
+                  createdAt: string; // ISO 8601 date string
+                  url: string;
+                }>;
+              };
+            }>;
+          };
+        };
+      };
+    };
+  }>(query, params);
+
+  const subissues =
+    response.repositoryOwner.repository.issue.subIssues.nodes.map(
+      // TODO: Refactor shared GraphQL logic. mapIssueNodes helper or something
+      (subIssue) => ({
+        title: subIssue.title,
+        body: subIssue.body,
+        url: subIssue.url,
+        number: subIssue.number,
+        assignees: subIssue.assignees.nodes.map((assignee) => assignee.login),
+        type: subIssue.issueType?.name || "Issue",
+        repository: {
+          name: subIssue.repository.name,
+          owner: subIssue.repository.owner.login,
+          nameWithOwner: subIssue.repository.nameWithOwner,
+        },
+        comments: subIssue.comments.nodes.map((comment) => ({
+          author: comment.author?.login || "Unknown",
+          body: comment.body,
+          createdAt: new Date(comment.createdAt),
+          url: comment.url,
+        })),
+      }),
+    );
+
+  const issueTitle = response.repositoryOwner.repository.issue.title;
+  return {
+    subissues,
+    title: `Subissues for ${issueTitle} (#${params.issueNumber})`,
+    url: response.repositoryOwner.repository.issue.url,
+  };
+}

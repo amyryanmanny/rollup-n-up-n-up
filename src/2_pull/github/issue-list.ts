@@ -1,4 +1,3 @@
-import { GitHubClient } from "./client";
 import { getMemory } from "@transform/memory";
 import { emojiCompare } from "@util/emoji";
 import { title } from "@util/string";
@@ -16,6 +15,11 @@ import {
   listIssuesForRepo,
   type ListIssuesForRepoParameters,
 } from "./graphql/repo";
+import {
+  listSubissuesForIssue,
+  type ListSubissuesForIssueParameters,
+} from "./graphql/subissues";
+
 import { type Issue, IssueWrapper } from "./issue";
 
 type SourceOfTruth = {
@@ -171,25 +175,30 @@ export class IssueList {
   }
 
   static async forRepo(
-    client: GitHubClient,
     params: ListIssuesForRepoParameters,
   ): Promise<IssueList> {
-    const response = await listIssuesForRepo(client, params);
+    const response = await listIssuesForRepo(params);
     const { issues, title, url } = response;
     return new IssueList(issues, { title, url });
   }
 
+  static async forSubissues(
+    params: ListSubissuesForIssueParameters,
+  ): Promise<IssueList> {
+    const response = await listSubissuesForIssue(params);
+    const { subissues, title, url } = response;
+    return new IssueList(subissues, { title, url });
+  }
+
   static async forProject(
-    client: GitHubClient,
     params: ListIssuesForProjectParameters,
   ): Promise<IssueList> {
-    const response = await listIssuesForProject(client, params);
+    const response = await listIssuesForProject(params);
     const { issues, title, url } = response;
     return new IssueList(issues, { title, url });
   }
 
   static async forProjectView(
-    client: GitHubClient,
     params: GetProjectViewParameters,
   ): Promise<IssueList> {
     let view: ProjectView;
@@ -205,10 +214,10 @@ export class IssueList {
         filterQuery: params.customQuery,
       });
     } else {
-      view = await getProjectView(client, params);
+      view = await getProjectView(params);
     }
 
-    const issueList = await this.forProject(client, {
+    const issueList = await this.forProject({
       organization: params.organization,
       projectNumber: params.projectNumber,
       typeFilter: view.getFilterType(),

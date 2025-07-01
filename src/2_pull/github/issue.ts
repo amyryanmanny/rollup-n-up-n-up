@@ -3,6 +3,7 @@ import { getMemory } from "@transform/memory";
 import { type ProjectField } from "./graphql/project";
 import { CommentWrapper, type Comment } from "./comment";
 import { findLatestUpdate } from "./update";
+import { IssueList } from "./issue-list";
 
 // Interface
 export type Issue = {
@@ -125,7 +126,16 @@ export class IssueWrapper {
     );
   }
 
-  // Comment Functions
+  // Subissues
+  async subissues(): Promise<IssueList> {
+    return IssueList.forSubissues({
+      owner: this.owner,
+      repo: this.repo,
+      issueNumber: this.number,
+    });
+  }
+
+  // Comment
   get comments(): CommentWrapper[] {
     // TODO: Memoize
     const issue = this.issue;
@@ -141,7 +151,7 @@ export class IssueWrapper {
       .sort(sortCommentsByDateDesc); // Newest comments first
   }
 
-  latestComment(): CommentWrapper {
+  get latestComment(): CommentWrapper {
     const comments = this.comments;
 
     if (comments.length !== 0) {
@@ -151,7 +161,7 @@ export class IssueWrapper {
     return CommentWrapper.empty(this.url);
   }
 
-  latestUpdate(): CommentWrapper {
+  get latestUpdate(): CommentWrapper {
     const comments = this.comments;
 
     if (comments.length !== 0) {

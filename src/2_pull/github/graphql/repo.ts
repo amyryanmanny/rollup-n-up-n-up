@@ -1,4 +1,4 @@
-import type { GitHubClient } from "../client";
+import { getOctokit } from "@util/octokit";
 import type { Issue } from "../issue";
 
 type IssueStateParam = "OPEN" | "CLOSED" | "ALL";
@@ -17,9 +17,10 @@ type ListIssuesForRepoResponse = {
 };
 
 export async function listIssuesForRepo(
-  client: GitHubClient,
   params: ListIssuesForRepoParameters,
 ): Promise<ListIssuesForRepoResponse> {
+  const octokit = getOctokit();
+
   // Compute state
   const state = params.state?.trim().toUpperCase() || "OPEN";
   let states: Array<IssueState>;
@@ -83,7 +84,7 @@ export async function listIssuesForRepo(
     }
   `;
 
-  const response = await client.octokit.graphql.paginate<{
+  const response = await octokit.graphql.paginate<{
     repositoryOwner: {
       repository: {
         issues: {
@@ -109,7 +110,7 @@ export async function listIssuesForRepo(
               nodes: Array<{
                 author: {
                   login: string;
-                };
+                } | null;
                 body: string;
                 createdAt: string; // ISO 8601 date string
                 url: string;
@@ -143,7 +144,7 @@ export async function listIssuesForRepo(
         nameWithOwner: issue.repository.nameWithOwner,
       },
       comments: issue.comments.nodes.map((comment) => ({
-        author: comment.author.login,
+        author: comment.author?.login || "Unknown",
         body: comment.body,
         createdAt: new Date(comment.createdAt),
         url: comment.url,

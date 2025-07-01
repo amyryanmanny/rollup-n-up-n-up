@@ -1,6 +1,6 @@
 import { DefaultDict } from "@util/collections";
+import { getOctokit } from "@util/octokit";
 
-import type { GitHubClient } from "./client";
 import type { ProjectField } from "./graphql/project";
 
 export type GetProjectViewParameters = {
@@ -183,9 +183,10 @@ export class ProjectView {
 }
 
 export async function getProjectView(
-  client: GitHubClient,
   params: GetProjectViewParameters,
 ): Promise<ProjectView> {
+  const octokit = getOctokit();
+
   const query = `
     query($organization: String!, $projectNumber: Int!, $projectViewNumber: Int!) {
       organization(login: $organization) {
@@ -199,7 +200,7 @@ export async function getProjectView(
     }
   `;
 
-  const response = await client.octokit.graphql<{
+  const response = await octokit.graphql<{
     organization: {
       projectV2: {
         view: {

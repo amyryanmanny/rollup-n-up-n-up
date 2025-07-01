@@ -9,7 +9,19 @@ export class GitHubClient {
   // TODO: Support URL. Just decompose the URL and call the other methods
 
   issuesForRepo(owner: string, repo: string): Promise<IssueList> {
-    return IssueList.forRepo(this, { owner, repo });
+    return IssueList.forRepo({ owner, repo });
+  }
+
+  subissuesForIssue(
+    owner: string,
+    repo: string,
+    issueNumber: number,
+  ): Promise<IssueList> {
+    return IssueList.forSubissues({
+      owner,
+      repo,
+      issueNumber,
+    });
   }
 
   issuesForProject(
@@ -20,7 +32,7 @@ export class GitHubClient {
     if (typeof typeFilter === "string") {
       typeFilter = [typeFilter];
     }
-    return IssueList.forProject(this, {
+    return IssueList.forProject({
       organization,
       projectNumber,
       typeFilter,
@@ -32,7 +44,7 @@ export class GitHubClient {
     projectNumber: number,
     projectViewNumber: number,
   ): Promise<IssueList> {
-    return IssueList.forProjectView(this, {
+    return IssueList.forProjectView({
       organization,
       projectNumber,
       projectViewNumber,
@@ -44,7 +56,7 @@ export class GitHubClient {
     projectNumber: number,
     customQuery: string,
   ): Promise<IssueList> {
-    return IssueList.forProjectView(this, {
+    return IssueList.forProjectView({
       organization,
       projectNumber,
       customQuery,
