@@ -57,6 +57,10 @@ export async function listSubissuesForIssue(
                   }
                 }
               }
+              pageInfo {
+                hasNextPage
+                endCursor
+              }
             }
           }
         }

@@ -55734,6 +55734,10 @@ async function listSubissuesForIssue(params) {
                   }
                 }
               }
+              pageInfo {
+                hasNextPage
+                endCursor
+              }
             }
           }
         }
