@@ -44,13 +44,17 @@ class Memory {
   }
 
   async summarize(prompt: string, memoryBank: number = 0): Promise<string> {
+    if (!prompt || prompt.trim() === "") {
+      throw new Error("Prompt cannot be empty.");
+    }
+
     const content = this.getBankContent(memoryBank);
     if (!content || content.trim() === "") {
       // TODO: Point to a doc explaining how memory works
       return "No content to summarize.";
     }
 
-    return await summarize(prompt, content);
+    return await summarize(content, prompt);
   }
 
   headbonk(memoryBank?: number): void {

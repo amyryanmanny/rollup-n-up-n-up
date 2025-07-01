@@ -28,7 +28,8 @@
     "@octokit/request-error": "^7.0.0",
     "@octokit/rest": "^22.0.0",
     "strftime": "^0.10.3",
-    "ventojs": "^1.12.16"
+    "ventojs": "^1.12.16",
+    "yaml": "^2.8.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.26.0",

@@ -1,75 +1,95 @@
-// TODO: This file needs a refactor, it's pretty confusing
 import fs from "fs";
+import path from "path";
+import yaml from "yaml";
 
 import ModelClient, { isUnexpected } from "@azure-rest/ai-inference";
 import { AzureKeyCredential } from "@azure/core-auth";
 
-import { summary } from "@actions/core";
-import { SUMMARY_ENV_VAR } from "@actions/core/lib/summary";
-import { context } from "@actions/github";
-
-import { getConfig } from "@config";
+import { getConfig, getModelEndpoint } from "@config";
 import { getToken } from "@util/octokit";
+import { insertPlaceholders } from "./placeholders";
 
 const DEFAULT_SYSTEM_PROMPT =
-  "You are a helpful assistant summarizing GitHub Discussions, Issues, and Comments into a concise rollup for less technical audiences.";
-const DEFAULT_MODEL_NAME = "openai/gpt-4.1";
-const DEFAULT_MAX_TOKENS = 800;
+  "You are an assistant summarizing structured GitHub Issues, Comments, and Discussions into a concise rollup for leadership, including less technical audiences.";
+const DEFAULT_MODEL = "openai/gpt-4.1";
+const DEFAULT_MAX_TOKENS = 4096;
 
 export type PromptParameters = {
-  prompt: string;
-  systemPrompt?: string;
-  modelName?: string;
+  name?: string;
+  description?: string;
+  model?: string;
+  modelParameters?: {
+    temperature?: number;
+    [key: string]: string | number | boolean | undefined;
+  };
+  messages: Array<{
+    role: "system" | "user";
+    content: string;
+  }>;
+
+  // Non-standard API
   maxTokens?: string | number;
 };
 
-function getEndpoint(tokenKind: string): string {
-  const customEndpoint = getConfig("MODEL_ENDPOINT") || "";
-  if (customEndpoint !== "") {
-    return customEndpoint;
+function loadPromptFile(promptFilePath: string): PromptParameters {
+  if (!promptFilePath.includes(".")) {
+    // If no file extension is provided, assume it's a .prompt.yaml file
+    promptFilePath += ".prompt.yaml";
   }
 
-  switch (tokenKind) {
-    case "app":
-      // Apps must use the org-specific endpoint. Assume the current org
-      return `https://models.github.ai/orgs/${context.repo.owner}/inference`;
-    case "pat":
-    case "default":
-      // Default endpoint for PAT or default token
-      return "https://models.github.ai/inference";
-    default:
-      throw new Error(`Unknown token kind: ${tokenKind}`);
-  }
-}
+  const directories = [
+    "", // Absolute path
+    ".github/prompts",
+    ".github/Prompts",
+    "prompts",
+    "Prompts",
+  ];
 
-function loadPrompt(input: string): string {
-  const promptFileOrInput = getConfig(input);
+  let yamlBlob: string | undefined;
+  for (const directory of directories) {
+    const fullPath = path.join(directory, promptFilePath);
+    if (fs.existsSync(fullPath)) {
+      yamlBlob = fs.readFileSync(fullPath, "utf-8");
+    }
+  }
 
-  if (promptFileOrInput === undefined || promptFileOrInput === "") {
-    throw new Error(`Prompt input "${input}" was requested but not provided.`);
+  if (yamlBlob === undefined) {
+    throw new Error(`Prompt file "${promptFilePath}" does not exist.`);
+  } else if (yamlBlob.trim() === "") {
+    throw new Error(`Prompt file "${promptFilePath}" is empty.`);
   }
-  if (fs.existsSync(promptFileOrInput)) {
-    return fs.readFileSync(promptFileOrInput, "utf-8");
-  }
-  return promptFileOrInput;
+
+  // Parse YAML
+  return yaml.parse(yamlBlob) as PromptParameters;
 }
 
 export async function runPrompt(params: PromptParameters): Promise<string> {
-  const { prompt, systemPrompt, modelName, maxTokens } = {
-    prompt: params.prompt,
-    systemPrompt: params.systemPrompt || DEFAULT_SYSTEM_PROMPT,
-    modelName: params.modelName || DEFAULT_MODEL_NAME,
+  const { messages, model, maxTokens } = {
+    messages: params.messages,
+    model: params.model || getConfig("MODEL") || DEFAULT_MODEL,
     maxTokens: Number(params.maxTokens) || DEFAULT_MAX_TOKENS,
   };
 
+  // Validate inputs
+  if (!messages.find((msg) => msg.role === "system")) {
+    messages.unshift({
+      role: "system",
+      content: getConfig("SYSTEM_PROMPT") || DEFAULT_SYSTEM_PROMPT,
+    });
+  }
+
+  if (!messages.find((msg) => msg.role === "user")) {
+    throw new Error("No user message found in the prompt.");
+  }
+
+  if (model.startsWith("xai/")) {
+    throw new Error("xai models are not supported");
+  }
+
+  // Finally call the Models API
   try {
-    if (modelName.startsWith("xai/")) {
-      throw new Error("xai models are not supported");
-    }
-
     const token = await getToken();
-
-    const endpoint = getEndpoint(token.kind);
+    const endpoint = getModelEndpoint(token.kind);
 
     // TODO: Detailed debug info MODEL_NAME, etc. Prepare for Datadog
     const client = ModelClient(endpoint, new AzureKeyCredential(token.value), {
@@ -78,15 +98,9 @@ export async function runPrompt(params: PromptParameters): Promise<string> {
 
     const response = await client.path("/chat/completions").post({
       body: {
-        messages: [
-          {
-            role: "system",
-            content: systemPrompt,
-          },
-          { role: "user", content: prompt },
-        ],
+        model,
+        messages,
         max_tokens: maxTokens,
-        model: modelName,
       },
     });
 
@@ -99,12 +113,9 @@ export async function runPrompt(params: PromptParameters): Promise<string> {
       );
     }
 
-    const modelResponse: string | null =
-      response.body.choices[0].message.content;
-
+    const modelResponse = response.body.choices[0].message.content;
     return modelResponse ?? "No response from model";
-  } catch (error) {
-    // Fail the workflow run if an error occurs
+  } catch (error: unknown) {
     if (error instanceof Error) {
       return `ERROR: ${error.message}`;
     } else {
@@ -114,29 +125,14 @@ export async function runPrompt(params: PromptParameters): Promise<string> {
 }
 
 export async function summarize(
-  promptInput: string,
   content: string,
+  promptFilePath: string,
 ): Promise<string> {
-  const prompt = loadPrompt(promptInput);
-
-  const contentMarker = RegExp(/\{\{\s*CONTENT\s*\}\}/);
-  // TODO: Use systemPrompt instead of hydrating
-  const hydratedPrompt = prompt.replace(contentMarker, content);
-
-  if (SUMMARY_ENV_VAR in process.env) {
-    // If running on a GitHub Action, log the prompt for debugging
-    summary.addDetails("Hydrated Prompt (Debug)", hydratedPrompt).write();
-  } else {
-    console.debug(`Hydrated Prompt:\n${hydratedPrompt}`);
-  }
-
-  const output = await runPrompt({
-    prompt: hydratedPrompt,
-    // TODO: Concat the system prompt with the default one
-    systemPrompt: getConfig("SYSTEM_PROMPT"),
-    modelName: getConfig("MODEL_NAME"),
-    maxTokens: getConfig("MAX_TOKENS"),
-  });
-
-  return output;
+  const prompt = loadPromptFile(promptFilePath);
+  const summary = await runPrompt(
+    insertPlaceholders(prompt, {
+      input: content,
+    }),
+  );
+  return summary;
 }

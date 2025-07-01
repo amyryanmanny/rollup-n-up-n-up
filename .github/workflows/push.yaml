@@ -14,7 +14,6 @@ jobs:
         uses: ./actions/render
         env:
           GITHUB_PAT_TOKEN: ${{ secrets.ROLLUP_PAT_TOKEN }}
-          TLDR_PROMPT: prompt.txt
         with:
           template: './templates/main.md.vto'
 
@@ -27,4 +26,4 @@ jobs:
           title: '%Y-%m-%d example_report.md'
           body: ${{ steps.render.outputs.md }}
           targets: |
-            repo-file: https://github.com/amyryanmanny/rollup-n-up-n-up/tree/test-push/templates
+            repo-file: https://github.com/amyryanmanny/rollup-n-up-n-up/tree/test-push/reports

@@ -15,3 +15,8 @@ export function getConfig(key: string): string | undefined {
   dotenv.config();
   return process.env[key];
 }
+
+export * from "./github";
+export * from "./model";
+export * from "./push";
+export * from "./update";

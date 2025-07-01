@@ -30,15 +30,16 @@ inputs:
       Defaults to models.github.ai, with the org-specific path if using a GitHub App.
     required: false
     # default: https://models.github.ai/
-  model_name:
-    description: The model to use for rendering the template. Defaults to gpt-4.1.
+  model:
+    description: |
+      The model to use for rendering the template, if it is missing from .prompt.yml.
+      Defaults to gpt-4.1.
     required: false
-    default: openai/gpt-4.1
+    # default: openai/gpt-4.1
   max_tokens:
     description: The maximum number of tokens to generate in the response.
     required: false
-    default: "4096"
-  # TODO: Prompts. Or just detect from the .prompt.yml files in the repo.
+    # default: "4096"
 
   # Templating
   template:

@@ -43,16 +43,19 @@ export function stripToSentence(markdown: string): string {
 }
 
 export async function summarizeToSentence(markdown: string): Promise<string> {
-  // Summarize the markdown to a single sentence
   if (!markdown.trim().includes("\n")) {
     // If the markdown is already a single sentence, return it as is
     return markdown.trim();
   }
   return await runPrompt({
-    prompt: markdown,
-    systemPrompt:
-      "Summarize the following content into a single sentence. Try to sacrifice as little meaning as possible.",
-    modelName: "openai/gpt-4.1-mini", // Use a lighter model for this task
-    maxTokens: 100,
+    messages: [
+      {
+        role: "system",
+        content:
+          "Summarize the following content into a single sentence. Try to sacrifice as little meaning as possible.",
+      },
+      { role: "user", content: markdown },
+    ],
+    model: "openai/gpt-4.1-mini", // Use a lighter model for this task
   });
 }
