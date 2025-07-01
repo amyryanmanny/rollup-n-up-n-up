@@ -55295,7 +55295,8 @@ function emojiCompare(a2, b2) {
 var slugifyProjectFieldName = (field) => {
   return field.toLowerCase().replace(/\s+/g, "-");
 };
-async function listIssuesForProject(client, params) {
+async function listIssuesForProject(params) {
+  const octokit = getOctokit();
   const query = `
     query paginate($organization: String!, $projectNumber: Int!, $cursor: String) {
       organization(login: $organization) {
@@ -55373,12 +55374,11 @@ async function listIssuesForProject(client, params) {
       }
     }
   `;
-  const response = await client.octokit.graphql.paginate(query, {
+  const response = await octokit.graphql.paginate(query, {
     organization: params.organization,
     projectNumber: params.projectNumber
   });
-  const items = response.organization.projectV2.items;
-  const issues = items.edges.map((edge) => {
+  const issues = response.organization.projectV2.items.edges.map((edge) => {
     const content = edge.node.content;
     if (!content || content.__typename !== "Issue") {
       return null;
@@ -55396,7 +55396,7 @@ async function listIssuesForProject(client, params) {
         nameWithOwner: content.repository.nameWithOwner
       },
       comments: content.comments.nodes.map((comment) => ({
-        author: comment.author.login,
+        author: comment.author?.login || "Unknown",
         body: comment.body,
         createdAt: new Date(comment.createdAt),
         url: comment.url
@@ -55574,7 +55574,8 @@ class ProjectView {
     ];
   }
 }
-async function getProjectView(client, params) {
+async function getProjectView(params) {
+  const octokit = getOctokit();
   const query = `
     query($organization: String!, $projectNumber: Int!, $projectViewNumber: Int!) {
       organization(login: $organization) {
@@ -55587,7 +55588,7 @@ async function getProjectView(client, params) {
       }
     }
   `;
-  const response = await client.octokit.graphql(query, {
+  const response = await octokit.graphql(query, {
     organization: params.organization,
     projectNumber: params.projectNumber,
     projectViewNumber: params.projectViewNumber
@@ -55600,7 +55601,8 @@ async function getProjectView(client, params) {
 }
 
 // src/2_pull/github/graphql/repo.ts
-async function listIssuesForRepo(client, params) {
+async function listIssuesForRepo(params) {
+  const octokit = getOctokit();
   const state2 = params.state?.trim().toUpperCase() || "OPEN";
   let states;
   switch (state2) {
@@ -55659,7 +55661,7 @@ async function listIssuesForRepo(client, params) {
       }
     }
   `;
-  const response = await client.octokit.graphql.paginate(query, {
+  const response = await octokit.graphql.paginate(query, {
     owner: params.owner,
     repo: params.repo,
     states
@@ -55677,7 +55679,7 @@ async function listIssuesForRepo(client, params) {
       nameWithOwner: issue.repository.nameWithOwner
     },
     comments: issue.comments.nodes.map((comment) => ({
-      author: comment.author.login,
+      author: comment.author?.login || "Unknown",
       body: comment.body,
       createdAt: new Date(comment.createdAt),
       url: comment.url
@@ -55687,6 +55689,82 @@ async function listIssuesForRepo(client, params) {
     issues,
     title: `Issues for ${params.owner}/${params.repo}`,
     url: `https://github.com/${params.owner}/${params.repo}`
+  };
+}
+
+// src/2_pull/github/graphql/subissues.ts
+async function listSubissuesForIssue(params) {
+  const octokit = getOctokit();
+  const query = `
+    query paginate($owner: String!, $repo: String!, $issueNumber: Int!, $cursor: String) {
+      repositoryOwner(login: $owner) {
+        repository(name: $repo) {
+          issue(number: $issueNumber) {
+            title
+            url
+            subIssues(first: 100, after: $cursor) {
+              nodes {
+                title
+                body
+                url
+                number
+                assignees(first: 5) {
+                  nodes {
+                    login
+                  }
+                }
+                issueType {
+                  name
+                }
+                repository {
+                  name
+                  owner {
+                    login
+                  }
+                  nameWithOwner
+                }
+                comments(last: 100) {
+                  nodes {
+                    author {
+                      login
+                    }
+                    body
+                    createdAt
+                    url
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+  const response = await octokit.graphql.paginate(query, params);
+  const subissues = response.repositoryOwner.repository.issue.subIssues.nodes.map((subIssue) => ({
+    title: subIssue.title,
+    body: subIssue.body,
+    url: subIssue.url,
+    number: subIssue.number,
+    assignees: subIssue.assignees.nodes.map((assignee) => assignee.login),
+    type: subIssue.issueType?.name || "Issue",
+    repository: {
+      name: subIssue.repository.name,
+      owner: subIssue.repository.owner.login,
+      nameWithOwner: subIssue.repository.nameWithOwner
+    },
+    comments: subIssue.comments.nodes.map((comment) => ({
+      author: comment.author?.login || "Unknown",
+      body: comment.body,
+      createdAt: new Date(comment.createdAt),
+      url: comment.url
+    }))
+  }));
+  const issueTitle = response.repositoryOwner.repository.issue.title;
+  return {
+    subissues,
+    title: `Subissues for ${issueTitle} (#${params.issueNumber})`,
+    url: response.repositoryOwner.repository.issue.url
   };
 }
 
@@ -55892,6 +55970,13 @@ class IssueWrapper {
       return [name, field.value ?? ""];
     }));
   }
+  async subissues() {
+    return IssueList.forSubissues({
+      owner: this.owner,
+      repo: this.repo,
+      issueNumber: this.number
+    });
+  }
   get comments() {
     const issue = this.issue;
     const sortCommentsByDateDesc = (a2, b2) => {
@@ -55899,14 +55984,14 @@ class IssueWrapper {
     };
     return issue.comments.map((comment) => new CommentWrapper(issue.title, comment)).sort(sortCommentsByDateDesc);
   }
-  latestComment() {
+  get latestComment() {
     const comments = this.comments;
     if (comments.length !== 0) {
       return comments[0];
     }
     return CommentWrapper.empty(this.url);
   }
-  latestUpdate() {
+  get latestUpdate() {
     const comments = this.comments;
     if (comments.length !== 0) {
       const update2 = findLatestUpdate(comments);
@@ -56028,17 +56113,22 @@ class IssueList {
     this.sourceOfTruth = sourceOfTruth;
     this.issues = issues.map((issue) => new IssueWrapper(issue));
   }
-  static async forRepo(client, params) {
-    const response = await listIssuesForRepo(client, params);
+  static async forRepo(params) {
+    const response = await listIssuesForRepo(params);
     const { issues, title: title2, url } = response;
     return new IssueList(issues, { title: title2, url });
   }
-  static async forProject(client, params) {
-    const response = await listIssuesForProject(client, params);
+  static async forSubissues(params) {
+    const response = await listSubissuesForIssue(params);
+    const { subissues, title: title2, url } = response;
+    return new IssueList(subissues, { title: title2, url });
+  }
+  static async forProject(params) {
+    const response = await listIssuesForProject(params);
     const { issues, title: title2, url } = response;
     return new IssueList(issues, { title: title2, url });
   }
-  static async forProjectView(client, params) {
+  static async forProjectView(params) {
     let view;
     if (params.projectViewNumber === undefined) {
       if (params.customQuery === undefined) {
@@ -56049,9 +56139,9 @@ class IssueList {
         filterQuery: params.customQuery
       });
     } else {
-      view = await getProjectView(client, params);
+      view = await getProjectView(params);
     }
-    const issueList = await this.forProject(client, {
+    const issueList = await this.forProject({
       organization: params.organization,
       projectNumber: params.projectNumber,
       typeFilter: view.getFilterType()
@@ -56078,27 +56168,34 @@ ${this.issues.map((issue) => issue.render()).join(`
 class GitHubClient {
   octokit = getOctokit();
   issuesForRepo(owner, repo) {
-    return IssueList.forRepo(this, { owner, repo });
+    return IssueList.forRepo({ owner, repo });
+  }
+  subissuesForIssue(owner, repo, issueNumber) {
+    return IssueList.forSubissues({
+      owner,
+      repo,
+      issueNumber
+    });
   }
   issuesForProject(organization, projectNumber, typeFilter) {
     if (typeof typeFilter === "string") {
       typeFilter = [typeFilter];
     }
-    return IssueList.forProject(this, {
+    return IssueList.forProject({
       organization,
       projectNumber,
       typeFilter
     });
   }
   issuesForProjectView(organization, projectNumber, projectViewNumber) {
-    return IssueList.forProjectView(this, {
+    return IssueList.forProjectView({
       organization,
       projectNumber,
       projectViewNumber
     });
   }
   issuesForProjectQuery(organization, projectNumber, customQuery) {
-    return IssueList.forProjectView(this, {
+    return IssueList.forProjectView({
       organization,
       projectNumber,
       customQuery
