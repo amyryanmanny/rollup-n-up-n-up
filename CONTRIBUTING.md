@@ -33,3 +33,9 @@ You'll also need to [source your Node and Bun environments](https://github.com/t
 ## Eslint
 
 Eslint rules are marked as errors, but there's no need to fix them manually as you code. If you use VSCode, just press `Shift-Option-F` (Mac) or `Shift-Alt-F` to automatically format the current file.
+
+## Running Actions Locally
+
+Install the `SanjulaGanepola.github-local-actions` VSCode Extension from the recommendations. It will help you install the `nektos/act` Local Action Runner, and Docker if necessary. Open the sidebar tab, and supply the missing secrets and variables.
+
+Make sure to always build your code before running, since it runs the action directly from the `/dist` folder (as specified in the local `action.yml`).
