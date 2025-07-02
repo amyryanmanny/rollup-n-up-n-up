@@ -98,6 +98,9 @@ export async function runPrompt(params: PromptParameters): Promise<string> {
     throw new Error("xai models are not supported");
   }
 
+  // TODO: Count tokens
+  // import { encoding_for_model, TiktokenModel } from "@dqbd/tiktoken";
+
   // Finally call the Models API
   try {
     const token = await getToken();
@@ -105,6 +108,7 @@ export async function runPrompt(params: PromptParameters): Promise<string> {
 
     // TODO: Detailed debug info MODEL_NAME, etc. Prepare for Datadog
     const client = ModelClient(endpoint, new AzureKeyCredential(token.value), {
+      apiVersion: "2024-12-01-preview",
       userAgentOptions: { userAgentPrefix: "github-actions-rollup-n-up-n-up" },
     });
 
@@ -113,7 +117,8 @@ export async function runPrompt(params: PromptParameters): Promise<string> {
         ...modelParameters,
         model,
         messages,
-        max_tokens: maxTokens,
+        [model === "openai/o1" ? "max_completion_tokens" : "max_tokens"]:
+          maxTokens ? Number(maxTokens) : DEFAULT_MAX_TOKENS,
       },
     });
 

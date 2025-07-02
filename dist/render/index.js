@@ -55063,6 +55063,7 @@ async function runPrompt(params) {
     const token = await getToken2();
     const endpoint7 = getModelEndpoint(token.kind);
     const client = esm_default(endpoint7, new AzureKeyCredential(token.value), {
+      apiVersion: "2024-12-01-preview",
       userAgentOptions: { userAgentPrefix: "github-actions-rollup-n-up-n-up" }
     });
     const response = await client.path("/chat/completions").post({
@@ -55070,7 +55071,7 @@ async function runPrompt(params) {
         ...modelParameters,
         model: model2,
         messages,
-        max_tokens: maxTokens
+        [model2 === "openai/o1" ? "max_completion_tokens" : "max_tokens"]: maxTokens ? Number(maxTokens) : DEFAULT_MAX_TOKENS
       }
     });
     if (isUnexpected(response)) {
