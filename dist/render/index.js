@@ -44163,8 +44163,9 @@ __export(exports_filters, {
   toSnakeCase: () => toSnakeCase,
   title: () => title,
   summarizeToSentence: () => summarizeToSentence,
-  stripToSentence: () => stripToSentence,
   stripHtml: () => stripHtml,
+  stripHeaders: () => stripHeaders,
+  stripFormatting: () => stripFormatting,
   accessible: () => accessible
 });
 
@@ -55149,8 +55150,11 @@ function accessible(markdown) {
   markdown = markdown.replace(emojiRegex, (emoji) => `${emoji} (${colorMap[emoji]})`);
   return markdown;
 }
-function stripToSentence(markdown) {
-  return markdown.replace(/[\s-]+/g, " ").trim();
+function stripHeaders(markdown) {
+  return markdown.replace(/^(#{1,6})\s+(.*)$/gm, (match, hashes, headerText) => `**${headerText}**`).trim();
+}
+function stripFormatting(markdown) {
+  return markdown.replace(/[#*_~`>]/g, "").replace(/!\[.*?\]\(.*?\)/g, "").replace(/\[.*?\]\(.*?\)/g, "").replace(/[-+*]\s+/g, "").replace(/[\s]+/g, " ").trim();
 }
 async function summarizeToSentence(markdown) {
   if (!markdown.trim().includes(`
