@@ -37769,9 +37769,9 @@ function parseUpdateDetection(updateDetectionBlob) {
 }
 
 // src/util/config/index.ts
-function getConfig(key) {
+function getConfig(key, required = false) {
   if (process.env.GITHUB_ACTIONS === "true") {
-    const input = import_core.getInput(key);
+    const input = import_core.getInput(key, { required });
     if (input !== "") {
       return input;
     }
@@ -55041,6 +55041,7 @@ async function runPrompt(params) {
     modelParameters: params.modelParameters || {},
     maxTokens: Number(params.maxTokens) || DEFAULT_MAX_TOKENS
   };
+  console.log(`model: ${model2}`);
   if (!messages.find((msg) => msg.role === "system")) {
     messages.unshift({
       role: "system",
@@ -55057,7 +55058,7 @@ async function runPrompt(params) {
     const token = await getToken2();
     const endpoint7 = getModelEndpoint(token.kind);
     const client = esm_default(endpoint7, new AzureKeyCredential(token.value), {
-      userAgentOptions: { userAgentPrefix: "github-actions-rollup-n-up" }
+      userAgentOptions: { userAgentPrefix: "github-actions-rollup-n-up-n-up" }
     });
     const response = await client.path("/chat/completions").post({
       body: {
@@ -55074,12 +55075,15 @@ async function runPrompt(params) {
       throw new Error(`An error occurred while fetching the response (${response.status}) ${response.body}`);
     }
     const modelResponse = response.body.choices[0].message.content;
-    return modelResponse ?? "No response from model";
+    if (!modelResponse) {
+      throw new Error("No response from model.");
+    }
+    return modelResponse;
   } catch (error) {
     if (error instanceof Error) {
-      return `ERROR: ${error.message}`;
+      throw new Error(`Error: ${error.message}`);
     } else {
-      return "An unexpected error occurred";
+      throw new Error(`Unexpected Error: ${error}`);
     }
   }
 }

@@ -30876,9 +30876,9 @@ function parsePushTargets(targetBlob) {
 }
 
 // src/util/config/index.ts
-function getConfig(key) {
+function getConfig(key, required = false) {
   if (process.env.GITHUB_ACTIONS === "true") {
-    const input = import_core2.getInput(key);
+    const input = import_core2.getInput(key, { required });
     if (input !== "") {
       return input;
     }

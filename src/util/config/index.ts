@@ -2,10 +2,13 @@ import dotenv from "dotenv";
 
 import { getInput } from "@actions/core";
 
-export function getConfig(key: string): string | undefined {
+export function getConfig(
+  key: string,
+  required: boolean = false,
+): string | undefined {
   // Flags set by CI/CD - https://stackoverflow.com/a/73973555
   if (process.env.GITHUB_ACTIONS === "true") {
-    const input = getInput(key);
+    const input = getInput(key, { required });
     if (input !== "") {
       return input;
     }

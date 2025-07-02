@@ -71,6 +71,8 @@ export async function runPrompt(params: PromptParameters): Promise<string> {
     maxTokens: Number(params.maxTokens) || DEFAULT_MAX_TOKENS,
   };
 
+  console.log(`model: ${model}`);
+
   // Validate inputs
   if (!messages.find((msg) => msg.role === "system")) {
     messages.unshift({
@@ -94,7 +96,7 @@ export async function runPrompt(params: PromptParameters): Promise<string> {
 
     // TODO: Detailed debug info MODEL_NAME, etc. Prepare for Datadog
     const client = ModelClient(endpoint, new AzureKeyCredential(token.value), {
-      userAgentOptions: { userAgentPrefix: "github-actions-rollup-n-up" },
+      userAgentOptions: { userAgentPrefix: "github-actions-rollup-n-up-n-up" },
     });
 
     const response = await client.path("/chat/completions").post({
@@ -116,12 +118,15 @@ export async function runPrompt(params: PromptParameters): Promise<string> {
     }
 
     const modelResponse = response.body.choices[0].message.content;
-    return modelResponse ?? "No response from model";
+    if (!modelResponse) {
+      throw new Error("No response from model.");
+    }
+    return modelResponse;
   } catch (error: unknown) {
     if (error instanceof Error) {
-      return `ERROR: ${error.message}`;
+      throw new Error(`Error: ${error.message}`);
     } else {
-      return "An unexpected error occurred";
+      throw new Error(`Unexpected Error: ${error}`);
     }
   }
 }
