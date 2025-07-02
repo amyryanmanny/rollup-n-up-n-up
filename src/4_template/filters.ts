@@ -37,9 +37,25 @@ export function accessible(markdown: string): string {
   return markdown;
 }
 
-export function stripToSentence(markdown: string): string {
-  // Strip the markdown by replacing newlines and hyphens with spaces
-  return markdown.replace(/[\s-]+/g, " ").trim();
+export function stripHeaders(markdown: string): string {
+  // Replace headers by converting them to bolded text
+  return markdown
+    .replace(
+      /^(#{1,6})\s+(.*)$/gm,
+      (match, hashes, headerText) => `**${headerText}**`,
+    )
+    .trim();
+}
+
+export function stripFormatting(markdown: string): string {
+  // Strip the markdown by removing markdown-specific syntax
+  return markdown
+    .replace(/[#*_~`>]/g, "") // Remove markdown symbols like #, *, _, ~, `, >
+    .replace(/!\[.*?\]\(.*?\)/g, "") // Remove images
+    .replace(/\[.*?\]\(.*?\)/g, "") // Remove links
+    .replace(/[-+*]\s+/g, "") // Remove list markers
+    .replace(/[\s]+/g, " ") // Replace multiple spaces with a single space
+    .trim();
 }
 
 export async function summarizeToSentence(markdown: string): Promise<string> {
