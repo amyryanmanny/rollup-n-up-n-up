@@ -31,6 +31,8 @@ export type PromptParameters = {
   maxTokens?: string | number;
 };
 
+// TODO: Move to @util/config/model, and handle getConfig("model_name") after checking directories
+// And require model name for better parity. All for easier matrix support
 function loadPromptFile(promptFilePath: string): PromptParameters {
   if (!promptFilePath.includes(".")) {
     // If no file extension is provided, assume it's a .prompt.yaml file
@@ -79,6 +81,7 @@ export async function runPrompt(params: PromptParameters): Promise<string> {
     });
   }
 
+  // TODO: Force model configuration to all go through prompt files
   messages.filter((msg) => {
     // Some models reject certain types of messages
     if (msg.role === "system" && model.startsWith("openai/o1")) {
