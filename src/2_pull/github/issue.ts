@@ -181,7 +181,7 @@ export class IssueWrapper {
   // Render / Memory Functions
   private get rendered(): string {
     // Issues are Level 3
-    return `### ${this.header}\n\n${this._body}\n\n`;
+    return `### ${this.type}: ${this.header}\n\n${this._body}\n\n`;
   }
 
   remember() {

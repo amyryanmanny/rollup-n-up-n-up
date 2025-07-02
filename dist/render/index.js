@@ -56158,7 +56158,7 @@ class IssueWrapper {
     return CommentWrapper.empty(this.url);
   }
   get rendered() {
-    return `### ${this.header}
+    return `### ${this.type}: ${this.header}
 
 ${this._body}
 
