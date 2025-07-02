@@ -71,8 +71,6 @@ export async function runPrompt(params: PromptParameters): Promise<string> {
     maxTokens: Number(params.maxTokens) || DEFAULT_MAX_TOKENS,
   };
 
-  console.log(`model: ${model}`);
-
   // Validate inputs
   if (!messages.find((msg) => msg.role === "system")) {
     messages.unshift({
@@ -80,6 +78,14 @@ export async function runPrompt(params: PromptParameters): Promise<string> {
       content: getConfig("SYSTEM_PROMPT") || DEFAULT_SYSTEM_PROMPT,
     });
   }
+
+  messages.filter((msg) => {
+    // Some models reject certain types of messages
+    if (msg.role === "system" && model.startsWith("openai/o1")) {
+      return false;
+    }
+    return true;
+  });
 
   if (!messages.find((msg) => msg.role === "user")) {
     throw new Error("No user message found in the prompt.");
@@ -126,7 +132,7 @@ export async function runPrompt(params: PromptParameters): Promise<string> {
     if (error instanceof Error) {
       throw new Error(`Error: ${error.message}`);
     } else {
-      throw new Error(`Unexpected Error: ${error}`);
+      throw new Error(`Unexpected Error: ${JSON.stringify(error)}`);
     }
   }
 }

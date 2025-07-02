@@ -55041,13 +55041,18 @@ async function runPrompt(params) {
     modelParameters: params.modelParameters || {},
     maxTokens: Number(params.maxTokens) || DEFAULT_MAX_TOKENS
   };
-  console.log(`model: ${model2}`);
   if (!messages.find((msg) => msg.role === "system")) {
     messages.unshift({
       role: "system",
       content: getConfig("SYSTEM_PROMPT") || DEFAULT_SYSTEM_PROMPT
     });
   }
+  messages.filter((msg) => {
+    if (msg.role === "system" && model2.startsWith("openai/o1")) {
+      return false;
+    }
+    return true;
+  });
   if (!messages.find((msg) => msg.role === "user")) {
     throw new Error("No user message found in the prompt.");
   }
@@ -55083,7 +55088,7 @@ async function runPrompt(params) {
     if (error instanceof Error) {
       throw new Error(`Error: ${error.message}`);
     } else {
-      throw new Error(`Unexpected Error: ${error}`);
+      throw new Error(`Unexpected Error: ${JSON.stringify(error)}`);
     }
   }
 }
