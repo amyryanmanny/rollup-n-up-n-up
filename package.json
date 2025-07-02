@@ -28,6 +28,7 @@
     "@octokit/plugin-paginate-graphql": "^6.0.0",
     "@octokit/request-error": "^7.0.0",
     "@octokit/rest": "^22.0.0",
+    "memoize": "^10.1.0",
     "strftime": "^0.10.3",
     "ventojs": "^1.12.16",
     "yaml": "^2.8.0"

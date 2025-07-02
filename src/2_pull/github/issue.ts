@@ -31,6 +31,10 @@ export class IssueWrapper {
     this.issue = issue;
   }
 
+  get hasUpdate(): boolean {
+    return !this.latestUpdate.isEmpty;
+  }
+
   // Properties
   get header(): string {
     return `[${this.title}](${this.url})`;
@@ -137,7 +141,7 @@ export class IssueWrapper {
 
   // Comment
   get comments(): CommentWrapper[] {
-    // TODO: Memoize
+    // TODO: Memoize with CommentList
     const issue = this.issue;
 
     // TODO: Create a CommentList to perform this logic

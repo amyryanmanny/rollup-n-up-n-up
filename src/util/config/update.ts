@@ -6,18 +6,25 @@ import {
   type UpdateDetectionKind,
 } from "@pull/github/update";
 
-type UpdateDetection = {
+type UpdateDetectionConfig = {
   strategies: UpdateDetectionStrategy[];
 };
 
 const DEFAULT_MARKER = /<!--\s*UPDATE\s*-->/i; // Case insensitive with variable spacing
 
-export function getUpdateDetectionConfig(): UpdateDetection {
+// Singleton
+let updateDetectionConfig: UpdateDetectionConfig | undefined;
+
+export function getUpdateDetectionConfig(): UpdateDetectionConfig {
+  if (updateDetectionConfig) {
+    return updateDetectionConfig;
+  }
+
   let strategies: UpdateDetectionStrategy[];
 
-  const updateDetectionConfig = getConfig("UPDATE_DETECTION");
-  if (updateDetectionConfig) {
-    strategies = parseUpdateDetection(updateDetectionConfig);
+  const config = getConfig("UPDATE_DETECTION");
+  if (config) {
+    strategies = parseUpdateDetection(config);
     if (strategies.length === 0) {
       throw new Error(
         'No valid strategies found in the "update_detection" input. See docs.',
@@ -27,9 +34,9 @@ export function getUpdateDetectionConfig(): UpdateDetection {
     strategies = [
       {
         kind: "section",
-        name: "Update",
+        section: "Update",
       },
-      // { kind: "skip" },
+      { kind: "skip" },
     ];
   }
 
@@ -37,12 +44,15 @@ export function getUpdateDetectionConfig(): UpdateDetection {
   // TODO: Add a way to configure order, and possible Regex of this marker
   let markerIndex = strategies.findLastIndex((s) => s.kind === "section");
   if (markerIndex === -1) markerIndex = 0;
+
   strategies.splice(markerIndex, 0, {
     kind: "marker",
     marker: DEFAULT_MARKER,
+    timeframe: "last-week",
   });
 
-  return { strategies };
+  updateDetectionConfig = { strategies };
+  return updateDetectionConfig;
 }
 
 function parseUpdateDetection(
@@ -51,14 +61,26 @@ function parseUpdateDetection(
   // Process the configuration string as lines
   return updateDetectionBlob
     .split("\n")
-    .map((configLine) => {
-      if (!configLine.trim()) {
+    .map((line) => line.trim())
+    .map((line) => {
+      if (line === "") {
         return undefined;
       }
+
+      // TODO: Extract function-call syntax like "lastWeek(Update)"
+
+      if (line === "skip" || line === "skip()") {
+        return {
+          kind: "skip" as UpdateDetectionKind,
+        } as UpdateDetectionStrategy;
+      }
+
       // TODO: Handle other types
+
+      // Any lines that don't match above are considered sections
       return {
         kind: "section" as UpdateDetectionKind,
-        name: configLine.trim(),
+        name: line,
       } as UpdateDetectionStrategy;
     })
     .filter((config) => config !== undefined);

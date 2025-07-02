@@ -39,6 +39,15 @@ export class IssueList {
     return this.issues.length;
   }
 
+  get isEmpty(): boolean {
+    return this.issues.length === 0;
+  }
+
+  get hasUpdates(): boolean {
+    // Check if any issue has an update
+    return this.issues.some((issue) => issue.hasUpdate);
+  }
+
   [Symbol.iterator]() {
     return this.issues[Symbol.iterator]();
   }

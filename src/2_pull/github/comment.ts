@@ -5,7 +5,7 @@ import {
   stripHtml,
   toSnakeCase,
 } from "@util/string";
-import { extractUpdate } from "./update";
+import { extractUpdate, type Timeframe } from "./update";
 
 export type Comment = {
   author: string;
@@ -98,6 +98,27 @@ export class CommentWrapper {
       return stripHtml(boldedSection).trim();
     }
     return undefined;
+  }
+
+  isWithinTimeframe(timeframe: Timeframe): boolean {
+    // Check if the comment was created within the given timeframe
+    const now = new Date();
+    const createdAt = this.createdAt;
+
+    const day = 86_400_000; // 24 hours in milliseconds
+
+    switch (timeframe) {
+      case "all-time":
+        return true;
+      case "last-week":
+        return now.getTime() - createdAt.getTime() < 7 * day;
+      case "last-month":
+        return now.getTime() - createdAt.getTime() < 31 * day;
+      case "last-year":
+        return now.getTime() - createdAt.getTime() < 365 * day;
+      default:
+        throw new Error("Invalid timeframe provided for comment filtering.");
+    }
   }
 
   // Render / Memory Functions
