@@ -64,9 +64,10 @@ function loadPromptFile(promptFilePath: string): PromptParameters {
 }
 
 export async function runPrompt(params: PromptParameters): Promise<string> {
-  const { messages, model, maxTokens } = {
+  const { messages, model, modelParameters, maxTokens } = {
     messages: params.messages,
     model: params.model || getConfig("MODEL") || DEFAULT_MODEL,
+    modelParameters: params.modelParameters || {},
     maxTokens: Number(params.maxTokens) || DEFAULT_MAX_TOKENS,
   };
 
@@ -98,6 +99,7 @@ export async function runPrompt(params: PromptParameters): Promise<string> {
 
     const response = await client.path("/chat/completions").post({
       body: {
+        ...modelParameters,
         model,
         messages,
         max_tokens: maxTokens,

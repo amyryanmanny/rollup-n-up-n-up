@@ -29137,8 +29137,7 @@ var require_anchors = __commonJS((exports) => {
     return {
       onAnchor: (source) => {
         aliasObjects.push(source);
-        if (!prevAnchors)
-          prevAnchors = anchorNames(doc);
+        prevAnchors ?? (prevAnchors = anchorNames(doc));
         const anchor = findNewAnchor(prefix, prevAnchors);
         prevAnchors.add(anchor);
         return anchor;
@@ -29293,23 +29292,35 @@ var require_Alias = __commonJS((exports) => {
         }
       });
     }
-    resolve(doc) {
+    resolve(doc, ctx) {
+      let nodes;
+      if (ctx?.aliasResolveCache) {
+        nodes = ctx.aliasResolveCache;
+      } else {
+        nodes = [];
+        visit.visit(doc, {
+          Node: (_key, node) => {
+            if (identity.isAlias(node) || identity.hasAnchor(node))
+              nodes.push(node);
+          }
+        });
+        if (ctx)
+          ctx.aliasResolveCache = nodes;
+      }
       let found = undefined;
-      visit.visit(doc, {
-        Node: (_key, node) => {
-          if (node === this)
-            return visit.visit.BREAK;
-          if (node.anchor === this.source)
-            found = node;
-        }
-      });
+      for (const node of nodes) {
+        if (node === this)
+          break;
+        if (node.anchor === this.source)
+          found = node;
+      }
       return found;
     }
     toJSON(_arg, ctx) {
       if (!ctx)
         return { source: this.source };
       const { anchors: anchors2, doc, maxAliasCount } = ctx;
-      const source = this.resolve(doc);
+      const source = this.resolve(doc, ctx);
       if (!source) {
         const msg = `Unresolved alias (the anchor must be set before the alias): ${this.source}`;
         throw new ReferenceError(msg);
@@ -29433,8 +29444,7 @@ var require_createNode = __commonJS((exports) => {
     if (aliasDuplicateObjects && value && typeof value === "object") {
       ref = sourceObjects.get(value);
       if (ref) {
-        if (!ref.anchor)
-          ref.anchor = onAnchor(value);
+        ref.anchor ?? (ref.anchor = onAnchor(value));
         return new Alias.Alias(ref.anchor);
       } else {
         ref = { anchor: null, node: null };
@@ -29977,7 +29987,7 @@ ${indent}${start}${value}${end}`;
 `) || inFlow && /[[\]{},]/.test(value)) {
       return quotedString(value, ctx);
     }
-    if (!value || /^[\n\t ,[\]{}#&*!|>'"%@`]|^[?-]$|^[?-][ \t]|[\n:][ \t]|[ \t]\n|[\n\t ]#|[\n\t :]$/.test(value)) {
+    if (/^[\n\t ,[\]{}#&*!|>'"%@`]|^[?-]$|^[?-][ \t]|[\n:][ \t]|[ \t]\n|[\n\t ]#|[\n\t :]$/.test(value)) {
       return implicitKey || inFlow || !value.includes(`
 `) ? quotedString(value, ctx) : blockString(item, ctx, onComment, onChompKeep);
     }
@@ -30108,7 +30118,7 @@ var require_stringify = __commonJS((exports) => {
       tagObj = tags.find((t2) => t2.nodeClass && obj instanceof t2.nodeClass);
     }
     if (!tagObj) {
-      const name = obj?.constructor?.name ?? typeof obj;
+      const name = obj?.constructor?.name ?? (obj === null ? "null" : typeof obj);
       throw new Error(`Tag not resolved for ${name} value`);
     }
     return tagObj;
@@ -30122,7 +30132,7 @@ var require_stringify = __commonJS((exports) => {
       anchors$1.add(anchor);
       props.push(`&${anchor}`);
     }
-    const tag = node.tag ? node.tag : tagObj.default ? null : tagObj.tag;
+    const tag = node.tag ?? (tagObj.default ? null : tagObj.tag);
     if (tag)
       props.push(doc.directives.tagString(tag));
     return props.join(" ");
@@ -30145,8 +30155,7 @@ var require_stringify = __commonJS((exports) => {
     }
     let tagObj = undefined;
     const node = identity.isNode(item) ? item : ctx.doc.createNode(item, { onTagObj: (o2) => tagObj = o2 });
-    if (!tagObj)
-      tagObj = getTagObject(ctx.doc.schema.tags, node);
+    tagObj ?? (tagObj = getTagObject(ctx.doc.schema.tags, node));
     const props = stringifyProps(node, tagObj, ctx);
     if (props.length > 0)
       ctx.indentAtStart = (ctx.indentAtStart ?? 0) + props.length + 1;
@@ -30298,7 +30307,7 @@ ${ctx.indent}`;
 
 // node_modules/yaml/dist/log.js
 var require_log = __commonJS((exports) => {
-  var node_process = __require("node:process");
+  var node_process = __require("process");
   function debug(logLevel, ...messages) {
     if (logLevel === "debug")
       console.log(...messages);
@@ -31123,7 +31132,7 @@ var require_schema2 = __commonJS((exports) => {
 
 // node_modules/yaml/dist/schema/yaml-1.1/binary.js
 var require_binary = __commonJS((exports) => {
-  var node_buffer = __require("node:buffer");
+  var node_buffer = __require("buffer");
   var Scalar = require_Scalar();
   var stringifyString = require_stringifyString();
   var binary = {
@@ -31159,8 +31168,7 @@ var require_binary = __commonJS((exports) => {
       } else {
         throw new Error("This environment does not support writing binary tags; either Buffer or btoa is required");
       }
-      if (!type)
-        type = Scalar.Scalar.BLOCK_LITERAL;
+      type ?? (type = Scalar.Scalar.BLOCK_LITERAL);
       if (type !== Scalar.Scalar.QUOTE_DOUBLE) {
         const lineWidth = Math.max(ctx.options.lineWidth - ctx.indent.length, ctx.options.minContentWidth);
         const n2 = Math.ceil(str.length / lineWidth);
@@ -32250,8 +32258,7 @@ var require_resolve_props = __commonJS((exports) => {
           if (token.source.endsWith(":"))
             onError(token.offset + token.source.length - 1, "BAD_ALIAS", "Anchor ending in : is ambiguous", true);
           anchor = token;
-          if (start === null)
-            start = token.offset;
+          start ?? (start = token.offset);
           atNewline = false;
           hasSpace = false;
           reqSpace = true;
@@ -32260,8 +32267,7 @@ var require_resolve_props = __commonJS((exports) => {
           if (tag)
             onError(token, "MULTIPLE_TAGS", "A node can have at most one tag");
           tag = token;
-          if (start === null)
-            start = token.offset;
+          start ?? (start = token.offset);
           atNewline = false;
           hasSpace = false;
           reqSpace = true;
@@ -33321,8 +33327,7 @@ var require_compose_scalar = __commonJS((exports) => {
 var require_util_empty_scalar_position = __commonJS((exports) => {
   function emptyScalarPosition(offset, before, pos) {
     if (before) {
-      if (pos === null)
-        pos = before.length;
+      pos ?? (pos = before.length);
       for (let i2 = pos - 1;i2 >= 0; --i2) {
         let st = before[i2];
         switch (st.type) {
@@ -33485,7 +33490,7 @@ var require_compose_doc = __commonJS((exports) => {
 
 // node_modules/yaml/dist/compose/composer.js
 var require_composer = __commonJS((exports) => {
-  var node_process = __require("node:process");
+  var node_process = __require("process");
   var directives = require_directives();
   var Document = require_Document();
   var errors = require_errors3();
@@ -34696,7 +34701,7 @@ var require_line_counter = __commonJS((exports) => {
 
 // node_modules/yaml/dist/parse/parser.js
 var require_parser = __commonJS((exports) => {
-  var node_process = __require("node:process");
+  var node_process = __require("process");
   var cst = require_cst();
   var lexer = require_lexer();
   function includesToken(list, type) {
@@ -37713,11 +37718,15 @@ function getModelEndpoint(tokenKind) {
 var import_strftime = __toESM(require_strftime(), 1);
 // src/util/config/update.ts
 var DEFAULT_MARKER = /<!--\s*UPDATE\s*-->/i;
+var updateDetectionConfig;
 function getUpdateDetectionConfig() {
-  let strategies;
-  const updateDetectionConfig = getConfig("UPDATE_DETECTION");
   if (updateDetectionConfig) {
-    strategies = parseUpdateDetection(updateDetectionConfig);
+    return updateDetectionConfig;
+  }
+  let strategies;
+  const config = getConfig("UPDATE_DETECTION");
+  if (config) {
+    strategies = parseUpdateDetection(config);
     if (strategies.length === 0) {
       throw new Error('No valid strategies found in the "update_detection" input. See docs.');
     }
@@ -37725,8 +37734,9 @@ function getUpdateDetectionConfig() {
     strategies = [
       {
         kind: "section",
-        name: "Update"
-      }
+        section: "Update"
+      },
+      { kind: "skip" }
     ];
   }
   let markerIndex = strategies.findLastIndex((s) => s.kind === "section");
@@ -37734,19 +37744,26 @@ function getUpdateDetectionConfig() {
     markerIndex = 0;
   strategies.splice(markerIndex, 0, {
     kind: "marker",
-    marker: DEFAULT_MARKER
+    marker: DEFAULT_MARKER,
+    timeframe: "last-week"
   });
-  return { strategies };
+  updateDetectionConfig = { strategies };
+  return updateDetectionConfig;
 }
 function parseUpdateDetection(updateDetectionBlob) {
   return updateDetectionBlob.split(`
-`).map((configLine) => {
-    if (!configLine.trim()) {
+`).map((line) => line.trim()).map((line) => {
+    if (line === "") {
       return;
+    }
+    if (line === "skip" || line === "skip()") {
+      return {
+        kind: "skip"
+      };
     }
     return {
       kind: "section",
-      name: configLine.trim()
+      name: line
     };
   }).filter((config) => config !== undefined);
 }
@@ -55017,9 +55034,10 @@ function loadPromptFile(promptFilePath) {
   return import_yaml.default.parse(yamlBlob);
 }
 async function runPrompt(params) {
-  const { messages, model: model2, maxTokens } = {
+  const { messages, model: model2, modelParameters, maxTokens } = {
     messages: params.messages,
     model: params.model || getConfig("MODEL") || DEFAULT_MODEL,
+    modelParameters: params.modelParameters || {},
     maxTokens: Number(params.maxTokens) || DEFAULT_MAX_TOKENS
   };
   if (!messages.find((msg) => msg.role === "system")) {
@@ -55042,6 +55060,7 @@ async function runPrompt(params) {
     });
     const response = await client.path("/chat/completions").post({
       body: {
+        ...modelParameters,
         model: model2,
         messages,
         max_tokens: maxTokens
@@ -55772,6 +55791,98 @@ async function listSubissuesForIssue(params) {
   };
 }
 
+// node_modules/mimic-function/index.js
+var copyProperty = (to, from, property, ignoreNonConfigurable) => {
+  if (property === "length" || property === "prototype") {
+    return;
+  }
+  if (property === "arguments" || property === "caller") {
+    return;
+  }
+  const toDescriptor = Object.getOwnPropertyDescriptor(to, property);
+  const fromDescriptor = Object.getOwnPropertyDescriptor(from, property);
+  if (!canCopyProperty(toDescriptor, fromDescriptor) && ignoreNonConfigurable) {
+    return;
+  }
+  Object.defineProperty(to, property, fromDescriptor);
+};
+var canCopyProperty = function(toDescriptor, fromDescriptor) {
+  return toDescriptor === undefined || toDescriptor.configurable || toDescriptor.writable === fromDescriptor.writable && toDescriptor.enumerable === fromDescriptor.enumerable && toDescriptor.configurable === fromDescriptor.configurable && (toDescriptor.writable || toDescriptor.value === fromDescriptor.value);
+};
+var changePrototype = (to, from) => {
+  const fromPrototype = Object.getPrototypeOf(from);
+  if (fromPrototype === Object.getPrototypeOf(to)) {
+    return;
+  }
+  Object.setPrototypeOf(to, fromPrototype);
+};
+var wrappedToString = (withName, fromBody) => `/* Wrapped ${withName}*/
+${fromBody}`;
+var toStringDescriptor = Object.getOwnPropertyDescriptor(Function.prototype, "toString");
+var toStringName = Object.getOwnPropertyDescriptor(Function.prototype.toString, "name");
+var changeToString = (to, from, name) => {
+  const withName = name === "" ? "" : `with ${name.trim()}() `;
+  const newToString = wrappedToString.bind(null, withName, from.toString());
+  Object.defineProperty(newToString, "name", toStringName);
+  const { writable, enumerable, configurable } = toStringDescriptor;
+  Object.defineProperty(to, "toString", { value: newToString, writable, enumerable, configurable });
+};
+function mimicFunction(to, from, { ignoreNonConfigurable = false } = {}) {
+  const { name } = to;
+  for (const property of Reflect.ownKeys(from)) {
+    copyProperty(to, from, property, ignoreNonConfigurable);
+  }
+  changePrototype(to, from);
+  changeToString(to, from, name);
+  return to;
+}
+
+// node_modules/memoize/distribution/index.js
+var cacheStore = new WeakMap;
+var cacheTimerStore = new WeakMap;
+function memoize(function_, { cacheKey, cache = new Map, maxAge } = {}) {
+  if (maxAge === 0) {
+    return function_;
+  }
+  if (typeof maxAge === "number") {
+    const maxSetIntervalValue = 2147483647;
+    if (maxAge > maxSetIntervalValue) {
+      throw new TypeError(`The \`maxAge\` option cannot exceed ${maxSetIntervalValue}.`);
+    }
+    if (maxAge < 0) {
+      throw new TypeError("The `maxAge` option should not be a negative number.");
+    }
+  }
+  const memoized = function(...arguments_) {
+    const key = cacheKey ? cacheKey(arguments_) : arguments_[0];
+    const cacheItem = cache.get(key);
+    if (cacheItem) {
+      return cacheItem.data;
+    }
+    const result = function_.apply(this, arguments_);
+    const computedMaxAge = typeof maxAge === "function" ? maxAge(...arguments_) : maxAge;
+    cache.set(key, {
+      data: result,
+      maxAge: computedMaxAge ? Date.now() + computedMaxAge : Number.POSITIVE_INFINITY
+    });
+    if (computedMaxAge && computedMaxAge > 0 && computedMaxAge !== Number.POSITIVE_INFINITY) {
+      const timer = setTimeout(() => {
+        cache.delete(key);
+      }, computedMaxAge);
+      timer.unref?.();
+      const timers = cacheTimerStore.get(function_) ?? new Set;
+      timers.add(timer);
+      cacheTimerStore.set(function_, timers);
+    }
+    return result;
+  };
+  mimicFunction(memoized, function_, {
+    ignoreNonConfigurable: true
+  });
+  cacheStore.set(memoized, cache);
+  return memoized;
+}
+
 // src/2_pull/github/update.ts
 function findLatestUpdate(comments) {
   const { strategies } = getUpdateDetectionConfig();
@@ -55791,7 +55902,7 @@ function findLatestUpdate(comments) {
 function extractUpdate(comment) {
   const { strategies } = getUpdateDetectionConfig();
   for (const strategy of strategies) {
-    const update2 = extractUpdateWithStrategy(comment, strategy);
+    const update2 = memoizedExtractUpdateWithStrategy(comment, strategy);
     if (update2 !== undefined) {
       return update2;
     }
@@ -55801,17 +55912,21 @@ function extractUpdate(comment) {
 function extractUpdateWithStrategy(comment, strategy) {
   switch (strategy.kind) {
     case "marker": {
-      const { marker } = strategy;
+      const { marker, timeframe } = strategy;
       if (comment.hasMarker(marker)) {
-        return comment._body;
+        if (!timeframe || comment.isWithinTimeframe(timeframe)) {
+          return comment._body;
+        }
       }
       break;
     }
     case "section": {
-      const { name: sectionName } = strategy;
+      const { section: sectionName, timeframe } = strategy;
       const section = comment.section(sectionName);
       if (section !== undefined) {
-        return section;
+        if (!timeframe || comment.isWithinTimeframe(timeframe)) {
+          return section;
+        }
       }
       break;
     }
@@ -55821,6 +55936,9 @@ function extractUpdateWithStrategy(comment, strategy) {
   }
   return;
 }
+var memoizedExtractUpdateWithStrategy = memoize(extractUpdateWithStrategy, {
+  cacheKey: ([comment, strategy]) => comment.url + JSON.stringify(strategy)
+});
 
 // src/2_pull/github/comment.ts
 class CommentWrapper {
@@ -55884,6 +56002,23 @@ class CommentWrapper {
     }
     return;
   }
+  isWithinTimeframe(timeframe) {
+    const now = new Date;
+    const createdAt = this.createdAt;
+    const day = 86400000;
+    switch (timeframe) {
+      case "all-time":
+        return true;
+      case "last-week":
+        return now.getTime() - createdAt.getTime() < 7 * day;
+      case "last-month":
+        return now.getTime() - createdAt.getTime() < 31 * day;
+      case "last-year":
+        return now.getTime() - createdAt.getTime() < 365 * day;
+      default:
+        throw new Error("Invalid timeframe provided for comment filtering.");
+    }
+  }
   get rendered() {
     return `#### ${this.header}
 
@@ -55906,6 +56041,9 @@ class IssueWrapper {
   issue;
   constructor(issue) {
     this.issue = issue;
+  }
+  get hasUpdate() {
+    return !this.latestUpdate.isEmpty;
   }
   get header() {
     return `[${this.title}](${this.url})`;
@@ -56028,6 +56166,12 @@ class IssueList {
   issues;
   get length() {
     return this.issues.length;
+  }
+  get isEmpty() {
+    return this.issues.length === 0;
+  }
+  get hasUpdates() {
+    return this.issues.some((issue) => issue.hasUpdate);
   }
   [Symbol.iterator]() {
     return this.issues[Symbol.iterator]();
