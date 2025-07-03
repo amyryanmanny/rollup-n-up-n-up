@@ -8,6 +8,7 @@ export function getConfig(
 ): string | undefined {
   // Flags set by CI/CD - https://stackoverflow.com/a/73973555
   if (process.env.GITHUB_ACTIONS === "true") {
+    // @nektos/act correctly sets this environment variable
     const input = getInput(key, { required });
     if (input !== "") {
       return input;
@@ -16,7 +17,12 @@ export function getConfig(
 
   // Fallback to local environment variable
   dotenv.config();
-  return process.env[key];
+  // Check various case variations of the key
+  return (
+    process.env[key] ??
+    process.env[key.toUpperCase()] ??
+    process.env[key.toLowerCase()]
+  );
 }
 
 export * from "./github";

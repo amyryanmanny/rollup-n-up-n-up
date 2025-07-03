@@ -13,6 +13,7 @@ jobs:
         id: render
         uses: ./actions/render
         env:
+          SYNAPSE_TLDR: synapse_tldr_gpt
           GITHUB_PAT_TOKEN: ${{ secrets.ROLLUP_PAT_TOKEN }}
         with:
           template: './templates/main.md.vto'

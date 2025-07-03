@@ -1,16 +1,29 @@
 {{- set synapseInitiatives = await github.issuesForProjectView("github", 21922, 2) -}}
 # [Synapse Initiative Updates {{ today }}]({{ synapseInitiatives.url }})
 
-### TL;DR
-
 {{ mark TLDR }}
 
 <details><summary>Expand to read original updates!</summary>
 {{ for issue of synapseInitiatives }}
 ### {{ issue.header }}
-{{ set update = await issue.latestUpdate() }}
-{{ update.update }}
+{{ set issueUpdate = issue.latestUpdate }}
+{{ issueUpdate.update |> stripHeaders }}
+
+{{ set subissues = await issue.subissues() }}
+{{ for subissue of subissues }}
+{{ set subissueUpdate = subissue.latestUpdate }}
+{{ if !subissueUpdate.isEmpty }}
+#### Subissue: {{ subissue.header }}
+
+{{ subissueUpdate.update |> stripHeaders }}
+{{ /if }}
+{{ /for }}
+
 {{ /for }}
 </details>
 
-{{ hoist TLDR = await memory.summarize("synapse_tldr.prompt.yaml") }}
+{{ debugTemplate() }}
+
+{{ debugMemory() }}
+
+{{ hoist TLDR = await memory.summarize("synapse_tldr") }}
