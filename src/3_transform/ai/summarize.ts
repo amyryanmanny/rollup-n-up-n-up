@@ -41,6 +41,8 @@ export async function runPrompt(params: PromptParameters): Promise<string> {
   // TODO: Count tokens
   // import { encoding_for_model, TiktokenModel } from "@dqbd/tiktoken";
 
+  // TODO: Replace Markdown image tags by image_url messages
+
   // Finally call the Models API
   const token = await getToken();
   const endpoint = getModelEndpoint(token.kind);
