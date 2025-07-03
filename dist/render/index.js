@@ -37785,20 +37785,21 @@ function getUpdateDetectionConfig() {
 }
 function parseUpdateDetection(updateDetectionBlob) {
   return updateDetectionBlob.split(`
-`).map((line) => line.trim()).map((line) => {
-    if (line === "") {
-      return;
-    }
+`).map((line) => line.trim()).filter((line) => line !== "").map((line) => {
     if (line === "skip" || line === "skip()") {
-      return {
-        kind: "skip"
-      };
+      return { kind: "skip" };
+    }
+    if (line === "fail" || line === "fail()") {
+      return { kind: "fail" };
+    }
+    if (line === "blame" || line === "blame()") {
+      return { kind: "blame" };
     }
     return {
       kind: "section",
-      name: line
+      section: line
     };
-  }).filter((config) => config !== undefined);
+  });
 }
 
 // src/util/config/index.ts
@@ -55884,12 +55885,21 @@ function findLatestUpdate(comments) {
   const { strategies } = getUpdateDetectionConfig();
   for (const strategy of strategies) {
     for (const comment of comments) {
-      if (strategy.kind === "skip") {
-        return;
-      }
-      const update2 = extractUpdateWithStrategy(comment, strategy);
-      if (update2 !== undefined) {
-        return comment;
+      switch (strategy.kind) {
+        case "section":
+        case "marker": {
+          const update2 = extractUpdateWithStrategy(comment, strategy);
+          if (update2 !== undefined) {
+            return comment;
+          }
+          break;
+        }
+        case "skip":
+          return;
+        case "fail":
+          throw new Error(`No valid update found for issue ${comment.issue.title} - ${comment.issue.url}!`);
+        case "blame":
+          throw new Error("Not implemented: blame strategy");
       }
     }
   }
@@ -55926,9 +55936,6 @@ function extractUpdateWithStrategy(comment, strategy) {
       }
       break;
     }
-    case "skip": {
-      break;
-    }
   }
   return;
 }
@@ -55941,25 +55948,25 @@ class CommentWrapper {
   memory = getMemory();
   static NULL_UPDATE = "No updates found";
   comment;
-  issueTitle;
+  issue;
   sections;
   boldedSections;
-  constructor(issueTitle, comment) {
-    this.issueTitle = issueTitle;
+  constructor(issue, comment) {
+    this.issue = issue;
     this.comment = comment;
     this.sections = splitMarkdownByHeaders(comment.body);
     this.boldedSections = splitMarkdownByBoldedText(comment.body);
   }
-  static empty(issueUrl) {
-    return new CommentWrapper("", {
+  static empty(issue) {
+    return new CommentWrapper(issue, {
       author: "",
       body: CommentWrapper.NULL_UPDATE,
       createdAt: new Date(0),
-      url: issueUrl
+      url: issue.url
     });
   }
   get header() {
-    return `[${this.issueTitle}](${this.url})`;
+    return `[${this.issue.title}](${this.url})`;
   }
   get url() {
     return this.comment.url;
@@ -56116,18 +56123,17 @@ class IssueWrapper {
     });
   }
   get comments() {
-    const issue = this.issue;
     const sortCommentsByDateDesc = (a2, b2) => {
       return b2.createdAt.getTime() - a2.createdAt.getTime();
     };
-    return issue.comments.map((comment) => new CommentWrapper(issue.title, comment)).sort(sortCommentsByDateDesc);
+    return this.issue.comments.map((comment) => new CommentWrapper(this, comment)).sort(sortCommentsByDateDesc);
   }
   get latestComment() {
     const comments = this.comments;
     if (comments.length !== 0) {
       return comments[0];
     }
-    return CommentWrapper.empty(this.url);
+    return CommentWrapper.empty(this);
   }
   get latestUpdate() {
     const comments = this.comments;
@@ -56137,7 +56143,7 @@ class IssueWrapper {
         return update2;
       }
     }
-    return CommentWrapper.empty(this.url);
+    return CommentWrapper.empty(this);
   }
   get rendered() {
     return `### ${this.type}: ${this.header}
