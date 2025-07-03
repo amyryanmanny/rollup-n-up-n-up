@@ -1,0 +1,39 @@
+name: Synapse TL;DR
+description: Summarizes input text concisely
+model: openai/o1
+modelParameters:
+  temperature: 0.2
+  # max_tokens: 4096
+messages:
+  - role: system
+    content: >
+      Summarize the given GitHub Issues, Comments, and Discussions into a Markdown report for leadership, including less technical audiences.
+  - role: user
+    content: |
+      Summarize the given updates into a rollup for the Synapse team.
+
+      Use the following sections for the output:
+
+      - ## TL;DR
+      - ## 🎉 Wins/Accomplishments 
+        - ### What We Shipped
+        - ### What We're Learning
+      - ## 📣 FYI
+      - ## 🆘 SOS/Need Support
+
+      Make sure:
+
+      - Never include line breaks (like ---), or meta text like "here you go".
+      - For the TL;DR, pay extra attention to examples, big ships, demos, and dogfooding time saved.
+      - Group updates for each Initiative (but not Epics)
+        - Include the title heading, and link to the comment the update was taken from.
+      - Include links from the original update that are appropriate.
+        - Always use the format [text](link) for links.
+        - Don't break issue comment links. (e.g. https://github.com/github/synapse/issues/4#issuecomment-123456789)
+      - Include specific GitHub handles (example @amyryanmanny) if they're in the summary, but if they're not, names are fine.
+      - Include the reason why an update is important for senior leadership.
+      - Include additional information in the summary rather than saying "Updates and continued progress" or "For more context on each project."
+
+      <text>
+      {{input}}
+      </text>

@@ -38,8 +38,8 @@ class Memory {
     return bank.slice();
   }
 
-  private getBankContent(bankIndex: number = 0): string {
-    const bank = this.getBank(bankIndex);
+  getBankContent(memoryBank: number = 0): string {
+    const bank = this.getBank(memoryBank);
     return bank.join("\n\n");
   }
 

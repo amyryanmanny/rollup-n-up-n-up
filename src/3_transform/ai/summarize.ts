@@ -1,95 +1,35 @@
-import fs from "fs";
-import path from "path";
-import yaml from "yaml";
-
 import ModelClient, { isUnexpected } from "@azure-rest/ai-inference";
 import { AzureKeyCredential } from "@azure/core-auth";
 
-import { getConfig, getModelEndpoint } from "@config";
+import { getModelEndpoint, loadPromptFile } from "@config";
 import { getToken } from "@util/octokit";
 import { insertPlaceholders } from "./placeholders";
-
-const DEFAULT_SYSTEM_PROMPT =
-  "You are an assistant summarizing structured GitHub Issues, Comments, and Discussions into a concise rollup for leadership, including less technical audiences.";
-const DEFAULT_MODEL = "openai/gpt-4.1";
-const DEFAULT_MAX_TOKENS = 4096;
 
 export type PromptParameters = {
   name?: string;
   description?: string;
-  model?: string;
+  model: string;
   modelParameters?: {
     temperature?: number;
+    max_tokens?: number;
+    max_completion_tokens?: number;
+    // Unknown parameters - I will add more as I encounter them
     [key: string]: string | number | boolean | undefined;
   };
   messages: Array<{
-    role: "system" | "user";
+    role: "system" | "user" | "assistant" | "developer";
     content: string;
   }>;
-
-  // Non-standard API
-  maxTokens?: string | number;
 };
 
-// TODO: Move to @util/config/model, and handle getConfig("model_name") after checking directories
-// And require model name for better parity. All for easier matrix support
-function loadPromptFile(promptFilePath: string): PromptParameters {
-  if (!promptFilePath.includes(".")) {
-    // If no file extension is provided, assume it's a .prompt.yaml file
-    promptFilePath += ".prompt.yaml";
-  }
-
-  const directories = [
-    "", // Absolute path
-    ".github/prompts",
-    ".github/Prompts",
-    "prompts",
-    "Prompts",
-  ];
-
-  let yamlBlob: string | undefined;
-  for (const directory of directories) {
-    const fullPath = path.join(directory, promptFilePath);
-    if (fs.existsSync(fullPath)) {
-      yamlBlob = fs.readFileSync(fullPath, "utf-8");
-    }
-  }
-
-  if (yamlBlob === undefined) {
-    throw new Error(`Prompt file "${promptFilePath}" does not exist.`);
-  } else if (yamlBlob.trim() === "") {
-    throw new Error(`Prompt file "${promptFilePath}" is empty.`);
-  }
-
-  // Parse YAML
-  return yaml.parse(yamlBlob) as PromptParameters;
-}
-
 export async function runPrompt(params: PromptParameters): Promise<string> {
-  const { messages, model, modelParameters, maxTokens } = {
+  const { messages, model, modelParameters } = {
     messages: params.messages,
-    model: params.model || getConfig("MODEL") || DEFAULT_MODEL,
+    model: params.model,
     modelParameters: params.modelParameters || {},
-    maxTokens: Number(params.maxTokens) || DEFAULT_MAX_TOKENS,
   };
 
   // Validate inputs
-  if (!messages.find((msg) => msg.role === "system")) {
-    messages.unshift({
-      role: "system",
-      content: getConfig("SYSTEM_PROMPT") || DEFAULT_SYSTEM_PROMPT,
-    });
-  }
-
-  // TODO: Force model configuration to all go through prompt files
-  messages.filter((msg) => {
-    // Some models reject certain types of messages
-    if (msg.role === "system" && model.startsWith("openai/o1")) {
-      return false;
-    }
-    return true;
-  });
-
   if (!messages.find((msg) => msg.role === "user")) {
     throw new Error("No user message found in the prompt.");
   }
@@ -102,13 +42,13 @@ export async function runPrompt(params: PromptParameters): Promise<string> {
   // import { encoding_for_model, TiktokenModel } from "@dqbd/tiktoken";
 
   // Finally call the Models API
-  try {
-    const token = await getToken();
-    const endpoint = getModelEndpoint(token.kind);
+  const token = await getToken();
+  const endpoint = getModelEndpoint(token.kind);
 
+  try {
     // TODO: Detailed debug info MODEL_NAME, etc. Prepare for Datadog
     const client = ModelClient(endpoint, new AzureKeyCredential(token.value), {
-      apiVersion: "2024-12-01-preview",
+      apiVersion: "2024-12-01-preview", // For o1 support
       userAgentOptions: { userAgentPrefix: "github-actions-rollup-n-up-n-up" },
     });
 
@@ -117,8 +57,6 @@ export async function runPrompt(params: PromptParameters): Promise<string> {
         ...modelParameters,
         model,
         messages,
-        [model === "openai/o1" ? "max_completion_tokens" : "max_tokens"]:
-          maxTokens ? Number(maxTokens) : DEFAULT_MAX_TOKENS,
       },
     });
 
@@ -137,11 +75,7 @@ export async function runPrompt(params: PromptParameters): Promise<string> {
     }
     return modelResponse;
   } catch (error: unknown) {
-    if (error instanceof Error) {
-      throw new Error(`Error: ${error.message}`);
-    } else {
-      throw new Error(`Unexpected Error: ${JSON.stringify(error)}`);
-    }
+    throw new Error(`Unexpected Error: ${JSON.stringify(error)}`);
   }
 }
 
