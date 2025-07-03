@@ -3,19 +3,14 @@ import memoize from "memoize";
 import { getUpdateDetectionConfig } from "@util/config/update";
 import { CommentWrapper } from "./comment";
 
-export type UpdateDetectionKind = "marker" | "section" | "skip";
 export type UpdateDetectionStrategy =
-  | MarkerStrategy
   | SectionStrategy
-  | SkipStrategy;
+  | MarkerStrategy
+  | SkipStrategy
+  | FailStrategy
+  | BlameStrategy;
 
 export type Timeframe = "last-week" | "last-month" | "last-year" | "all-time";
-
-type MarkerStrategy = {
-  kind: "marker";
-  marker: RegExp;
-  timeframe?: Timeframe;
-};
 
 type SectionStrategy = {
   kind: "section";
@@ -23,8 +18,23 @@ type SectionStrategy = {
   timeframe?: Timeframe;
 };
 
+type MarkerStrategy = {
+  kind: "marker";
+  marker: RegExp;
+  timeframe?: Timeframe;
+};
+
 type SkipStrategy = {
   kind: "skip";
+};
+
+type FailStrategy = {
+  kind: "fail";
+};
+
+type BlameStrategy = {
+  kind: "blame";
+  // TODO: List name
 };
 
 export function findLatestUpdate(
@@ -34,14 +44,27 @@ export function findLatestUpdate(
 
   for (const strategy of strategies) {
     for (const comment of comments) {
-      if (strategy.kind === "skip") {
-        // If we've reached this strategy, we couldn't find an update
-        // And we don't want to return the latest comment
-        return undefined;
-      }
-      const update = extractUpdateWithStrategy(comment, strategy);
-      if (update !== undefined) {
-        return comment;
+      switch (strategy.kind) {
+        case "section":
+        case "marker": {
+          const update = extractUpdateWithStrategy(comment, strategy);
+          if (update !== undefined) {
+            return comment;
+          }
+          break;
+        }
+        // If we've reached these strategies, we couldn't find an update
+        // And need to execute special behavior
+        case "skip":
+          return undefined; // Return no comment
+        case "fail":
+          throw new Error(
+            `No valid update found for issue ${comment.issue.title} - ${comment.issue.url}!`,
+          );
+        case "blame":
+          // TODO: Push them to a Singleton list
+          // Maybe in Memory class if implementation doesn't violate SRP too bad
+          throw new Error("Not implemented: blame strategy");
       }
     }
   }
@@ -86,9 +109,6 @@ function extractUpdateWithStrategy(
         }
       }
       break;
-    }
-    case "skip": {
-      break; // Doesn't mean anything to the individual comment, only the list
     }
   }
   return undefined;

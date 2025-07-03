@@ -1,10 +1,7 @@
 // TODO: This file needs test cases bad
 import { getConfig } from "@util/config";
 
-import {
-  type UpdateDetectionStrategy,
-  type UpdateDetectionKind,
-} from "@pull/github/update";
+import { type UpdateDetectionStrategy } from "@pull/github/update";
 
 type UpdateDetectionConfig = {
   strategies: UpdateDetectionStrategy[];
@@ -40,8 +37,8 @@ export function getUpdateDetectionConfig(): UpdateDetectionConfig {
     ];
   }
 
-  // The marker strategy should come after the sections for now
-  // TODO: Add a way to configure order, and possible Regex of this marker
+  // The marker strategy should always go after the sections for now
+  // TODO: Add a way to configure Regex of this marker
   let markerIndex = strategies.findLastIndex((s) => s.kind === "section");
   if (markerIndex === -1) markerIndex = 0;
 
@@ -62,26 +59,29 @@ function parseUpdateDetection(
   return updateDetectionBlob
     .split("\n")
     .map((line) => line.trim())
-    .map((line) => {
-      if (line === "") {
-        return undefined;
-      }
-
+    .filter((line) => line !== "")
+    .map((line): UpdateDetectionStrategy | undefined => {
       // TODO: Extract function-call syntax like "lastWeek(Update)"
+      // Command, ...args
 
       if (line === "skip" || line === "skip()") {
-        return {
-          kind: "skip" as UpdateDetectionKind,
-        } as UpdateDetectionStrategy;
+        return { kind: "skip" };
       }
 
-      // TODO: Handle other types
+      if (line === "fail" || line === "fail()") {
+        return { kind: "fail" };
+      }
+
+      if (line === "blame" || line === "blame()") {
+        return { kind: "blame" };
+      }
+
+      // TODO: Handle marker type
 
       // Any lines that don't match above are considered sections
       return {
-        kind: "section" as UpdateDetectionKind,
-        name: line,
-      } as UpdateDetectionStrategy;
-    })
-    .filter((config) => config !== undefined);
+        kind: "section",
+        section: line,
+      };
+    });
 }
