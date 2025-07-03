@@ -141,17 +141,15 @@ export class IssueWrapper {
 
   // Comment
   get comments(): CommentWrapper[] {
-    // TODO: Memoize with CommentList
-    const issue = this.issue;
-
-    // TODO: Create a CommentList to perform this logic
+    // TODO: Replace with CommentList property
+    // TODO: Sorting should be done in CommentList constructor
     const sortCommentsByDateDesc = (a: CommentWrapper, b: CommentWrapper) => {
       // Sort comments by createdAt in descending order
       return b.createdAt.getTime() - a.createdAt.getTime();
     };
 
-    return (issue.comments as Comment[])
-      .map((comment) => new CommentWrapper(issue.title, comment))
+    return (this.issue.comments as Comment[])
+      .map((comment) => new CommentWrapper(this, comment))
       .sort(sortCommentsByDateDesc); // Newest comments first
   }
 
@@ -162,7 +160,7 @@ export class IssueWrapper {
       return comments[0];
     }
 
-    return CommentWrapper.empty(this.url);
+    return CommentWrapper.empty(this);
   }
 
   get latestUpdate(): CommentWrapper {
@@ -175,7 +173,7 @@ export class IssueWrapper {
       }
     }
 
-    return CommentWrapper.empty(this.url);
+    return CommentWrapper.empty(this);
   }
 
   // Render / Memory Functions

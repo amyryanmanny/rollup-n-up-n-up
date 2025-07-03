@@ -6,6 +6,7 @@ import {
   toSnakeCase,
 } from "@util/string";
 import { extractUpdate, type Timeframe } from "./update";
+import type { IssueWrapper } from "./issue";
 
 export type Comment = {
   author: string;
@@ -20,31 +21,33 @@ export class CommentWrapper {
   static NULL_UPDATE = "No updates found";
 
   private comment: Comment;
-  private issueTitle: string;
+  public issue: IssueWrapper;
 
   private sections: Map<string, string>;
   private boldedSections: Map<string, string>;
 
-  constructor(issueTitle: string, comment: Comment) {
-    this.issueTitle = issueTitle;
+  constructor(issue: IssueWrapper, comment: Comment) {
+    // TODO: Move this.issue onto CommentList class instead
+    // Call it parent, also support Dicussion since there's big overlap
+    this.issue = issue;
     this.comment = comment;
 
     this.sections = splitMarkdownByHeaders(comment.body);
     this.boldedSections = splitMarkdownByBoldedText(comment.body);
   }
 
-  static empty(issueUrl: string): CommentWrapper {
-    return new CommentWrapper("", {
+  static empty(issue: IssueWrapper): CommentWrapper {
+    return new CommentWrapper(issue, {
       author: "",
       body: CommentWrapper.NULL_UPDATE,
       createdAt: new Date(0),
-      url: issueUrl,
+      url: issue.url,
     });
   }
 
   // Properties
   get header(): string {
-    return `[${this.issueTitle}](${this.url})`;
+    return `[${this.issue.title}](${this.url})`;
   }
 
   get url(): string {
