@@ -11,7 +11,7 @@ export function getMemory(): Memory {
   return memory;
 }
 
-class Memory {
+export class Memory {
   private banks: DefaultDict<number, string[]>;
 
   constructor() {

@@ -6,6 +6,7 @@ import * as plugins from "./plugins";
 
 import { GitHubClient } from "../2_pull/github/client";
 import { getMemory } from "../3_transform/memory";
+import { debugMemory, debugTemplate } from "./debug";
 
 // TODO: Configurable templatesDir
 const templatesDir = path.join(process.cwd(), "templates");
@@ -34,17 +35,14 @@ const today = new Date().toISOString().split("T")[0];
 
 const globals = { github, memory, today };
 
-function debugTemplate(source: string): string {
-  return `<details><summary>Template</summary>\n\n\`\`\`\n${source}\n\`\`\`\n\n</details>`;
-}
-
 export async function renderTemplate(templatePath: string): Promise<string> {
   // Load the template
   const template = await env.load(templatePath);
   // Render the template with the provided data
   const result = await template({
     ...globals,
-    debugTemplate: () => debugTemplate(template.source),
+    debugTemplate: () => debugTemplate(template),
+    debugMemory: (memoryBank: number = 0) => debugMemory(memory, memoryBank),
   });
 
   memory.headbonk(); // Reset memory after rendering
