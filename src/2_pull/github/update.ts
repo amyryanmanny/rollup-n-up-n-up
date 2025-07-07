@@ -4,6 +4,7 @@ import { getUpdateDetectionConfig } from "@util/config/update";
 import { CommentWrapper } from "./comment";
 
 export type UpdateDetectionStrategy =
+  | TimeboxStrategy
   | SectionStrategy
   | MarkerStrategy
   | SkipStrategy
@@ -11,6 +12,11 @@ export type UpdateDetectionStrategy =
   | BlameStrategy;
 
 export type Timeframe = "last-week" | "last-month" | "last-year" | "all-time";
+
+type TimeboxStrategy = {
+  kind: "timebox";
+  timeframe: Timeframe;
+};
 
 type SectionStrategy = {
   kind: "section";
@@ -45,6 +51,7 @@ export function findLatestUpdate(
   for (const strategy of strategies) {
     for (const comment of comments) {
       switch (strategy.kind) {
+        case "timebox":
         case "section":
         case "marker": {
           const update = extractUpdateWithStrategy(comment, strategy);
@@ -56,15 +63,12 @@ export function findLatestUpdate(
         // If we've reached these strategies, we couldn't find an update
         // And need to execute special behavior
         case "skip":
+        case "blame":
           return undefined; // Return no comment
         case "fail":
           throw new Error(
             `No valid update found for issue ${comment.issue.title} - ${comment.issue.url}!`,
           );
-        case "blame":
-          // TODO: Push them to a Singleton list
-          // Maybe in Memory class if implementation doesn't violate SRP too bad
-          throw new Error("Not implemented: blame strategy");
       }
     }
   }
@@ -89,6 +93,13 @@ function extractUpdateWithStrategy(
   strategy: UpdateDetectionStrategy,
 ): string | undefined {
   switch (strategy.kind) {
+    case "timebox": {
+      const { timeframe } = strategy as TimeboxStrategy;
+      if (comment.isWithinTimeframe(timeframe)) {
+        return comment._body;
+      }
+      break;
+    }
     case "marker": {
       const { marker, timeframe } = strategy as MarkerStrategy;
       if (comment.hasMarker(marker)) {
