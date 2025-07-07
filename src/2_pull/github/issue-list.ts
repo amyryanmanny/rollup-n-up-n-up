@@ -20,7 +20,7 @@ import {
   type ListSubissuesForIssueParameters,
 } from "./graphql/subissues";
 
-import { type Issue, IssueWrapper } from "./issue";
+import { IssueWrapper } from "./issue";
 
 type SourceOfTruth = {
   title: string;
@@ -135,8 +135,8 @@ export class IssueList {
         groups.set(
           key,
           new IssueList([], {
-            title: this.sourceOfTruth.title.slice(),
-            url: this.sourceOfTruth.url.slice(),
+            title: this.sourceOfTruth.title,
+            url: this.sourceOfTruth.url,
             groupKey: key || "No " + title(fieldName),
           }),
         );
@@ -178,9 +178,9 @@ export class IssueList {
   }
 
   // Constructors
-  private constructor(issues: Issue[], sourceOfTruth: SourceOfTruth) {
+  private constructor(issues: IssueWrapper[], sourceOfTruth: SourceOfTruth) {
     this.sourceOfTruth = sourceOfTruth;
-    this.issues = issues.map((issue) => new IssueWrapper(issue));
+    this.issues = issues;
   }
 
   static async forRepo(
@@ -188,7 +188,10 @@ export class IssueList {
   ): Promise<IssueList> {
     const response = await listIssuesForRepo(params);
     const { issues, title, url } = response;
-    return new IssueList(issues, { title, url });
+    return new IssueList(
+      issues.map((issue) => new IssueWrapper(issue)),
+      { title, url },
+    );
   }
 
   static async forSubissues(
@@ -196,7 +199,10 @@ export class IssueList {
   ): Promise<IssueList> {
     const response = await listSubissuesForIssue(params);
     const { subissues, title, url } = response;
-    return new IssueList(subissues, { title, url });
+    return new IssueList(
+      subissues.map((issue) => new IssueWrapper(issue)),
+      { title, url },
+    );
   }
 
   static async forProject(
@@ -204,7 +210,10 @@ export class IssueList {
   ): Promise<IssueList> {
     const response = await listIssuesForProject(params);
     const { issues, title, url } = response;
-    return new IssueList(issues, { title, url });
+    return new IssueList(
+      issues.map((issue) => new IssueWrapper(issue)),
+      { title, url },
+    );
   }
 
   static async forProjectView(
