@@ -48,6 +48,14 @@ export class IssueList {
     return this.issues.some((issue) => issue.hasUpdate);
   }
 
+  get blame(): IssueList {
+    const issuesWithNoUpdate = this.issues.filter((issue) => !issue.hasUpdate);
+    return new IssueList(issuesWithNoUpdate, {
+      title: `${this.sourceOfTruth.title} - Missing Updates`,
+      url: this.sourceOfTruth.url,
+    });
+  }
+
   [Symbol.iterator]() {
     return this.issues[Symbol.iterator]();
   }
