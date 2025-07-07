@@ -60,7 +60,7 @@ function parseUpdateDetection(
     .split("\n")
     .map((line) => line.trim())
     .filter((line) => line !== "")
-    .map((line): UpdateDetectionStrategy | undefined => {
+    .map((line): UpdateDetectionStrategy => {
       // TODO: Extract function-call syntax like "lastWeek(Update)"
       // Command, ...args
 
