@@ -1,10 +1,18 @@
 // TODO: This file needs test cases bad
 import { getConfig } from "@util/config";
 
-import { type UpdateDetectionStrategy } from "@pull/github/update";
+import {
+  type Timeframe,
+  type UpdateDetectionStrategy,
+} from "@pull/github/update";
 
 type UpdateDetectionConfig = {
   strategies: UpdateDetectionStrategy[];
+};
+
+type FunctionSyntax = {
+  name: string;
+  args: string[];
 };
 
 const DEFAULT_MARKER = /<!--\s*UPDATE\s*-->/i; // Case insensitive with variable spacing
@@ -37,19 +45,24 @@ export function getUpdateDetectionConfig(): UpdateDetectionConfig {
     ];
   }
 
-  // The marker strategy should always go after the sections for now
-  // TODO: Add a way to configure Regex of this marker
-  let markerIndex = strategies.findLastIndex((s) => s.kind === "section");
-  if (markerIndex === -1) markerIndex = 0;
-
-  strategies.splice(markerIndex, 0, {
-    kind: "marker",
-    marker: DEFAULT_MARKER,
-    timeframe: "last-week",
-  });
-
   updateDetectionConfig = { strategies };
   return updateDetectionConfig;
+}
+
+function parseFunctionSyntax(input: string): FunctionSyntax {
+  const functionCallRegex = /^([a-zA-Z_][a-zA-Z0-9_]*)\(([^)]*)\)$/;
+
+  const match = input.match(functionCallRegex);
+  if (match) {
+    const [, functionName, argsString] = match;
+    const args = argsString
+      .split(",")
+      .map((arg) => arg.trim())
+      .map((arg) => arg.replace(/^["']|["']$/g, "")); // Remove optional quotes
+    return { name: functionName, args };
+  } else {
+    return { name: input, args: [] };
+  }
 }
 
 function parseUpdateDetection(
@@ -61,27 +74,67 @@ function parseUpdateDetection(
     .map((line) => line.trim())
     .filter((line) => line !== "")
     .map((line): UpdateDetectionStrategy => {
-      // TODO: Extract function-call syntax like "lastWeek(Update)"
-      // Command, ...args
+      const { name: funcName, args } = parseFunctionSyntax(line);
 
-      if (line === "skip" || line === "skip()") {
-        return { kind: "skip" };
+      // Handle special functions
+      switch (funcName) {
+        case "skip":
+          return { kind: "skip" };
+        case "fail":
+          return { kind: "fail" };
+        case "blame":
+          return { kind: "blame" };
       }
 
-      if (line === "fail" || line === "fail()") {
-        return { kind: "fail" };
+      // Extract the timeframe from funcName
+      // E.g. lastWeek(), lastWeek(Update), lastWeek(MARKER)
+      let timeframe: Timeframe | undefined = undefined;
+      switch (funcName) {
+        case "lastWeek":
+          timeframe = "last-week";
+          break;
+        case "lastMonth":
+          timeframe = "last-month";
+          break;
+        case "lastYear":
+          timeframe = "last-year";
+          break;
+        case "allTime":
+          timeframe = "all-time";
+          break;
+        default:
+          if (args.length > 0) {
+            throw new Error(
+              `Invalid function call "${funcName}()" in updateDetection config.`,
+            );
+          }
       }
 
-      if (line === "blame" || line === "blame()") {
-        return { kind: "blame" };
+      if (args.length === 0 && timeframe !== undefined) {
+        // No section name provided, just handle timeframe
+        return {
+          kind: "timebox",
+          timeframe,
+        };
       }
 
-      // TODO: Handle marker type
+      const sectionName = args[0] || funcName;
 
-      // Any lines that don't match above are considered sections
-      return {
-        kind: "section",
-        section: line,
-      };
+      switch (sectionName) {
+        case "MARKER":
+        case "DEFAULT_MARKER":
+          return {
+            kind: "marker",
+            // TODO: Add a way to configure the Regex
+            marker: DEFAULT_MARKER,
+            timeframe,
+          };
+        default:
+          return {
+            kind: "section",
+            section: sectionName,
+            timeframe,
+          };
+      }
     });
 }

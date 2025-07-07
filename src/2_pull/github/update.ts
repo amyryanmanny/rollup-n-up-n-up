@@ -40,7 +40,7 @@ type FailStrategy = {
 
 type BlameStrategy = {
   kind: "blame";
-  // TODO: List name
+  // TODO: Add special blame behavior beyond skip. E.g. Slack messages
 };
 
 export function findLatestUpdate(
