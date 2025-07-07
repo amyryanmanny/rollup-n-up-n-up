@@ -37772,33 +37772,73 @@ function getUpdateDetectionConfig() {
       { kind: "skip" }
     ];
   }
-  let markerIndex = strategies.findLastIndex((s) => s.kind === "section");
-  if (markerIndex === -1)
-    markerIndex = 0;
-  strategies.splice(markerIndex, 0, {
-    kind: "marker",
-    marker: DEFAULT_MARKER,
-    timeframe: "last-week"
-  });
   updateDetectionConfig = { strategies };
   return updateDetectionConfig;
+}
+function parseFunctionSyntax(input) {
+  const functionCallRegex = /^([a-zA-Z_][a-zA-Z0-9_]*)\(([^)]*)\)$/;
+  const match = input.match(functionCallRegex);
+  if (match) {
+    const [, functionName, argsString] = match;
+    const args = argsString.split(",").map((arg) => arg.trim()).map((arg) => arg.replace(/^["']|["']$/g, ""));
+    return { name: functionName, args };
+  } else {
+    return { name: input, args: [] };
+  }
 }
 function parseUpdateDetection(updateDetectionBlob) {
   return updateDetectionBlob.split(`
 `).map((line) => line.trim()).filter((line) => line !== "").map((line) => {
-    if (line === "skip" || line === "skip()") {
-      return { kind: "skip" };
+    const { name: funcName, args } = parseFunctionSyntax(line);
+    switch (funcName) {
+      case "skip":
+        return { kind: "skip" };
+      case "fail":
+        return { kind: "fail" };
+      case "blame":
+        return { kind: "blame" };
     }
-    if (line === "fail" || line === "fail()") {
-      return { kind: "fail" };
+    let timeframe = undefined;
+    switch (funcName) {
+      case "lastWeek":
+        timeframe = "last-week";
+        break;
+      case "lastMonth":
+        timeframe = "last-month";
+        break;
+      case "lastYear":
+        timeframe = "last-year";
+        break;
+      case "allTime":
+        timeframe = "all-time";
+        break;
+      default:
+        if (args.length > 0) {
+          throw new Error(`Invalid function call "${funcName}()" in updateDetection config.`);
+        }
     }
-    if (line === "blame" || line === "blame()") {
-      return { kind: "blame" };
+    if (args.length === 0 && timeframe !== undefined) {
+      return {
+        kind: "timebox",
+        timeframe
+      };
     }
-    return {
-      kind: "section",
-      section: line
-    };
+    const sectionName = args[0] || funcName;
+    switch (sectionName) {
+      case "MARKER":
+      case "DEFAULT_MARKER":
+        return {
+          kind: "marker",
+          marker: DEFAULT_MARKER,
+          timeframe
+        };
+      default:
+        return {
+          kind: "section",
+          section: sectionName,
+          timeframe
+        };
+    }
   });
 }
 
@@ -55886,6 +55926,7 @@ function findLatestUpdate(comments) {
   for (const strategy of strategies) {
     for (const comment of comments) {
       switch (strategy.kind) {
+        case "timebox":
         case "section":
         case "marker": {
           const update2 = extractUpdateWithStrategy(comment, strategy);
@@ -55895,11 +55936,10 @@ function findLatestUpdate(comments) {
           break;
         }
         case "skip":
+        case "blame":
           return;
         case "fail":
           throw new Error(`No valid update found for issue ${comment.issue.title} - ${comment.issue.url}!`);
-        case "blame":
-          throw new Error("Not implemented: blame strategy");
       }
     }
   }
@@ -55917,6 +55957,13 @@ function extractUpdate(comment) {
 }
 function extractUpdateWithStrategy(comment, strategy) {
   switch (strategy.kind) {
+    case "timebox": {
+      const { timeframe } = strategy;
+      if (comment.isWithinTimeframe(timeframe)) {
+        return comment._body;
+      }
+      break;
+    }
     case "marker": {
       const { marker, timeframe } = strategy;
       if (comment.hasMarker(marker)) {
@@ -56175,6 +56222,13 @@ class IssueList {
   get hasUpdates() {
     return this.issues.some((issue) => issue.hasUpdate);
   }
+  get blame() {
+    const issuesWithNoUpdate = this.issues.filter((issue) => !issue.hasUpdate);
+    return new IssueList(issuesWithNoUpdate, {
+      title: `${this.sourceOfTruth.title} - Missing Updates`,
+      url: this.sourceOfTruth.url
+    });
+  }
   [Symbol.iterator]() {
     return this.issues[Symbol.iterator]();
   }
@@ -56232,8 +56286,8 @@ class IssueList {
       const key = issue.field(fieldName);
       if (!groups.has(key)) {
         groups.set(key, new IssueList([], {
-          title: this.sourceOfTruth.title.slice(),
-          url: this.sourceOfTruth.url.slice(),
+          title: this.sourceOfTruth.title,
+          url: this.sourceOfTruth.url,
           groupKey: key || "No " + title(fieldName)
         }));
       }
@@ -56261,22 +56315,22 @@ class IssueList {
   }
   constructor(issues, sourceOfTruth) {
     this.sourceOfTruth = sourceOfTruth;
-    this.issues = issues.map((issue) => new IssueWrapper(issue));
+    this.issues = issues;
   }
   static async forRepo(params) {
     const response = await listIssuesForRepo(params);
     const { issues, title: title2, url } = response;
-    return new IssueList(issues, { title: title2, url });
+    return new IssueList(issues.map((issue) => new IssueWrapper(issue)), { title: title2, url });
   }
   static async forSubissues(params) {
     const response = await listSubissuesForIssue(params);
     const { subissues, title: title2, url } = response;
-    return new IssueList(subissues, { title: title2, url });
+    return new IssueList(subissues.map((issue) => new IssueWrapper(issue)), { title: title2, url });
   }
   static async forProject(params) {
     const response = await listIssuesForProject(params);
     const { issues, title: title2, url } = response;
-    return new IssueList(issues, { title: title2, url });
+    return new IssueList(issues.map((issue) => new IssueWrapper(issue)), { title: title2, url });
   }
   static async forProjectView(params) {
     let view;
