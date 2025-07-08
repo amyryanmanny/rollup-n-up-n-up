@@ -1,6 +1,6 @@
 name: Synapse TL;DR
 description: Summarizes input text concisely
-model: openai/o1
+model: openai/gpt-4.1
 modelParameters:
   temperature: 0.2
   # max_tokens: 4096
