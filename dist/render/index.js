@@ -37800,6 +37800,9 @@ function parseUpdateDetection(updateDetectionBlob) {
     }
     let timeframe = undefined;
     switch (funcName) {
+      case "today":
+        timeframe = "today";
+        break;
       case "lastWeek":
         timeframe = "last-week";
         break;
@@ -37814,7 +37817,7 @@ function parseUpdateDetection(updateDetectionBlob) {
         break;
       default:
         if (args.length > 0) {
-          throw new Error(`Invalid function call "${funcName}()" in updateDetection config.`);
+          throw new Error(`Invalid function call "${funcName}()" in update_detection config.`);
         }
     }
     if (args.length === 0 && timeframe !== undefined) {
@@ -56059,6 +56062,8 @@ class CommentWrapper {
     switch (timeframe) {
       case "all-time":
         return true;
+      case "today":
+        return now.getTime() - createdAt.getTime() < day;
       case "last-week":
         return now.getTime() - createdAt.getTime() < 7 * day;
       case "last-month":
@@ -56066,7 +56071,7 @@ class CommentWrapper {
       case "last-year":
         return now.getTime() - createdAt.getTime() < 365 * day;
       default:
-        throw new Error("Invalid timeframe provided for comment filtering.");
+        throw new Error(`Invalid timeframe for comment filtering: "${timeframe}".`);
     }
   }
   get rendered() {
