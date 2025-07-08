@@ -55932,8 +55932,8 @@ function findLatestUpdate(comments) {
         case "timebox":
         case "section":
         case "marker": {
-          const update2 = extractUpdateWithStrategy(comment, strategy);
-          if (update2 !== undefined && update2.trim() !== "") {
+          const update2 = memoizedExtractUpdateWithStrategy(comment, strategy);
+          if (update2 !== undefined) {
             return comment;
           }
           break;
@@ -55959,30 +55959,31 @@ function extractUpdate(comment) {
   return comment._body;
 }
 function extractUpdateWithStrategy(comment, strategy) {
+  if (comment.isEmpty) {
+    return;
+  }
+  if ("timeframe" in strategy) {
+    const { timeframe } = strategy;
+    if (timeframe && !comment.isWithinTimeframe(timeframe)) {
+      return;
+    }
+  }
   switch (strategy.kind) {
     case "timebox": {
-      const { timeframe } = strategy;
-      if (comment.isWithinTimeframe(timeframe)) {
+      return comment._body;
+    }
+    case "marker": {
+      const { marker } = strategy;
+      if (comment.hasMarker(marker)) {
         return comment._body;
       }
       break;
     }
-    case "marker": {
-      const { marker, timeframe } = strategy;
-      if (comment.hasMarker(marker)) {
-        if (!timeframe || comment.isWithinTimeframe(timeframe)) {
-          return comment._body;
-        }
-      }
-      break;
-    }
     case "section": {
-      const { section: sectionName, timeframe } = strategy;
+      const { section: sectionName } = strategy;
       const section = comment.section(sectionName);
-      if (section !== undefined) {
-        if (!timeframe || comment.isWithinTimeframe(timeframe)) {
-          return section;
-        }
+      if (section !== undefined && section.trim() !== "") {
+        return section;
       }
       break;
     }

@@ -59,8 +59,9 @@ export function findLatestUpdate(
         case "timebox":
         case "section":
         case "marker": {
-          const update = extractUpdateWithStrategy(comment, strategy);
-          if (update !== undefined && update.trim() !== "") {
+          // TODO: Timeframe short circuit
+          const update = memoizedExtractUpdateWithStrategy(comment, strategy);
+          if (update !== undefined) {
             return comment;
           }
           break;
@@ -97,36 +98,40 @@ function extractUpdateWithStrategy(
   comment: CommentWrapper,
   strategy: UpdateDetectionStrategy,
 ): string | undefined {
+  if (comment.isEmpty) {
+    // Empty comment isn't an update no matter the strategy
+    return undefined;
+  }
+
+  // Check timeframe first
+  if ("timeframe" in strategy) {
+    const { timeframe } = strategy;
+    if (timeframe && !comment.isWithinTimeframe(timeframe)) {
+      return undefined;
+    }
+  }
+
   switch (strategy.kind) {
     case "timebox": {
-      const { timeframe } = strategy as TimeboxStrategy;
-      if (comment.isWithinTimeframe(timeframe)) {
+      return comment._body;
+    }
+    case "marker": {
+      const { marker } = strategy as MarkerStrategy;
+      if (comment.hasMarker(marker)) {
         return comment._body;
       }
       break;
     }
-    case "marker": {
-      const { marker, timeframe } = strategy as MarkerStrategy;
-      if (comment.hasMarker(marker)) {
-        if (!timeframe || comment.isWithinTimeframe(timeframe)) {
-          return comment._body;
-        }
-      }
-      break;
-    }
     case "section": {
-      const { section: sectionName, timeframe } = strategy as SectionStrategy;
+      const { section: sectionName } = strategy as SectionStrategy;
       const section = comment.section(sectionName);
-      if (section !== undefined) {
-        // TODO: Very unoptimized
-        // Comments are sorted by createdAt, so they can be partitioned in advance
-        if (!timeframe || comment.isWithinTimeframe(timeframe)) {
-          return section;
-        }
+      if (section !== undefined && section.trim() !== "") {
+        return section;
       }
       break;
     }
   }
+
   return undefined;
 }
 
