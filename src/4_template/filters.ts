@@ -58,6 +58,8 @@ export function stripFormatting(markdown: string): string {
     .trim();
 }
 
+// TODO: Generic summarize taking string instead of memory
+
 export async function summarizeToSentence(markdown: string): Promise<string> {
   if (!markdown.trim().includes("\n")) {
     // If the markdown is already a single sentence, return it as is

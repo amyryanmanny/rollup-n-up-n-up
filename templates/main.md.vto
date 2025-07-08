@@ -22,8 +22,8 @@
 {{ /for }}
 </details>
 
-{{ debugTemplate() }}
+{{ debugTemplate() |> safe }}
 
-{{ debugMemory() }}
+{{ debugMemory() |> safe }}
 
 {{ hoist TLDR = await memory.summarize("synapse_tldr") }}

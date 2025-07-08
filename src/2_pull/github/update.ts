@@ -8,8 +8,8 @@ export type UpdateDetectionStrategy =
   | SectionStrategy
   | MarkerStrategy
   | SkipStrategy
-  | FailStrategy
-  | BlameStrategy;
+  | BlameStrategy
+  | FailStrategy;
 
 export type Timeframe =
   | "today"
@@ -39,13 +39,13 @@ type SkipStrategy = {
   kind: "skip";
 };
 
-type FailStrategy = {
-  kind: "fail";
-};
-
 type BlameStrategy = {
   kind: "blame";
   // TODO: Add special blame behavior beyond skip. E.g. Slack messages
+};
+
+type FailStrategy = {
+  kind: "fail";
 };
 
 export function findLatestUpdate(

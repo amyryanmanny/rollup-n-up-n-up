@@ -37769,6 +37769,14 @@ function getUpdateDetectionConfig() {
         kind: "section",
         section: "Update"
       },
+      {
+        kind: "marker",
+        marker: DEFAULT_MARKER
+      },
+      {
+        kind: "timebox",
+        timeframe: "last-week"
+      },
       { kind: "skip" }
     ];
   }

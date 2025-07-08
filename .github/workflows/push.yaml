@@ -17,6 +17,11 @@ jobs:
           GITHUB_PAT_TOKEN: ${{ secrets.ROLLUP_PAT_TOKEN }}
         with:
           template: './templates/main.md.vto'
+          update_detection: |
+            today(Summary)
+            today(Update)
+            today("Trending Reason")
+            skip()
 
       - name: Push
         id: push
@@ -27,4 +32,5 @@ jobs:
           title: '%Y-%m-%d example_report.md'
           body: ${{ steps.render.outputs.md }}
           targets: |
+            issue: https://github.com/amyryanmanny/rollup-n-up-n-up/issues
             repo-file: https://github.com/amyryanmanny/rollup-n-up-n-up/tree/test-push/reports
