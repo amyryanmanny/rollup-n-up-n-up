@@ -90,6 +90,9 @@ function parseUpdateDetection(
       // E.g. lastWeek(), lastWeek(Update), lastWeek(MARKER)
       let timeframe: Timeframe | undefined = undefined;
       switch (funcName) {
+        case "today":
+          timeframe = "today";
+          break;
         case "lastWeek":
           timeframe = "last-week";
           break;
@@ -105,7 +108,7 @@ function parseUpdateDetection(
         default:
           if (args.length > 0) {
             throw new Error(
-              `Invalid function call "${funcName}()" in updateDetection config.`,
+              `Invalid function call "${funcName}()" in update_detection config.`,
             );
           }
       }

@@ -11,7 +11,12 @@ export type UpdateDetectionStrategy =
   | FailStrategy
   | BlameStrategy;
 
-export type Timeframe = "last-week" | "last-month" | "last-year" | "all-time";
+export type Timeframe =
+  | "today"
+  | "last-week"
+  | "last-month"
+  | "last-year"
+  | "all-time";
 
 type TimeboxStrategy = {
   kind: "timebox";
