@@ -8,7 +8,7 @@ No updates found
 No updates found
 
 ### [Test Update Detection](https://github.com/amyryanmanny/rollup-n-up-n-up/issues/3)
-No updates found
+New update today!!
 
 
 #### Issues with No Update in the Past Month
@@ -17,8 +17,6 @@ No updates found
 - [Test Issue](https://github.com/amyryanmanny/rollup-n-up-n-up/issues/1) 
 
 - [Test Title](https://github.com/amyryanmanny/rollup-n-up-n-up/issues/2) 
-
-- [Test Update Detection](https://github.com/amyryanmanny/rollup-n-up-n-up/issues/3) 
 
 
 &lt;details&gt;&lt;summary&gt;Expand to view the full rollup-n-up-n-up template!&lt;/summary&gt;
@@ -61,9 +59,11 @@ No updates found
 
 
 
-#### [Test Update Detection](https://github.com/amyryanmanny/rollup-n-up-n-up/issues/3)
+#### [Test Update Detection](https://github.com/amyryanmanny/rollup-n-up-n-up/issues/3#issuecomment-3049949781)
 
-No updates found
+# Trending Reason
+
+New update today!!
 
 
 ```
