@@ -55933,7 +55933,7 @@ function findLatestUpdate(comments) {
         case "section":
         case "marker": {
           const update2 = extractUpdateWithStrategy(comment, strategy);
-          if (update2 !== undefined) {
+          if (update2 !== undefined && update2.trim() !== "") {
             return comment;
           }
           break;

@@ -60,7 +60,7 @@ export function findLatestUpdate(
         case "section":
         case "marker": {
           const update = extractUpdateWithStrategy(comment, strategy);
-          if (update !== undefined) {
+          if (update !== undefined && update.trim() !== "") {
             return comment;
           }
           break;
