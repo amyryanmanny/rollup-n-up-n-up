@@ -6,7 +6,7 @@ const body = `Test Body ${Math.floor(Math.random() * 1000)}`;
 // Debugging inputs
 const configs: PushTarget[] = [
   {
-    url: "https://github.com/github/synapse/discussions/categories/reporting-dogfooding",
+    url: "https://github.com/amyryanmanny/rollup-n-up-n-up/discussions/categories/general",
     type: "discussion",
   },
 ];

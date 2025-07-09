@@ -1,5 +1,5 @@
-name: Synapse TL;DR
-description: Summarizes input text concisely
+name: TL;DR (o1)
+description: Summarizes input text into a TL;DR report for an engineering team
 model: openai/o1
 modelParameters: {}
 messages:
@@ -24,7 +24,7 @@ messages:
         - Include the title heading, and link to the comment the update was taken from.
       - Include links from the original update that are appropriate.
         - Always use the format [text](link) for links.
-        - Don't break issue comment links. (e.g. https://github.com/github/synapse/issues/4#issuecomment-123456789)
+        - Don't break issue comment links. (e.g. https://github.com/github/repo/issues/4#issuecomment-123456789)
       - Include specific GitHub handles (example @amyryanmanny) if they're in the summary, but if they're not, names are fine.
       - Include the reason why an update is important for senior leadership.
       - Include additional information in the summary rather than saying "Updates and continued progress" or "For more context on each project."

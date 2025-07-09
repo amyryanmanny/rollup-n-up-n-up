@@ -4,7 +4,7 @@ Generic, declarative, modular building blocks for generating Rollup reports
 
 ## Installation
 
-[Follow this guide](https://github.com/github/synapse/discussions/105)
+[Follow this guide](https://github.com/amyryanmanny/rollup-n-up-n-up/discussions/5)
 
 ## Contribution
 
