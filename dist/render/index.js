@@ -55839,6 +55839,9 @@ async function listSubissuesForIssue(params) {
   };
 }
 
+// src/util/date.ts
+var ONE_DAY = 86400000;
+
 // node_modules/mimic-function/index.js
 var copyProperty = (to, from, property, ignoreNonConfigurable) => {
   if (property === "length" || property === "prototype") {
@@ -56050,6 +56053,18 @@ class CommentWrapper {
   get createdAt() {
     return this.comment.createdAt;
   }
+  get wasPostedToday() {
+    return new Date().getTime() - this.createdAt.getTime() < ONE_DAY;
+  }
+  get wasPostedThisWeek() {
+    return new Date().getTime() - this.createdAt.getTime() < 7 * ONE_DAY;
+  }
+  get wasPostedThisMonth() {
+    return new Date().getTime() - this.createdAt.getTime() < 31 * ONE_DAY;
+  }
+  get wasPostedThisYear() {
+    return new Date().getTime() - this.createdAt.getTime() < 365 * ONE_DAY;
+  }
   hasMarker(marker) {
     return marker.test(this.comment.body);
   }
@@ -56065,20 +56080,17 @@ class CommentWrapper {
     return;
   }
   isWithinTimeframe(timeframe) {
-    const now = new Date;
-    const createdAt = this.createdAt;
-    const day = 86400000;
     switch (timeframe) {
       case "all-time":
         return true;
       case "today":
-        return now.getTime() - createdAt.getTime() < day;
+        return this.wasPostedToday;
       case "last-week":
-        return now.getTime() - createdAt.getTime() < 7 * day;
+        return this.wasPostedThisWeek;
       case "last-month":
-        return now.getTime() - createdAt.getTime() < 31 * day;
+        return this.wasPostedThisMonth;
       case "last-year":
-        return now.getTime() - createdAt.getTime() < 365 * day;
+        return this.wasPostedThisYear;
       default:
         throw new Error(`Invalid timeframe for comment filtering: "${timeframe}".`);
     }

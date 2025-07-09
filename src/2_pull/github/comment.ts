@@ -1,12 +1,14 @@
 import { getMemory } from "@transform/memory";
+import { ONE_DAY } from "@util/date";
 import {
   splitMarkdownByBoldedText,
   splitMarkdownByHeaders,
   stripHtml,
   toSnakeCase,
 } from "@util/string";
-import { extractUpdate, type Timeframe } from "./update";
+
 import type { IssueWrapper } from "./issue";
+import { extractUpdate, type Timeframe } from "./update";
 
 export type Comment = {
   author: string;
@@ -85,6 +87,23 @@ export class CommentWrapper {
     return this.comment.createdAt;
   }
 
+  // Date Properties
+  get wasPostedToday(): boolean {
+    return new Date().getTime() - this.createdAt.getTime() < ONE_DAY;
+  }
+
+  get wasPostedThisWeek(): boolean {
+    return new Date().getTime() - this.createdAt.getTime() < 7 * ONE_DAY;
+  }
+
+  get wasPostedThisMonth(): boolean {
+    return new Date().getTime() - this.createdAt.getTime() < 31 * ONE_DAY;
+  }
+
+  get wasPostedThisYear(): boolean {
+    return new Date().getTime() - this.createdAt.getTime() < 365 * ONE_DAY;
+  }
+
   // Helpers
   hasMarker(marker: RegExp): boolean {
     return marker.test(this.comment.body);
@@ -105,22 +124,17 @@ export class CommentWrapper {
 
   isWithinTimeframe(timeframe: Timeframe): boolean {
     // Check if the comment was created within the given timeframe
-    const now = new Date();
-    const createdAt = this.createdAt;
-
-    const day = 86_400_000; // 24 hours in milliseconds
-
     switch (timeframe) {
       case "all-time":
         return true;
       case "today":
-        return now.getTime() - createdAt.getTime() < day;
+        return this.wasPostedToday;
       case "last-week":
-        return now.getTime() - createdAt.getTime() < 7 * day;
+        return this.wasPostedThisWeek;
       case "last-month":
-        return now.getTime() - createdAt.getTime() < 31 * day;
+        return this.wasPostedThisMonth;
       case "last-year":
-        return now.getTime() - createdAt.getTime() < 365 * day;
+        return this.wasPostedThisYear;
       default:
         throw new Error(
           `Invalid timeframe for comment filtering: "${timeframe}".`,

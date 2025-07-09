@@ -119,6 +119,7 @@ export class IssueList {
   }
 
   sortByEmoji(fieldName: string): IssueList {
+    // TODO: Combine with sort(), no need for both
     // Sort the issues by the given field name
     // The field is expected to be a status containing an emoji
     // Red comes first
