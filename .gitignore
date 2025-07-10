@@ -140,4 +140,5 @@ out
 # Output
 templates/*
 !templates/main.md.vto
+!templates/interrogator.md.vto
 output.md

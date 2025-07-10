@@ -1,0 +1,27 @@
+name: 'Interrogator'
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: URL pointing to Issues to interrogate
+        required: true
+      query:
+        description: Query to infer about the Issues using the AI model
+        required: true
+
+jobs:
+  interrogate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Render
+        id: render
+        uses: ./actions/render
+        env:
+          GITHUB_PAT_TOKEN: ${{ secrets.ROLLUP_PAT_TOKEN }}
+          URL: ${{ inputs.url}}
+          QUERY: ${{ inputs.query }}
+        with:
+          template: './templates/interrogator.md.vto'
