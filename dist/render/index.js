@@ -44248,6 +44248,7 @@ __export(exports_filters, {
   toSnakeCase: () => toSnakeCase,
   title: () => title,
   summarizeToSentence: () => summarizeToSentence,
+  summarize: () => summarize,
   stripHtml: () => stripHtml,
   stripHeaders: () => stripHeaders,
   stripFormatting: () => stripFormatting,
@@ -55128,11 +55129,33 @@ async function runPrompt(params) {
   }
 }
 async function summarize(content, promptFilePath) {
+  if (!content || content.trim() === "") {
+    throw new Error("content cannot be empty.");
+  }
+  if (!promptFilePath || promptFilePath.trim() === "") {
+    throw new Error("promptFilePath cannot be empty.");
+  }
   const prompt = loadPromptFile(promptFilePath);
   const summary = await runPrompt(insertPlaceholders(prompt, {
-    input: content
+    input: content,
+    content
   }));
   return summary;
+}
+async function query(content, query2, promptFilePath) {
+  if (!content || content.trim() === "") {
+    throw new Error("content cannot be empty.");
+  }
+  if (!promptFilePath || promptFilePath.trim() === "") {
+    throw new Error("promptFilePath cannot be empty.");
+  }
+  const prompt = loadPromptFile(promptFilePath);
+  const response = await runPrompt(insertPlaceholders(prompt, {
+    input: content,
+    content,
+    query: query2
+  }));
+  return response;
 }
 
 // src/util/string.ts
@@ -55306,15 +55329,19 @@ class Memory {
 
 `);
   }
-  async summarize(prompt, memoryBank = 0) {
-    if (!prompt || prompt.trim() === "") {
-      throw new Error("Prompt cannot be empty.");
-    }
+  async summarize(promptFilePath, memoryBank = 0) {
     const content = this.getBankContent(memoryBank);
     if (!content || content.trim() === "") {
-      return "No content to summarize.";
+      return "No content in memory to summarize.";
     }
-    return await summarize(content, prompt);
+    return await summarize(content, promptFilePath);
+  }
+  async query(promptFilePath, query2, memoryBank = 0) {
+    const content = this.getBankContent(memoryBank);
+    if (!content || content.trim() === "") {
+      return "No content in memory to summarize.";
+    }
+    return await query(content, query2, promptFilePath);
   }
   headbonk(memoryBank) {
     if (memoryBank === undefined) {
@@ -55364,7 +55391,7 @@ var slugifyProjectFieldName = (field) => {
 };
 async function listIssuesForProject(params) {
   const octokit = getOctokit();
-  const query = `
+  const query2 = `
     query paginate($organization: String!, $projectNumber: Int!, $cursor: String) {
       organization(login: $organization) {
         projectV2(number: $projectNumber) {
@@ -55441,7 +55468,7 @@ async function listIssuesForProject(params) {
       }
     }
   `;
-  const response = await octokit.graphql.paginate(query, {
+  const response = await octokit.graphql.paginate(query2, {
     organization: params.organization,
     projectNumber: params.projectNumber
   });
@@ -55643,7 +55670,7 @@ class ProjectView {
 }
 async function getProjectView(params) {
   const octokit = getOctokit();
-  const query = `
+  const query2 = `
     query($organization: String!, $projectNumber: Int!, $projectViewNumber: Int!) {
       organization(login: $organization) {
         projectV2(number: $projectNumber) {
@@ -55655,7 +55682,7 @@ async function getProjectView(params) {
       }
     }
   `;
-  const response = await octokit.graphql(query, {
+  const response = await octokit.graphql(query2, {
     organization: params.organization,
     projectNumber: params.projectNumber,
     projectViewNumber: params.projectViewNumber
@@ -55683,7 +55710,7 @@ async function listIssuesForRepo(params) {
     default:
       throw new Error(`Unknown IssueState: ${state2}. Choose OPEN, CLOSED, or ALL.`);
   }
-  const query = `
+  const query2 = `
     query paginate($owner: String!, $repo: String!, $states: [IssueState!], $cursor: String) {
       repositoryOwner(login: $owner) {
         repository(name: $repo) {
@@ -55728,7 +55755,7 @@ async function listIssuesForRepo(params) {
       }
     }
   `;
-  const response = await octokit.graphql.paginate(query, {
+  const response = await octokit.graphql.paginate(query2, {
     owner: params.owner,
     repo: params.repo,
     states
@@ -55762,7 +55789,7 @@ async function listIssuesForRepo(params) {
 // src/2_pull/github/graphql/subissues.ts
 async function listSubissuesForIssue(params) {
   const octokit = getOctokit();
-  const query = `
+  const query2 = `
     query paginate($owner: String!, $repo: String!, $issueNumber: Int!, $cursor: String) {
       repositoryOwner(login: $owner) {
         repository(name: $repo) {
@@ -55811,7 +55838,7 @@ async function listSubissuesForIssue(params) {
       }
     }
   `;
-  const response = await octokit.graphql.paginate(query, params);
+  const response = await octokit.graphql.paginate(query2, params);
   const subissues = response.repositoryOwner.repository.issue.subIssues.nodes.map((subIssue) => ({
     title: subIssue.title,
     body: subIssue.body,
@@ -56096,7 +56123,7 @@ class CommentWrapper {
     }
   }
   get rendered() {
-    return `#### ${this.issue.type}: ${this.header}
+    return `#### Comment on ${this.issue.type}: ${this.header}
 
 ${this._body}
 
@@ -56219,11 +56246,18 @@ class IssueWrapper {
     return CommentWrapper.empty(this);
   }
   get rendered() {
-    return `### ${this.type}: ${this.header}
+    const rendered = `### ${this.type}: ${this.header}
 
 ${this._body}
 
 `;
+    const update2 = this.latestUpdate;
+    if (update2.isEmpty) {
+      return rendered;
+    }
+    return `${rendered}
+
+${update2.rendered}`;
   }
   remember() {
     this.memory.remember(this.rendered);
@@ -56382,7 +56416,8 @@ class IssueList {
   get rendered() {
     return `## ${this.header}
 
-${this.issues.map((issue) => issue.render()).join(`
+${this.issues.map((issue) => issue.rendered).join(`
+
 `)}`;
   }
   remember() {
@@ -56397,6 +56432,34 @@ ${this.issues.map((issue) => issue.render()).join(`
 // src/2_pull/github/client.ts
 class GitHubClient {
   octokit = getOctokit();
+  url(url) {
+    const urlParts = new URL(url);
+    let match;
+    if (urlParts.hostname !== "github.com") {
+      throw new Error(`Unsupported hostname: ${urlParts.hostname}. Please provide a valid GitHub URL.`);
+    }
+    match = urlParts.pathname.match(/\/([^/]+)\/([^/]+)\/issues/);
+    if (match) {
+      const owner = match[1];
+      const repo = match[2];
+      return this.issuesForRepo(owner, repo);
+    }
+    match = urlParts.pathname.match(/orgs\/([^/]+)\/projects\/(\d+)\/views\/(\d+)/);
+    if (match) {
+      const organization = match[1];
+      const projectNumber = parseInt(match[2], 10);
+      const projectViewNumber = parseInt(match[3], 10);
+      return this.issuesForProjectView(organization, projectNumber, projectViewNumber);
+    }
+    match = urlParts.pathname.match(/orgs\/([^/]+)\/projects\/(\d+)/);
+    if (match) {
+      const organization = match[1];
+      const projectNumber = parseInt(match[2], 10);
+      const customQuery = urlParts.searchParams.get("filterQuery") || "";
+      return this.issuesForProjectQuery(organization, projectNumber, customQuery);
+    }
+    throw new Error(`Unsupported URL: ${url}. Please provide a valid GitHub issues URL.`);
+  }
   issuesForRepo(owner, repo) {
     return IssueList.forRepo({ owner, repo });
   }
@@ -56477,6 +56540,7 @@ async function renderTemplate(templatePath) {
   const template = await env.load(templatePath);
   const result = await template({
     ...globals,
+    getConfig: (config) => getConfig(config),
     debugTemplate: () => debugTemplate(template),
     debugMemory: (memoryBank = 0) => debugMemory(memory2, memoryBank)
   });
