@@ -56096,7 +56096,7 @@ class CommentWrapper {
     }
   }
   get rendered() {
-    return `#### ${this.header}
+    return `#### ${this.issue.type}: ${this.header}
 
 ${this._body}
 
