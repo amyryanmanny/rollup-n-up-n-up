@@ -1,6 +1,7 @@
 import { runPrompt } from "@transform/ai/summarize";
 
 export { stripHtml, toSnakeCase, title } from "@util/string";
+export { summarize } from "@transform/ai/summarize";
 
 export function accessible(markdown: string): string {
   // Inject accessibility features into the markdown
@@ -57,8 +58,6 @@ export function stripFormatting(markdown: string): string {
     .replace(/[\s]+/g, " ") // Replace multiple spaces with a single space
     .trim();
 }
-
-// TODO: Generic summarize taking string instead of memory
 
 export async function summarizeToSentence(markdown: string): Promise<string> {
   if (!markdown.trim().includes("\n")) {

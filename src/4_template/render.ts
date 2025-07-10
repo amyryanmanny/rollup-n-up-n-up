@@ -5,6 +5,7 @@ import * as filters from "./filters";
 import * as plugins from "./plugins";
 
 import { GitHubClient } from "../2_pull/github/client";
+import { getConfig } from "@util/config";
 import { getMemory } from "../3_transform/memory";
 import { debugMemory, debugTemplate } from "./debug";
 
@@ -41,6 +42,7 @@ export async function renderTemplate(templatePath: string): Promise<string> {
   // Render the template with the provided data
   const result = await template({
     ...globals,
+    getConfig: (config: string) => getConfig(config),
     debugTemplate: () => debugTemplate(template),
     debugMemory: (memoryBank: number = 0) => debugMemory(memory, memoryBank),
   });
