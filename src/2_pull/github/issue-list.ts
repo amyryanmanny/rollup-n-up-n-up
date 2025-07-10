@@ -257,7 +257,7 @@ export class IssueList {
   // Render / Memory Functions
   get rendered(): string {
     // IssueLists are Level 2
-    return `## ${this.header}\n\n${this.issues.map((issue) => issue.render()).join("\n")}`;
+    return `## ${this.header}\n\n${this.issues.map((issue) => issue.rendered).join("\n\n")}`;
   }
 
   remember() {

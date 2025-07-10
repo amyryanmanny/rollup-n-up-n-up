@@ -177,9 +177,17 @@ export class IssueWrapper {
   }
 
   // Render / Memory Functions
-  private get rendered(): string {
+  get rendered(): string {
     // Issues are Level 3
-    return `### ${this.type}: ${this.header}\n\n${this._body}\n\n`;
+    const rendered = `### ${this.type}: ${this.header}\n\n${this._body}\n\n`;
+
+    // Include the latest update if it exists
+    const update = this.latestUpdate;
+    if (update.isEmpty) {
+      return rendered;
+    }
+
+    return `${rendered}\n\n${update.rendered}`;
   }
 
   remember() {

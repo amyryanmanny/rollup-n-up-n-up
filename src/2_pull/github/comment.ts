@@ -143,9 +143,9 @@ export class CommentWrapper {
   }
 
   // Render / Memory Functions
-  private get rendered(): string {
+  get rendered(): string {
     // IssueComments are Level 4
-    return `#### ${this.issue.type}: ${this.header}\n\n${this._body}\n\n`;
+    return `#### Comment on ${this.issue.type}: ${this.header}\n\n${this._body}\n\n`;
   }
 
   remember() {
