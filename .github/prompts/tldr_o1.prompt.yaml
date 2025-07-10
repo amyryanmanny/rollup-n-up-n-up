@@ -29,6 +29,6 @@ messages:
       - Include the reason why an update is important for senior leadership.
       - Include additional information in the summary rather than saying "Updates and continued progress" or "For more context on each project."
 
-      <text>
-      {{input}}
-      </text>
+      <content>
+      {{content}}
+      </content>
