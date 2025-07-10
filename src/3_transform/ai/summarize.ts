@@ -85,11 +85,44 @@ export async function summarize(
   content: string,
   promptFilePath: string,
 ): Promise<string> {
+  if (!content || content.trim() === "") {
+    throw new Error("content cannot be empty.");
+  }
+
+  if (!promptFilePath || promptFilePath.trim() === "") {
+    throw new Error("promptFilePath cannot be empty.");
+  }
+
   const prompt = loadPromptFile(promptFilePath);
   const summary = await runPrompt(
     insertPlaceholders(prompt, {
-      input: content,
+      input: content, // Try 'input' as well since it's common in prompts
+      content,
     }),
   );
   return summary;
+}
+
+export async function query(
+  content: string,
+  query: string,
+  promptFilePath: string,
+): Promise<string> {
+  if (!content || content.trim() === "") {
+    throw new Error("content cannot be empty.");
+  }
+
+  if (!promptFilePath || promptFilePath.trim() === "") {
+    throw new Error("promptFilePath cannot be empty.");
+  }
+
+  const prompt = loadPromptFile(promptFilePath);
+  const response = await runPrompt(
+    insertPlaceholders(prompt, {
+      input: content,
+      content,
+      query,
+    }),
+  );
+  return response;
 }

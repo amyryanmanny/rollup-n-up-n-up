@@ -1,5 +1,5 @@
 import { DefaultDict } from "@util/collections";
-import { summarize } from "./ai/summarize";
+import { summarize as _summarize, query as _query } from "./ai/summarize";
 
 // Singleton
 let memory: Memory;
@@ -43,18 +43,30 @@ export class Memory {
     return bank.join("\n\n");
   }
 
-  async summarize(prompt: string, memoryBank: number = 0): Promise<string> {
-    if (!prompt || prompt.trim() === "") {
-      throw new Error("Prompt cannot be empty.");
-    }
-
+  async summarize(
+    promptFilePath: string,
+    memoryBank: number = 0,
+  ): Promise<string> {
     const content = this.getBankContent(memoryBank);
     if (!content || content.trim() === "") {
       // TODO: Point to a doc explaining how memory works
-      return "No content to summarize.";
+      return "No content in memory to summarize.";
     }
 
-    return await summarize(content, prompt);
+    return await _summarize(content, promptFilePath);
+  }
+
+  async query(
+    promptFilePath: string,
+    query: string,
+    memoryBank: number = 0,
+  ): Promise<string> {
+    const content = this.getBankContent(memoryBank);
+    if (!content || content.trim() === "") {
+      return "No content in memory to summarize.";
+    }
+
+    return await _query(content, query, promptFilePath);
   }
 
   headbonk(memoryBank?: number): void {
