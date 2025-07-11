@@ -87,12 +87,13 @@ export class ProjectView {
           return v; // Return as is for other values
         });
 
-        if (key.startsWith("-")) {
-          // Exclude filter
-          this.excludeFilters.get(key.slice(1)).push(...values);
-        } else {
-          // Regular filter
-          this.filters.get(key).push(...values);
+      if (key.startsWith("-")) {
+        // Exclude filter
+        const eKey = key.slice(1); // Remove the leading dash
+        this.excludeFilters.get(eKey).push(...values);
+      } else {
+        // Regular filter
+        this.filters.get(key).push(...values);
       }
     });
   }
@@ -150,8 +151,14 @@ export class ProjectView {
     return true;
   }
 
+  checkField(fieldName: string, field: IssueField | undefined): boolean {
+    let values: Array<string> = [];
+    if (!field) {
+      values = [];
     } else if (field.kind === "SingleSelect") {
-      strValue = field.value;
+      values = field.value ? [field.value] : [];
+    } else if (field.kind === "MultiSelect") {
+      values = field.values ?? [];
     } else if (field.kind === "Date") {
       // For Date filters, the format is:
       //   date:>=2025-06-16 or date:<=2025-06-22
@@ -161,16 +168,17 @@ export class ProjectView {
     const included = this.filters.get(fieldName);
     const excluded = this.excludeFilters.get(fieldName);
 
-    if (
-      included.length &&
-      (strValue === null || !included.includes(strValue))
-    ) {
-      return false;
+    if (values.some((value) => excluded.some((f) => f === value))) {
+      return false; // At least one value is excluded
     }
-    if (excluded.length && strValue !== null && excluded.includes(strValue)) {
-      return false;
+
+    // If there are no inclusion filters, all values are valid
+    if (included.length === 0) {
+      return true;
     }
-    return true;
+
+    // Return whether at least one value is included
+    return values.some((value) => included.some((f) => f === value));
   }
 
   checkDateField(field: string, date: Date | null): boolean {
@@ -225,6 +233,13 @@ export class ProjectView {
     return this.checkField("repo", {
       kind: "SingleSelect",
       value: repo ?? null,
+    });
+  }
+
+  checkAssignees(assignees: string[]): boolean {
+    return this.checkField("assignee", {
+      kind: "MultiSelect",
+      values: assignees,
     });
   }
 

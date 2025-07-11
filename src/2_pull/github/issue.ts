@@ -127,7 +127,13 @@ export class IssueWrapper {
     // Return the projectFields of the issue, mapped back to string representation
     return new Map(
       Array.from(this._projectFields.entries()).map(([name, field]) => {
-        return [name, field.value ?? ""];
+        switch (field.kind) {
+          case "SingleSelect":
+          case "Date":
+            return [name, field.value ?? ""];
+          case "MultiSelect": // Doesn't really exist but included for completeness
+            return [name, (field.values || []).join(", ")];
+        }
       }),
     );
   }
