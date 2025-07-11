@@ -17,17 +17,13 @@ type ProjectViewParameters = {
 };
 
 export class ProjectView {
-  private _name: string;
-  private _number: number | undefined;
-  private _filterQuery: string;
+  private params: ProjectViewParameters;
 
   private filters: DefaultDict<string, string[]>;
   private excludeFilters: DefaultDict<string, string[]>;
 
   constructor(params: ProjectViewParameters) {
-    this._name = params.name;
-    this._number = params.number;
-    this._filterQuery = params.filterQuery;
+    this.params = params;
 
     this.filters = new DefaultDict<string, string[]>(() => []);
     this.excludeFilters = new DefaultDict<string, string[]>(() => []);
@@ -56,15 +52,15 @@ export class ProjectView {
 
   // Properties
   get name(): string {
-    return this._name;
+    return this.params.name;
   }
 
   get number(): number | undefined {
-    return this._number;
+    return this.params.number;
   }
 
   get filterQuery(): string {
-    return this._filterQuery;
+    return this.params.filterQuery;
   }
 
   get customFields(): string[] {
