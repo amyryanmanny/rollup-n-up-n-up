@@ -13,7 +13,10 @@ export type PromptParameters = {
     temperature?: number;
     max_tokens?: number;
     max_completion_tokens?: number;
-    // Unknown parameters - I will add more as I encounter them
+    top_p?: number;
+    frequency_penalty?: number;
+    presence_penalty?: number;
+    // Most models are different, so need to handle unknown parameters too
     [key: string]: string | number | boolean | undefined;
   };
   messages: Array<{
