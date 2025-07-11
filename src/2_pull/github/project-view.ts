@@ -1,7 +1,8 @@
 import { DefaultDict } from "@util/collections";
 import { getOctokit } from "@util/octokit";
 
-import type { ProjectField } from "./graphql/project";
+import type { IssueField } from "./graphql/project";
+import type { IssueWrapper } from "./issue";
 
 export type GetProjectViewParameters = {
   organization: string;
@@ -78,10 +79,31 @@ export class ProjectView {
     return this.filters.get("type");
   }
 
-  checkField(fieldName: string, field: ProjectField | undefined): boolean {
-    let strValue: string | null = null;
-    if (field === undefined || field.value === null) {
-      strValue = null;
+  filter(issue: IssueWrapper): boolean {
+    // First check against default fields
+    if (!this.checkType(issue.type)) {
+      return false;
+    }
+
+    if (!this.checkRepo(issue.repoNameWithOwner)) {
+      return false;
+    }
+
+    if (!this.checkAssignees(issue.assignees)) {
+      return false;
+    }
+
+    // Next check against all the custom Project Fields
+    for (const field of this.customFields) {
+      const value = issue._projectFields.get(field);
+      if (!this.checkField(field, value)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
     } else if (field.kind === "SingleSelect") {
       strValue = field.value;
     } else if (field.kind === "Date") {

@@ -65,29 +65,16 @@ export class IssueList {
     return this.issues.find(predicate);
   }
 
+  filter(predicate: (issue: IssueWrapper) => boolean): IssueList {
+    // Filter the issues by a predicate
+    const filteredIssues = this.issues.filter(predicate);
+    return new IssueList(filteredIssues, this.sourceOfTruth);
+  }
+
   // Issue Filtering / Grouping / Sorting
-  filter(view: ProjectView) {
-    // Filter the issues
-    this.issues = this.issues.filter((wrapper) => {
-      // First check against default fields
-      if (!view.checkType(wrapper.type)) {
-        return false;
-      }
-
-      if (!view.checkRepo(wrapper.repoNameWithOwner)) {
-        return false;
-      }
-
-      // Next check against all the custom Project Fields
-      for (const field of view.customFields) {
-        const value = wrapper._projectFields.get(field);
-        if (!view.checkField(field, value)) {
-          return false;
-        }
-      }
-
-      return true;
-    });
+  private applyViewFilter(view: ProjectView) {
+    // Filter the issues by the view's query
+    this.issues = this.issues.filter((issue) => view.filter(issue));
 
     // Scope the Source of Truth to the view
     if (view.number) {
@@ -249,7 +236,7 @@ export class IssueList {
       projectNumber: params.projectNumber,
       typeFilter: view.getFilterType(),
     });
-    issueList.filter(view);
+    issueList.applyViewFilter(view);
 
     return issueList;
   }
