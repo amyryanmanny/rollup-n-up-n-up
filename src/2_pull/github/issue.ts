@@ -11,13 +11,13 @@ export type Issue = {
   body: string;
   url: string;
   number: number;
-  assignees: string[];
   type: string;
   repository: {
     name: string;
     owner: string;
     nameWithOwner: string;
   };
+  assignees: string[];
   comments: Array<Comment>;
   projectFields?: Map<string, ProjectField>;
 };
@@ -44,14 +44,6 @@ export class IssueWrapper {
     return this.issue.title.trim();
   }
 
-  get url(): string {
-    return this.issue.url;
-  }
-
-  get number(): number {
-    return this.issue.number;
-  }
-
   private get _body(): string {
     return this.issue.body || "";
   }
@@ -59,6 +51,14 @@ export class IssueWrapper {
   get body(): string {
     this.remember();
     return this._body;
+  }
+
+  get url(): string {
+    return this.issue.url;
+  }
+
+  get number(): number {
+    return this.issue.number;
   }
 
   get type(): string {
