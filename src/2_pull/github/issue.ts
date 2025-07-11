@@ -77,6 +77,10 @@ export class IssueWrapper {
     return this.issue.repository.nameWithOwner;
   }
 
+  get assignees(): string[] {
+    return this.issue.assignees.map((assignee) => assignee.trim());
+  }
+
   // Fields
   field(fieldName: string): string {
     // Return the value of the field by name

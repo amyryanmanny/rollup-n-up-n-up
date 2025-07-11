@@ -1,3 +1,5 @@
+import { context } from "@actions/github";
+
 import { DefaultDict } from "@util/collections";
 import { getOctokit } from "@util/octokit";
 
@@ -31,22 +33,66 @@ export class ProjectView {
 
     // Parse the filter string. Only split on spaces outside of quotes
     params.filterQuery.match(/(?:[^\s"]+|"[^"]*")+/g)?.forEach((f) => {
-      const [key, value] = f.split(":").map((s) => s.trim());
-      if (key && value) {
-        const values = value.split(",").map((v) => {
+      const [key, valueStr] = f.split(":").map((s) => s.trim());
+      if (!key || !valueStr) {
+        // Skip if the key or value is missing
+        return;
+      }
+
+      const values = valueStr
+        .split(",")
+        .map((v) => {
+          // Remove quotes from the value
           if (v.startsWith('"') && v.endsWith('"')) {
-            // Remove quotes from the value
             v = v.slice(1, -1);
           }
           return v.trim();
+        })
+        .map((v) => {
+          // Resolve metavariables - like dates, @me, other special values
+          if (v === "@me") {
+            return context.actor;
+          }
+
+          if (v.startsWith("@today")) {
+            // There might be other date syntaxes out there
+            const today = new Date();
+            const rest = v.split("@today-")[1]?.trim();
+
+            let days = 0;
+            if (rest) {
+              // Calculate number of days (e.g., @today-7d, @today-1m, @today-1y)
+              if (rest.endsWith("d")) {
+                days = parseInt(rest.slice(0, -1), 10);
+              }
+              if (rest.endsWith("w")) {
+                const weeks = parseInt(rest.slice(0, -1), 10);
+                days = weeks * 7; // Convert weeks to days
+              }
+              if (rest.endsWith("m")) {
+                const months = parseInt(rest.slice(0, -1), 10);
+                days = months * 30; // Approximate month as 30 days
+              }
+              if (rest.endsWith("y")) {
+                const years = parseInt(rest.slice(0, -1), 10);
+                days = years * 365; // Approximate year as 365 days
+              }
+            }
+
+            const date = new Date();
+            date.setDate(today.getDate() - days);
+            return date.toISOString().split("T")[0]; // Return as YYYY-MM-DD
+          }
+
+          return v; // Return as is for other values
         });
+
         if (key.startsWith("-")) {
           // Exclude filter
           this.excludeFilters.get(key.slice(1)).push(...values);
         } else {
           // Regular filter
           this.filters.get(key).push(...values);
-        }
       }
     });
   }
@@ -159,6 +205,8 @@ export class ProjectView {
     return true;
   }
 
+  // TODO: checkTitle with globbing
+
   checkType(type: string): boolean {
     return this.checkField("type", {
       kind: "SingleSelect",
@@ -173,7 +221,7 @@ export class ProjectView {
     });
   }
 
-  checkRepo(repo: string | undefined): boolean {
+  checkRepo(repo: string): boolean {
     return this.checkField("repo", {
       kind: "SingleSelect",
       value: repo ?? null,
