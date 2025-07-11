@@ -55535,43 +55535,72 @@ async function listIssuesForProject(params) {
 }
 
 // src/2_pull/github/project-view.ts
+var import_github3 = __toESM(require_github(), 1);
 class ProjectView {
-  _name;
-  _number;
-  _filterQuery;
+  params;
   filters;
   excludeFilters;
   constructor(params) {
-    this._name = params.name;
-    this._number = params.number;
-    this._filterQuery = params.filterQuery;
+    this.params = params;
     this.filters = new DefaultDict(() => []);
     this.excludeFilters = new DefaultDict(() => []);
     params.filterQuery.match(/(?:[^\s"]+|"[^"]*")+/g)?.forEach((f2) => {
-      const [key, value] = f2.split(":").map((s2) => s2.trim());
-      if (key && value) {
-        const values = value.split(",").map((v2) => {
-          if (v2.startsWith('"') && v2.endsWith('"')) {
-            v2 = v2.slice(1, -1);
-          }
-          return v2.trim();
-        });
-        if (key.startsWith("-")) {
-          this.excludeFilters.get(key.slice(1)).push(...values);
-        } else {
-          this.filters.get(key).push(...values);
+      const [key, valueStr] = f2.split(":").map((s2) => s2.trim());
+      if (!key || !valueStr) {
+        return;
+      }
+      const values = valueStr.split(",").map((v2) => {
+        if (v2.startsWith('"') && v2.endsWith('"')) {
+          v2 = v2.slice(1, -1);
         }
+        return v2.trim();
+      }).map((v2) => {
+        if (v2 === "@me") {
+          return import_github3.context.actor;
+        }
+        if (v2.startsWith("@today")) {
+          const today = new Date;
+          const rest = v2.split("@today-")[1]?.trim();
+          let days = 0;
+          if (rest) {
+            if (rest.endsWith("d")) {
+              days = parseInt(rest.slice(0, -1), 10);
+            }
+            if (rest.endsWith("w")) {
+              const weeks = parseInt(rest.slice(0, -1), 10);
+              days = weeks * 7;
+            }
+            if (rest.endsWith("m")) {
+              const months = parseInt(rest.slice(0, -1), 10);
+              days = months * 30;
+            }
+            if (rest.endsWith("y")) {
+              const years = parseInt(rest.slice(0, -1), 10);
+              days = years * 365;
+            }
+          }
+          const date = new Date;
+          date.setDate(today.getDate() - days);
+          return date.toISOString().split("T")[0];
+        }
+        return v2;
+      });
+      if (key.startsWith("-")) {
+        const eKey = key.slice(1);
+        this.excludeFilters.get(eKey).push(...values);
+      } else {
+        this.filters.get(key).push(...values);
       }
     });
   }
   get name() {
-    return this._name;
+    return this.params.name;
   }
   get number() {
-    return this._number;
+    return this.params.number;
   }
   get filterQuery() {
-    return this._filterQuery;
+    return this.params.filterQuery;
   }
   get customFields() {
     const defaultFields = ProjectView.defaultFields();
@@ -55585,24 +55614,44 @@ class ProjectView {
   getFilterType() {
     return this.filters.get("type");
   }
+  filter(issue) {
+    if (!this.checkType(issue.type)) {
+      return false;
+    }
+    if (!this.checkRepo(issue.repoNameWithOwner)) {
+      return false;
+    }
+    if (!this.checkAssignees(issue.assignees)) {
+      return false;
+    }
+    for (const field of this.customFields) {
+      const value = issue._projectFields.get(field);
+      if (!this.checkField(field, value)) {
+        return false;
+      }
+    }
+    return true;
+  }
   checkField(fieldName, field) {
-    let strValue = null;
-    if (field === undefined || field.value === null) {
-      strValue = null;
+    let values = [];
+    if (!field) {
+      values = [];
     } else if (field.kind === "SingleSelect") {
-      strValue = field.value;
+      values = field.value ? [field.value] : [];
+    } else if (field.kind === "MultiSelect") {
+      values = field.values ?? [];
     } else if (field.kind === "Date") {
       return this.checkDateField(fieldName, field.date);
     }
     const included = this.filters.get(fieldName);
     const excluded = this.excludeFilters.get(fieldName);
-    if (included.length && (strValue === null || !included.includes(strValue))) {
+    if (values.some((value) => excluded.some((f2) => f2 === value))) {
       return false;
     }
-    if (excluded.length && strValue !== null && excluded.includes(strValue)) {
-      return false;
+    if (included.length === 0) {
+      return true;
     }
-    return true;
+    return values.some((value) => included.some((f2) => f2 === value));
   }
   checkDateField(field, date) {
     const filter = this.filters.get(field);
@@ -55648,6 +55697,12 @@ class ProjectView {
     return this.checkField("repo", {
       kind: "SingleSelect",
       value: repo ?? null
+    });
+  }
+  checkAssignees(assignees) {
+    return this.checkField("assignee", {
+      kind: "MultiSelect",
+      values: assignees
     });
   }
   static defaultFields() {
@@ -56154,18 +56209,18 @@ class IssueWrapper {
   get title() {
     return this.issue.title.trim();
   }
-  get url() {
-    return this.issue.url;
-  }
-  get number() {
-    return this.issue.number;
-  }
   get _body() {
     return this.issue.body || "";
   }
   get body() {
     this.remember();
     return this._body;
+  }
+  get url() {
+    return this.issue.url;
+  }
+  get number() {
+    return this.issue.number;
   }
   get type() {
     return this.issue.type;
@@ -56178,6 +56233,9 @@ class IssueWrapper {
   }
   get repoNameWithOwner() {
     return this.issue.repository.nameWithOwner;
+  }
+  get assignees() {
+    return this.issue.assignees.map((assignee) => assignee.trim());
   }
   field(fieldName) {
     const insensitiveFieldName = fieldName.trim().toUpperCase().replace(/\s+/g, "").replace("_", "");
@@ -56204,15 +56262,20 @@ class IssueWrapper {
       case "REPONAMEWITHOWNER":
         return this.repoNameWithOwner ?? "";
     }
-    const projectField = this._projectFields.get(fieldName)?.value;
-    return projectField || "";
+    return this.projectFields.get(slugifyProjectFieldName(fieldName)) || "";
   }
   get _projectFields() {
     return this.issue.projectFields ?? new Map;
   }
   get projectFields() {
     return new Map(Array.from(this._projectFields.entries()).map(([name, field]) => {
-      return [name, field.value ?? ""];
+      switch (field.kind) {
+        case "SingleSelect":
+        case "Date":
+          return [name, field.value ?? ""];
+        case "MultiSelect":
+          return [name, (field.values || []).join(", ")];
+      }
     }));
   }
   async subissues() {
@@ -56295,22 +56358,12 @@ class IssueList {
   find(predicate) {
     return this.issues.find(predicate);
   }
-  filter(view) {
-    this.issues = this.issues.filter((wrapper) => {
-      if (!view.checkType(wrapper.type)) {
-        return false;
-      }
-      if (!view.checkRepo(wrapper.repoNameWithOwner)) {
-        return false;
-      }
-      for (const field of view.customFields) {
-        const value = wrapper._projectFields.get(field);
-        if (!view.checkField(field, value)) {
-          return false;
-        }
-      }
-      return true;
-    });
+  filter(predicate) {
+    const filteredIssues = this.issues.filter(predicate);
+    return new IssueList(filteredIssues, this.sourceOfTruth);
+  }
+  applyViewFilter(view) {
+    this.issues = this.issues.filter((issue) => view.filter(issue));
     if (view.number) {
       this.sourceOfTruth.url += `/views/${view.number}`;
     } else {
@@ -56410,7 +56463,7 @@ class IssueList {
       projectNumber: params.projectNumber,
       typeFilter: view.getFilterType()
     });
-    issueList.filter(view);
+    issueList.applyViewFilter(view);
     return issueList;
   }
   get rendered() {
@@ -56444,19 +56497,19 @@ class GitHubClient {
       const repo = match[2];
       return this.issuesForRepo(owner, repo);
     }
-    match = urlParts.pathname.match(/orgs\/([^/]+)\/projects\/(\d+)\/views\/(\d+)/);
+    match = urlParts.pathname.match(/orgs\/([^/]+)\/projects\/(\d+)(?:\/views\/(\d+))?/);
     if (match) {
       const organization = match[1];
       const projectNumber = parseInt(match[2], 10);
-      const projectViewNumber = parseInt(match[3], 10);
-      return this.issuesForProjectView(organization, projectNumber, projectViewNumber);
-    }
-    match = urlParts.pathname.match(/orgs\/([^/]+)\/projects\/(\d+)/);
-    if (match) {
-      const organization = match[1];
-      const projectNumber = parseInt(match[2], 10);
-      const customQuery = urlParts.searchParams.get("filterQuery") || "";
-      return this.issuesForProjectQuery(organization, projectNumber, customQuery);
+      const projectViewNumber = parseInt(match[3], 10) || null;
+      const customQuery = urlParts.searchParams.get("filterQuery");
+      if (customQuery) {
+        return this.issuesForProjectQuery(organization, projectNumber, customQuery);
+      }
+      if (projectViewNumber) {
+        return this.issuesForProjectView(organization, projectNumber, projectViewNumber);
+      }
+      return this.issuesForProject(organization, projectNumber);
     }
     throw new Error(`Unsupported URL: ${url}. Please provide a valid GitHub issues URL.`);
   }
@@ -56508,11 +56561,11 @@ ${source}
 </details>`;
 }
 function debugMemory(memory2, memoryBank) {
-  const context4 = memory2.getBankContent(memoryBank);
+  const context5 = memory2.getBankContent(memoryBank);
   return `<details><summary>Expand to view the context passed into the inference model!</summary>
 
 \`\`\`
-${context4}
+${context5}
 \`\`\`
 
 </details>`;
