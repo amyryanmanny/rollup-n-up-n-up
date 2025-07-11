@@ -26,36 +26,37 @@ export class GitHubClient {
       return this.issuesForRepo(owner, repo);
     }
 
-    // Project View
+    // Projects
     match = urlParts.pathname.match(
-      /orgs\/([^/]+)\/projects\/(\d+)\/views\/(\d+)/,
+      /orgs\/([^/]+)\/projects\/(\d+)(?:\/views\/(\d+))?/,
     );
     if (match) {
       const organization = match[1];
       const projectNumber = parseInt(match[2], 10);
-      const projectViewNumber = parseInt(match[3], 10);
+      const projectViewNumber = parseInt(match[3], 10) || null;
 
-      return this.issuesForProjectView(
-        organization,
-        projectNumber,
-        projectViewNumber,
-      );
-    }
+      const customQuery = urlParts.searchParams.get("filterQuery");
 
-    // Project Query
-    match = urlParts.pathname.match(/orgs\/([^/]+)\/projects\/(\d+)/);
-    if (match) {
-      const organization = match[1];
-      const projectNumber = parseInt(match[2], 10);
+      // Custom Query - Discard the View if it exists
+      if (customQuery) {
+        return this.issuesForProjectQuery(
+          organization,
+          projectNumber,
+          customQuery,
+        );
+      }
 
-      // Extract the query from the URL search parameters
-      const customQuery = urlParts.searchParams.get("filterQuery") || "";
+      // Project View
+      if (projectViewNumber) {
+        return this.issuesForProjectView(
+          organization,
+          projectNumber,
+          projectViewNumber,
+        );
+      }
 
-      return this.issuesForProjectQuery(
-        organization,
-        projectNumber,
-        customQuery,
-      );
+      // Default to all Project Issues
+      return this.issuesForProject(organization, projectNumber);
     }
 
     throw new Error(
