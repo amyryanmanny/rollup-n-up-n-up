@@ -13,20 +13,25 @@ type ListIssuesForProjectResponse = {
   url: string;
 };
 
-export type ProjectField = ProjectFieldSingleSelect | ProjectFieldDate;
+export type IssueField = FieldSingleSelect | FieldMultiSelect | FieldDate;
 
-type ProjectFieldSingleSelect = {
+type FieldSingleSelect = {
   kind: "SingleSelect";
   value: string | null;
 };
 
-type ProjectFieldDate = {
+type FieldMultiSelect = {
+  kind: "MultiSelect";
+  values: string[] | null;
+};
+
+type FieldDate = {
   kind: "Date";
   value: string | null; // ISO 8601 date string
   date: Date | null;
 };
 
-const slugifyProjectFieldName = (field: string): string => {
+export const slugifyProjectFieldName = (field: string): string => {
   // RoB Area FY25Q4 -> rob-area-fy25q4
   // Slugs are not accessible with GraphQL :(
   return field.toLowerCase().replace(/\s+/g, "-");
@@ -206,7 +211,7 @@ export async function listIssuesForProject(
         projectFields: edge.node.fieldValues.edges.reduce((acc, fieldEdge) => {
           const fieldNode = fieldEdge.node;
           if (fieldNode && fieldNode.field) {
-            let field: ProjectField;
+            let field: IssueField;
             switch (fieldNode.__typename) {
               case "ProjectV2ItemFieldSingleSelectValue":
                 field = {
@@ -231,7 +236,7 @@ export async function listIssuesForProject(
             acc.set(fieldName, field);
           }
           return acc;
-        }, new Map<string, ProjectField>()),
+        }, new Map<string, IssueField>()),
       };
     })
     .filter((item) => item !== null)

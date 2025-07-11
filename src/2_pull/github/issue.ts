@@ -1,6 +1,6 @@
 import { getMemory } from "@transform/memory";
 
-import { type ProjectField } from "./graphql/project";
+import { slugifyProjectFieldName, type IssueField } from "./graphql/project";
 import { CommentWrapper, type Comment } from "./comment";
 import { findLatestUpdate } from "./update";
 import { IssueList } from "./issue-list";
@@ -19,7 +19,7 @@ export type Issue = {
   };
   assignees: string[];
   comments: Array<Comment>;
-  projectFields?: Map<string, ProjectField>;
+  projectFields?: Map<string, IssueField>;
 };
 
 export class IssueWrapper {
@@ -110,15 +110,13 @@ export class IssueWrapper {
     }
 
     // Fallback to projectFields
-    // TODO: Handle case insensitivity here too
-    const projectField = this._projectFields.get(fieldName)?.value;
-    return projectField || "";
+    return this.projectFields.get(slugifyProjectFieldName(fieldName)) || "";
   }
 
-  get _projectFields(): Map<string, ProjectField> {
+  get _projectFields(): Map<string, IssueField> {
     // Internal Method - return issue projectFields
     // For Issues pulled from a Repo, projectFields are undefined
-    return this.issue.projectFields ?? new Map<string, ProjectField>();
+    return this.issue.projectFields ?? new Map<string, IssueField>();
   }
 
   get projectFields(): Map<string, string> {
