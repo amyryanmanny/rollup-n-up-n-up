@@ -43,19 +43,6 @@ export class IssueList {
     return this.issues.length === 0;
   }
 
-  get hasUpdates(): boolean {
-    // Check if any issue has an update
-    return this.issues.some((issue) => issue.hasUpdate);
-  }
-
-  get blame(): IssueList {
-    const issuesWithNoUpdate = this.issues.filter((issue) => !issue.hasUpdate);
-    return new IssueList(issuesWithNoUpdate, {
-      title: `${this.sourceOfTruth.title} - Missing Updates`,
-      url: this.sourceOfTruth.url,
-    });
-  }
-
   [Symbol.iterator]() {
     return this.issues[Symbol.iterator]();
   }
@@ -69,6 +56,26 @@ export class IssueList {
     // Filter the issues by a predicate
     const filteredIssues = this.issues.filter(predicate);
     return new IssueList(filteredIssues, this.sourceOfTruth);
+  }
+
+  // Properties
+  get header(): string {
+    return `[${this.sourceOfTruth.title}](${this.sourceOfTruth.url})`;
+  }
+
+  get title(): string {
+    return this.sourceOfTruth.title;
+  }
+
+  get url(): string {
+    return this.sourceOfTruth.url;
+  }
+
+  get groupKey(): string {
+    if (!this.sourceOfTruth.groupKey) {
+      throw new Error("Don't use groupKey without a groupBy.");
+    }
+    return this.sourceOfTruth.groupKey;
   }
 
   // Issue Filtering / Grouping / Sorting
@@ -88,37 +95,19 @@ export class IssueList {
   }
 
   sort(fieldName: string, direction: "asc" | "desc" = "asc"): IssueList {
-    // Sort the issues by the given field name
+    // Sort the issues by the given field name and direction
     this.issues.sort((a, b) => {
       const aValue = a.field(fieldName);
       const bValue = b.field(fieldName);
 
-      if (aValue < bValue) {
-        return direction === "asc" ? -1 : 1;
-      }
-      if (aValue > bValue) {
-        return direction === "asc" ? 1 : -1;
-      }
-      return 0;
+      const comparison =
+        emojiCompare(aValue, bValue) ??
+        aValue.localeCompare(bValue, undefined, { sensitivity: "base" });
+
+      return direction === "asc" ? comparison : -comparison;
     });
 
     return this; // Allow method chaining
-  }
-
-  sortByEmoji(fieldName: string): IssueList {
-    // TODO: Combine with sort(), no need for both
-    // Sort the issues by the given field name
-    // The field is expected to be a status containing an emoji
-    // Red comes first
-    this.issues.sort((a, b) => {
-      const aValue = a.field(fieldName);
-      const bValue = b.field(fieldName);
-
-      // If both have the same emoji or neither has it, sort alphabetically
-      return emojiCompare(aValue, bValue) ?? aValue.localeCompare(bValue);
-    });
-
-    return this;
   }
 
   groupBy(fieldName: string): IssueList[] {
@@ -153,24 +142,18 @@ export class IssueList {
       .sort((a, b) => emojiCompare(a, b) ?? a.localeCompare(b))[0];
   }
 
-  // Properties
-  get header(): string {
-    return `[${this.sourceOfTruth.title}](${this.sourceOfTruth.url})`;
+  // Updates
+  get hasUpdates(): boolean {
+    // Check if any issue has an update
+    return this.issues.some((issue) => issue.hasUpdate);
   }
 
-  get title(): string {
-    return this.sourceOfTruth.title;
-  }
-
-  get url(): string {
-    return this.sourceOfTruth.url;
-  }
-
-  get groupKey(): string {
-    if (!this.sourceOfTruth.groupKey) {
-      throw new Error("Don't use groupKey without a groupBy.");
-    }
-    return this.sourceOfTruth.groupKey;
+  get blame(): IssueList {
+    const issuesWithNoUpdate = this.issues.filter((issue) => !issue.hasUpdate);
+    return new IssueList(issuesWithNoUpdate, {
+      title: `${this.sourceOfTruth.title} - Missing Updates`,
+      url: this.sourceOfTruth.url,
+    });
   }
 
   // Constructors
