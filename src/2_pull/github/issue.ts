@@ -11,6 +11,8 @@ export type Issue = {
   body: string;
   url: string;
   number: number;
+  createdAt: Date;
+  updatedAt: Date;
   type: string;
   repository: {
     name: string;
@@ -18,6 +20,7 @@ export type Issue = {
     nameWithOwner: string;
   };
   assignees: string[];
+  labels: string[];
   comments: Array<Comment>;
   projectFields?: Map<string, IssueField>;
 };
@@ -61,6 +64,14 @@ export class IssueWrapper {
     return this.issue.number;
   }
 
+  get createdAt(): Date {
+    return this.issue.createdAt;
+  }
+
+  get updatedAt(): Date {
+    return this.issue.updatedAt;
+  }
+
   get type(): string {
     return this.issue.type;
   }
@@ -79,6 +90,10 @@ export class IssueWrapper {
 
   get assignees(): string[] {
     return this.issue.assignees.map((assignee) => assignee.trim());
+  }
+
+  get labels(): string[] {
+    return this.issue.labels.map((label) => label.trim());
   }
 
   // Fields

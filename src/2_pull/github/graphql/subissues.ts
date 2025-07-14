@@ -31,11 +31,8 @@ export async function listSubissuesForIssue(
                 body
                 url
                 number
-                assignees(first: 5) {
-                  nodes {
-                    login
-                  }
-                }
+                createdAt
+                updatedAt
                 issueType {
                   name
                 }
@@ -45,6 +42,16 @@ export async function listSubissuesForIssue(
                     login
                   }
                   nameWithOwner
+                }
+                assignees(first: 5) {
+                  nodes {
+                    login
+                  }
+                }
+                labels(first: 100) {
+                  nodes {
+                    name
+                  }
                 }
                 comments(last: 100) {
                   nodes {
@@ -80,11 +87,8 @@ export async function listSubissuesForIssue(
               body: string;
               url: string;
               number: number;
-              assignees: {
-                nodes: Array<{
-                  login: string;
-                }>;
-              };
+              createdAt: string; // ISO 8601 date string
+              updatedAt: string; // ISO 8601 date string
               issueType: {
                 name: string;
               } | null;
@@ -94,6 +98,16 @@ export async function listSubissuesForIssue(
                   login: string;
                 };
                 nameWithOwner: string;
+              };
+              assignees: {
+                nodes: Array<{
+                  login: string;
+                }>;
+              };
+              labels: {
+                nodes: Array<{
+                  name: string;
+                }>;
               };
               comments: {
                 nodes: Array<{
@@ -120,13 +134,16 @@ export async function listSubissuesForIssue(
         body: subIssue.body,
         url: subIssue.url,
         number: subIssue.number,
-        assignees: subIssue.assignees.nodes.map((assignee) => assignee.login),
+        createdAt: new Date(subIssue.createdAt),
+        updatedAt: new Date(subIssue.updatedAt),
         type: subIssue.issueType?.name || "Issue",
         repository: {
           name: subIssue.repository.name,
           owner: subIssue.repository.owner.login,
           nameWithOwner: subIssue.repository.nameWithOwner,
         },
+        assignees: subIssue.assignees.nodes.map((assignee) => assignee.login),
+        labels: subIssue.labels.nodes.map((label) => label.name),
         comments: subIssue.comments.nodes.map((comment) => ({
           author: comment.author?.login || "Unknown",
           body: comment.body,

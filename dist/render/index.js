@@ -55407,11 +55407,8 @@ async function listIssuesForProject(params) {
                     body
                     url
                     number
-                    assignees(first: 5) {
-                      nodes {
-                        login
-                      }
-                    }
+                    createdAt
+                    updatedAt
                     issueType {
                       name
                     }
@@ -55421,6 +55418,16 @@ async function listIssuesForProject(params) {
                         login
                       }
                       nameWithOwner
+                    }
+                    assignees(first: 5) {
+                      nodes {
+                        login
+                      }
+                    }
+                    labels(first: 100) {
+                      nodes {
+                        name
+                      }
                     }
                     comments(last: 100) {
                       nodes {
@@ -55482,13 +55489,16 @@ async function listIssuesForProject(params) {
       body: content.body || "",
       url: content.url,
       number: content.number,
-      assignees: content.assignees.nodes.map((assignee) => assignee.login),
+      createdAt: new Date(content.createdAt),
+      updatedAt: new Date(content.updatedAt),
       type: content.issueType?.name || "Issue",
       repository: {
         name: content.repository.name,
         owner: content.repository.owner.login,
         nameWithOwner: content.repository.nameWithOwner
       },
+      assignees: content.assignees.nodes.map((assignee) => assignee.login),
+      labels: content.labels.nodes.map((label) => label.name),
       comments: content.comments.nodes.map((comment) => ({
         author: comment.author?.login || "Unknown",
         body: comment.body,
@@ -55775,11 +55785,8 @@ async function listIssuesForRepo(params) {
               body
               url
               number
-              assignees(first: 5) {
-                nodes {
-                  login
-                }
-              }
+              createdAt
+              updatedAt
               issueType {
                 name
               }
@@ -55789,6 +55796,16 @@ async function listIssuesForRepo(params) {
                   login
                 }
                 nameWithOwner
+              }
+              assignees(first: 5) {
+                nodes {
+                  login
+                }
+              }
+              labels(first: 100) {
+                nodes {
+                  name
+                }
               }
               comments(last: 100) {
                 nodes {
@@ -55820,13 +55837,16 @@ async function listIssuesForRepo(params) {
     body: issue.body,
     url: issue.url,
     number: issue.number,
-    assignees: issue.assignees.nodes.map((assignee) => assignee.login),
+    createdAt: new Date(issue.createdAt),
+    updatedAt: new Date(issue.updatedAt),
     type: issue.issueType?.name || "Issue",
     repository: {
       name: issue.repository.name,
       owner: issue.repository.owner.login,
       nameWithOwner: issue.repository.nameWithOwner
     },
+    assignees: issue.assignees.nodes.map((assignee) => assignee.login),
+    labels: issue.labels.nodes.map((label) => label.name),
     comments: issue.comments.nodes.map((comment) => ({
       author: comment.author?.login || "Unknown",
       body: comment.body,
@@ -55857,11 +55877,8 @@ async function listSubissuesForIssue(params) {
                 body
                 url
                 number
-                assignees(first: 5) {
-                  nodes {
-                    login
-                  }
-                }
+                createdAt
+                updatedAt
                 issueType {
                   name
                 }
@@ -55871,6 +55888,16 @@ async function listSubissuesForIssue(params) {
                     login
                   }
                   nameWithOwner
+                }
+                assignees(first: 5) {
+                  nodes {
+                    login
+                  }
+                }
+                labels(first: 100) {
+                  nodes {
+                    name
+                  }
                 }
                 comments(last: 100) {
                   nodes {
@@ -55899,13 +55926,16 @@ async function listSubissuesForIssue(params) {
     body: subIssue.body,
     url: subIssue.url,
     number: subIssue.number,
-    assignees: subIssue.assignees.nodes.map((assignee) => assignee.login),
+    createdAt: new Date(subIssue.createdAt),
+    updatedAt: new Date(subIssue.updatedAt),
     type: subIssue.issueType?.name || "Issue",
     repository: {
       name: subIssue.repository.name,
       owner: subIssue.repository.owner.login,
       nameWithOwner: subIssue.repository.nameWithOwner
     },
+    assignees: subIssue.assignees.nodes.map((assignee) => assignee.login),
+    labels: subIssue.labels.nodes.map((label) => label.name),
     comments: subIssue.comments.nodes.map((comment) => ({
       author: comment.author?.login || "Unknown",
       body: comment.body,
@@ -56222,6 +56252,12 @@ class IssueWrapper {
   get number() {
     return this.issue.number;
   }
+  get createdAt() {
+    return this.issue.createdAt;
+  }
+  get updatedAt() {
+    return this.issue.updatedAt;
+  }
   get type() {
     return this.issue.type;
   }
@@ -56236,6 +56272,9 @@ class IssueWrapper {
   }
   get assignees() {
     return this.issue.assignees.map((assignee) => assignee.trim());
+  }
+  get labels() {
+    return this.issue.labels.map((label) => label.trim());
   }
   field(fieldName) {
     const insensitiveFieldName = fieldName.trim().toUpperCase().replace(/\s+/g, "").replace("_", "");

@@ -48,11 +48,8 @@ export async function listIssuesForRepo(
               body
               url
               number
-              assignees(first: 5) {
-                nodes {
-                  login
-                }
-              }
+              createdAt
+              updatedAt
               issueType {
                 name
               }
@@ -62,6 +59,16 @@ export async function listIssuesForRepo(
                   login
                 }
                 nameWithOwner
+              }
+              assignees(first: 5) {
+                nodes {
+                  login
+                }
+              }
+              labels(first: 100) {
+                nodes {
+                  name
+                }
               }
               comments(last: 100) {
                 nodes {
@@ -93,9 +100,8 @@ export async function listIssuesForRepo(
             body: string;
             url: string;
             number: number;
-            assignees: {
-              nodes: Array<{ login: string }>;
-            };
+            createdAt: string; // ISO 8601 date string
+            updatedAt: string; // ISO 8601 date string
             issueType: {
               name: string;
             } | null;
@@ -105,6 +111,12 @@ export async function listIssuesForRepo(
                 login: string;
               };
               nameWithOwner: string;
+            };
+            assignees: {
+              nodes: Array<{ login: string }>;
+            };
+            labels: {
+              nodes: Array<{ name: string }>;
             };
             comments: {
               nodes: Array<{
@@ -136,13 +148,16 @@ export async function listIssuesForRepo(
       body: issue.body,
       url: issue.url,
       number: issue.number,
-      assignees: issue.assignees.nodes.map((assignee) => assignee.login),
+      createdAt: new Date(issue.createdAt),
+      updatedAt: new Date(issue.updatedAt),
       type: issue.issueType?.name || "Issue",
       repository: {
         name: issue.repository.name,
         owner: issue.repository.owner.login,
         nameWithOwner: issue.repository.nameWithOwner,
       },
+      assignees: issue.assignees.nodes.map((assignee) => assignee.login),
+      labels: issue.labels.nodes.map((label) => label.name),
       comments: issue.comments.nodes.map((comment) => ({
         author: comment.author?.login || "Unknown",
         body: comment.body,
