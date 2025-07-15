@@ -55353,28 +55353,28 @@ class Memory {
 }
 
 // src/util/emoji.ts
+var EMOJI_PRIORITY = [
+  "\uD83D\uDD34",
+  "\uD83D\uDFE5",
+  "\uD83D\uDFE0",
+  "\uD83D\uDFE7",
+  "\uD83D\uDFE1",
+  "\uD83D\uDFE8",
+  "\uD83D\uDFE2",
+  "\uD83D\uDFE9",
+  "\uD83D\uDD35",
+  "\uD83D\uDFE6",
+  "\uD83D\uDFE3",
+  "\uD83D\uDFEA",
+  "\uD83D\uDFE4",
+  "\uD83D\uDFEB",
+  "⚪️",
+  "⬜️",
+  "⚫️",
+  "⬛️"
+];
 function emojiCompare(a2, b2) {
-  const emojiPriority = [
-    "\uD83D\uDD34",
-    "\uD83D\uDFE5",
-    "\uD83D\uDFE0",
-    "\uD83D\uDFE7",
-    "\uD83D\uDFE1",
-    "\uD83D\uDFE8",
-    "\uD83D\uDFE2",
-    "\uD83D\uDFE9",
-    "\uD83D\uDD35",
-    "\uD83D\uDFE6",
-    "\uD83D\uDFE3",
-    "\uD83D\uDFEA",
-    "\uD83D\uDFE4",
-    "⚪️",
-    "⬜️",
-    "⚫️",
-    "⬛️"
-  ];
-  for (let i2 = 0;i2 < emojiPriority.length; i2++) {
-    const emoji = emojiPriority[i2];
+  for (const emoji of EMOJI_PRIORITY) {
     if (a2.includes(emoji) && !b2.includes(emoji)) {
       return -1;
     }
@@ -55450,6 +55450,9 @@ async function listIssuesForProject(params) {
                         field {
                           ... on ProjectV2SingleSelectField {
                             name
+                            options {
+                              name
+                            }
                           }
                         }
                       }
@@ -55505,34 +55508,38 @@ async function listIssuesForProject(params) {
         createdAt: new Date(comment.createdAt),
         url: comment.url
       })),
-      projectFields: edge.node.fieldValues.edges.reduce((acc, fieldEdge) => {
-        const fieldNode = fieldEdge.node;
-        if (fieldNode && fieldNode.field) {
-          let field;
-          switch (fieldNode.__typename) {
-            case "ProjectV2ItemFieldSingleSelectValue":
-              field = {
-                kind: "SingleSelect",
-                value: fieldNode.name
-              };
-              break;
-            case "ProjectV2ItemFieldDateValue": {
-              const date = fieldNode.date;
-              field = {
-                kind: "Date",
-                value: date,
-                date: date ? new Date(date) : null
-              };
-              break;
+      project: {
+        number: params.projectNumber,
+        fields: edge.node.fieldValues.edges.reduce((acc, fieldEdge) => {
+          const fieldNode = fieldEdge.node;
+          if (fieldNode && fieldNode.field) {
+            let field;
+            switch (fieldNode.__typename) {
+              case "ProjectV2ItemFieldSingleSelectValue":
+                field = {
+                  kind: "SingleSelect",
+                  value: fieldNode.name,
+                  options: fieldNode.field.options.map((option) => option.name)
+                };
+                break;
+              case "ProjectV2ItemFieldDateValue": {
+                const date = fieldNode.date;
+                field = {
+                  kind: "Date",
+                  value: date,
+                  date: date ? new Date(date) : null
+                };
+                break;
+              }
+              default:
+                return acc;
             }
-            default:
-              return acc;
+            const fieldName = slugifyProjectFieldName(fieldNode.field.name);
+            acc.set(fieldName, field);
           }
-          const fieldName = slugifyProjectFieldName(fieldNode.field.name);
-          acc.set(fieldName, field);
-        }
-        return acc;
-      }, new Map)
+          return acc;
+        }, new Map)
+      }
     };
   }).filter((item) => item !== null).filter((item) => {
     return params.typeFilter === undefined || params.typeFilter.length === 0 || params.typeFilter.includes(item.type);
@@ -55554,7 +55561,11 @@ class ProjectView {
     this.params = params;
     this.filters = new DefaultDict(() => []);
     this.excludeFilters = new DefaultDict(() => []);
-    params.filterQuery.match(/(?:[^\s"]+|"[^"]*")+/g)?.forEach((f2) => {
+    const matches = params.filterQuery.match(/(?:[^\s"]+|"[^"]*")+/g);
+    if (!matches) {
+      return;
+    }
+    matches.forEach((f2) => {
       const [key, valueStr] = f2.split(":").map((s2) => s2.trim());
       if (!key || !valueStr) {
         return;
@@ -56207,6 +56218,17 @@ class CommentWrapper {
         throw new Error(`Invalid timeframe for comment filtering: "${timeframe}".`);
     }
   }
+  get emojiStatus() {
+    if (this.isEmpty) {
+      return;
+    }
+    for (const emoji of EMOJI_PRIORITY) {
+      if (this.comment.body.includes(emoji)) {
+        return emoji;
+      }
+    }
+    return;
+  }
   get rendered() {
     return `#### Comment on ${this.issue.type}: ${this.header}
 
@@ -56229,9 +56251,6 @@ class IssueWrapper {
   issue;
   constructor(issue) {
     this.issue = issue;
-  }
-  get hasUpdate() {
-    return !this.latestUpdate.isEmpty;
   }
   get header() {
     return `[${this.title}](${this.url})`;
@@ -56303,8 +56322,11 @@ class IssueWrapper {
     }
     return this.projectFields.get(slugifyProjectFieldName(fieldName)) || "";
   }
+  get projectNumber() {
+    return this.issue.project?.number;
+  }
   get _projectFields() {
-    return this.issue.projectFields ?? new Map;
+    return this.issue.project?.fields ?? new Map;
   }
   get projectFields() {
     return new Map(Array.from(this._projectFields.entries()).map(([name, field]) => {
@@ -56316,6 +56338,29 @@ class IssueWrapper {
           return [name, (field.values || []).join(", ")];
       }
     }));
+  }
+  status(fieldName) {
+    if (getConfig("EMOJI_OVERRIDE")) {
+      const update2 = this.latestUpdate;
+      const emoji = update2.emojiStatus;
+      if (emoji) {
+        const field = this._projectFields.get(fieldName);
+        if (field && field.kind === "SingleSelect") {
+          for (const option of field?.options || []) {
+            if (option.includes(emoji)) {
+              return option;
+            }
+          }
+        } else {
+          return emoji;
+        }
+      }
+    }
+    const value = this.field(fieldName);
+    if (!value) {
+      return "No Status";
+    }
+    return value;
   }
   async subissues() {
     return IssueList.forSubissues({
@@ -56346,6 +56391,9 @@ class IssueWrapper {
       }
     }
     return CommentWrapper.empty(this);
+  }
+  get hasUpdate() {
+    return !this.latestUpdate.isEmpty;
   }
   get rendered() {
     const rendered = `### ${this.type}: ${this.header}
@@ -56381,16 +56429,6 @@ class IssueList {
   get isEmpty() {
     return this.issues.length === 0;
   }
-  get hasUpdates() {
-    return this.issues.some((issue) => issue.hasUpdate);
-  }
-  get blame() {
-    const issuesWithNoUpdate = this.issues.filter((issue) => !issue.hasUpdate);
-    return new IssueList(issuesWithNoUpdate, {
-      title: `${this.sourceOfTruth.title} - Missing Updates`,
-      url: this.sourceOfTruth.url
-    });
-  }
   [Symbol.iterator]() {
     return this.issues[Symbol.iterator]();
   }
@@ -56400,6 +56438,21 @@ class IssueList {
   filter(predicate) {
     const filteredIssues = this.issues.filter(predicate);
     return new IssueList(filteredIssues, this.sourceOfTruth);
+  }
+  get header() {
+    return `[${this.sourceOfTruth.title}](${this.sourceOfTruth.url})`;
+  }
+  get title() {
+    return this.sourceOfTruth.title;
+  }
+  get url() {
+    return this.sourceOfTruth.url;
+  }
+  get groupKey() {
+    if (!this.sourceOfTruth.groupKey) {
+      throw new Error("Don't use groupKey without a groupBy.");
+    }
+    return this.sourceOfTruth.groupKey;
   }
   applyViewFilter(view) {
     this.issues = this.issues.filter((issue) => view.filter(issue));
@@ -56414,21 +56467,8 @@ class IssueList {
     this.issues.sort((a2, b2) => {
       const aValue = a2.field(fieldName);
       const bValue = b2.field(fieldName);
-      if (aValue < bValue) {
-        return direction === "asc" ? -1 : 1;
-      }
-      if (aValue > bValue) {
-        return direction === "asc" ? 1 : -1;
-      }
-      return 0;
-    });
-    return this;
-  }
-  sortByEmoji(fieldName) {
-    this.issues.sort((a2, b2) => {
-      const aValue = a2.field(fieldName);
-      const bValue = b2.field(fieldName);
-      return emojiCompare(aValue, bValue) ?? aValue.localeCompare(bValue);
+      const comparison = emojiCompare(aValue, bValue) ?? aValue.localeCompare(bValue, undefined, { sensitivity: "base" });
+      return direction === "asc" ? comparison : -comparison;
     });
     return this;
   }
@@ -56450,20 +56490,15 @@ class IssueList {
   overallStatus(fieldName) {
     return this.issues.map((issue) => issue.field(fieldName) ?? "").sort((a2, b2) => emojiCompare(a2, b2) ?? a2.localeCompare(b2))[0];
   }
-  get header() {
-    return `[${this.sourceOfTruth.title}](${this.sourceOfTruth.url})`;
+  get hasUpdates() {
+    return this.issues.some((issue) => issue.hasUpdate);
   }
-  get title() {
-    return this.sourceOfTruth.title;
-  }
-  get url() {
-    return this.sourceOfTruth.url;
-  }
-  get groupKey() {
-    if (!this.sourceOfTruth.groupKey) {
-      throw new Error("Don't use groupKey without a groupBy.");
-    }
-    return this.sourceOfTruth.groupKey;
+  get blame() {
+    const issuesWithNoUpdate = this.issues.filter((issue) => !issue.hasUpdate);
+    return new IssueList(issuesWithNoUpdate, {
+      title: `${this.sourceOfTruth.title} - Missing Updates`,
+      url: this.sourceOfTruth.url
+    });
   }
   constructor(issues, sourceOfTruth) {
     this.sourceOfTruth = sourceOfTruth;
