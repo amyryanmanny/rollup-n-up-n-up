@@ -134,7 +134,7 @@ out
 .yarn/install-state.gz
 .pnp.*
 
-# dotenv
+# dotenv / secrets
 .env
 *.pem
 
