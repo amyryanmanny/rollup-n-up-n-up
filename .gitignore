@@ -136,6 +136,7 @@ out
 
 # dotenv
 .env
+*.pem
 
 # Output
 templates/*
