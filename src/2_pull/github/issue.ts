@@ -1,4 +1,5 @@
 import { getMemory } from "@transform/memory";
+import { getConfig } from "@util/config";
 
 import { slugifyProjectFieldName, type IssueField } from "./graphql/project";
 import { CommentWrapper, type Comment } from "./comment";
@@ -22,7 +23,10 @@ export type Issue = {
   assignees: string[];
   labels: string[];
   comments: Array<Comment>;
-  projectFields?: Map<string, IssueField>;
+  project?: {
+    number: number;
+    fields: Map<string, IssueField>;
+  };
 };
 
 export class IssueWrapper {
@@ -32,10 +36,6 @@ export class IssueWrapper {
 
   constructor(issue: Issue) {
     this.issue = issue;
-  }
-
-  get hasUpdate(): boolean {
-    return !this.latestUpdate.isEmpty;
   }
 
   // Properties
@@ -132,10 +132,14 @@ export class IssueWrapper {
     return this.projectFields.get(slugifyProjectFieldName(fieldName)) || "";
   }
 
+  get projectNumber(): number | undefined {
+    return this.issue.project?.number;
+  }
+
   get _projectFields(): Map<string, IssueField> {
     // Internal Method - return issue projectFields
     // For Issues pulled from a Repo, projectFields are undefined
-    return this.issue.projectFields ?? new Map<string, IssueField>();
+    return this.issue.project?.fields ?? new Map<string, IssueField>();
   }
 
   get projectFields(): Map<string, string> {
@@ -151,6 +155,34 @@ export class IssueWrapper {
         }
       }),
     );
+  }
+
+  status(fieldName: string): string {
+    // Return the status of the issue by field name
+    if (getConfig("EMOJI_OVERRIDE")) {
+      // If EMOJI_OVERRIDE is enabled, check the body of an update for an emoji
+      const update = this.latestUpdate;
+      const emoji = update.emojiStatus;
+      if (emoji) {
+        const field = this._projectFields.get(fieldName);
+        if (field && field.kind === "SingleSelect") {
+          // Try to match to ProjectFieldValue for parity
+          for (const option of field?.options || []) {
+            if (option.includes(emoji)) {
+              // Return first option with matching emoji - Small false positive risk
+              return option;
+            }
+          }
+        } else {
+          return emoji;
+        }
+      }
+    }
+    const value = this.field(fieldName);
+    if (!value) {
+      return "No Status";
+    }
+    return value;
   }
 
   // Subissues
@@ -197,6 +229,10 @@ export class IssueWrapper {
     }
 
     return CommentWrapper.empty(this);
+  }
+
+  get hasUpdate(): boolean {
+    return !this.latestUpdate.isEmpty;
   }
 
   // Render / Memory Functions

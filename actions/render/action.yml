@@ -49,6 +49,10 @@ inputs:
     description: >
       An ordered list of strategies used to detect an update from issue comments (see docs for syntax).
     required: false
+  emoji_override:
+    description: >
+      If a matching Emoji exists in the latest update, it will override the Project Field status.
+    required: false
 
 outputs:
   md:

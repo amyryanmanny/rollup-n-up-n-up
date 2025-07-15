@@ -1,5 +1,6 @@
 import { getMemory } from "@transform/memory";
 import { ONE_DAY } from "@util/date";
+import { EMOJI_PRIORITY } from "@util/emoji";
 import {
   splitMarkdownByBoldedText,
   splitMarkdownByHeaders,
@@ -140,6 +141,19 @@ export class CommentWrapper {
           `Invalid timeframe for comment filtering: "${timeframe}".`,
         );
     }
+  }
+
+  get emojiStatus(): string | undefined {
+    // Extract a status emoji from the comment body
+    if (this.isEmpty) {
+      return undefined;
+    }
+    for (const emoji of EMOJI_PRIORITY) {
+      if (this.comment.body.includes(emoji)) {
+        return emoji; // Return highest priority emoji found
+      }
+    }
+    return undefined;
   }
 
   // Render / Memory Functions

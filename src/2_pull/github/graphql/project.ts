@@ -15,9 +15,10 @@ type ListIssuesForProjectResponse = {
 
 export type IssueField = FieldSingleSelect | FieldMultiSelect | FieldDate;
 
-type FieldSingleSelect = {
+export type FieldSingleSelect = {
   kind: "SingleSelect";
   value: string | null;
+  options?: string[]; // Value options for the field
 };
 
 type FieldMultiSelect = {
@@ -101,6 +102,9 @@ export async function listIssuesForProject(
                         field {
                           ... on ProjectV2SingleSelectField {
                             name
+                            options {
+                              name
+                            }
                           }
                         }
                       }
@@ -182,6 +186,7 @@ export async function listIssuesForProject(
                     date: string | null; // Date value
                     field: {
                       name: string; // Field name
+                      options?: Array<{ name: string }>; // For SingleSelect field options
                     } | null; // Null if no union type match
                   } | null;
                 }>;
@@ -201,7 +206,7 @@ export async function listIssuesForProject(
   });
 
   const issues = response.organization.projectV2.items.edges
-    .map((edge) => {
+    .map((edge): Issue | null => {
       const content = edge.node.content;
       if (!content || content.__typename !== "Issue") {
         return null;
@@ -227,35 +232,41 @@ export async function listIssuesForProject(
           createdAt: new Date(comment.createdAt),
           url: comment.url,
         })),
-        projectFields: edge.node.fieldValues.edges.reduce((acc, fieldEdge) => {
-          const fieldNode = fieldEdge.node;
-          if (fieldNode && fieldNode.field) {
-            let field: IssueField;
-            switch (fieldNode.__typename) {
-              case "ProjectV2ItemFieldSingleSelectValue":
-                field = {
-                  kind: "SingleSelect",
-                  value: fieldNode.name,
-                };
-                break;
-              case "ProjectV2ItemFieldDateValue": {
-                const date = fieldNode.date;
-                field = {
-                  kind: "Date",
-                  value: date,
-                  date: date ? new Date(date) : null,
-                };
-                break;
+        project: {
+          number: params.projectNumber,
+          fields: edge.node.fieldValues.edges.reduce((acc, fieldEdge) => {
+            const fieldNode = fieldEdge.node;
+            if (fieldNode && fieldNode.field) {
+              let field: IssueField;
+              switch (fieldNode.__typename) {
+                case "ProjectV2ItemFieldSingleSelectValue":
+                  field = {
+                    kind: "SingleSelect",
+                    value: fieldNode.name,
+                    options: fieldNode.field.options!.map(
+                      (option) => option.name,
+                    ),
+                  };
+                  break;
+                case "ProjectV2ItemFieldDateValue": {
+                  const date = fieldNode.date;
+                  field = {
+                    kind: "Date",
+                    value: date,
+                    date: date ? new Date(date) : null,
+                  };
+                  break;
+                }
+                default:
+                  // Ignore other field types for now
+                  return acc;
               }
-              default:
-                // Ignore other field types for now
-                return acc;
+              const fieldName = slugifyProjectFieldName(fieldNode.field.name);
+              acc.set(fieldName, field);
             }
-            const fieldName = slugifyProjectFieldName(fieldNode.field.name);
-            acc.set(fieldName, field);
-          }
-          return acc;
-        }, new Map<string, IssueField>()),
+            return acc;
+          }, new Map<string, IssueField>()),
+        },
       };
     })
     .filter((item) => item !== null)
