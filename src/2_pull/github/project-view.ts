@@ -31,8 +31,14 @@ export class ProjectView {
     this.filters = new DefaultDict<string, string[]>(() => []);
     this.excludeFilters = new DefaultDict<string, string[]>(() => []);
 
-    // Parse the filter string. Only split on spaces outside of quotes
-    params.filterQuery.match(/(?:[^\s"]+|"[^"]*")+/g)?.forEach((f) => {
+    // Parse the filter string
+    // Split on spaces unless they're inside quotes
+    const matches = params.filterQuery.match(/(?:[^\s"]+|"[^"]*")+/g);
+    if (!matches) {
+      return;
+    }
+
+    matches.forEach((f) => {
       const [key, valueStr] = f.split(":").map((s) => s.trim());
       if (!key || !valueStr) {
         // Skip if the key or value is missing
@@ -55,7 +61,7 @@ export class ProjectView {
           }
 
           if (v.startsWith("@today")) {
-            // There might be other date syntaxes out there
+            // There might be other date syntaxes I'm missing
             const today = new Date();
             const rest = v.split("@today-")[1]?.trim();
 
