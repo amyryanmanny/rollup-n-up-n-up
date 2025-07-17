@@ -1,6 +1,6 @@
 import { getMemory } from "@transform/memory";
 import { ONE_DAY } from "@util/date";
-import { EMOJI_PRIORITY } from "@util/emoji";
+import { extractEmoji } from "@util/emoji";
 import {
   splitMarkdownByBoldedText,
   splitMarkdownByHeaders,
@@ -112,11 +112,12 @@ export class CommentWrapper {
 
   section(name: string): string | undefined {
     // Get a section of the body by name
-    const section = this.sections.get(toSnakeCase(name));
+    name = toSnakeCase(name);
+    const section = this.sections.get(name);
     if (section !== undefined) {
       return stripHtml(section).trim();
     }
-    const boldedSection = this.boldedSections.get(toSnakeCase(name));
+    const boldedSection = this.boldedSections.get(name);
     if (boldedSection !== undefined) {
       return stripHtml(boldedSection).trim();
     }
@@ -143,17 +144,22 @@ export class CommentWrapper {
     }
   }
 
-  get emojiStatus(): string | undefined {
+  emojiStatus(sections?: string[]): string | undefined {
     // Extract a status emoji from the comment body
     if (this.isEmpty) {
       return undefined;
     }
-    for (const emoji of EMOJI_PRIORITY) {
-      if (this.comment.body.includes(emoji)) {
-        return emoji; // Return highest priority emoji found
+    if (sections) {
+      for (const sectionName of sections) {
+        const section = this.section(sectionName);
+        if (section) {
+          const emoji = extractEmoji(section);
+          if (emoji) return emoji;
+        }
       }
     }
-    return undefined;
+    // If no sections provided, or couldn't be found, search entire body
+    return extractEmoji(this.comment.body);
   }
 
   // Render / Memory Functions

@@ -31,3 +31,12 @@ export function emojiCompare(a: string, b: string): 1 | -1 | undefined {
 
   return undefined;
 }
+
+export function extractEmoji(text: string): string | undefined {
+  for (const emoji of EMOJI_PRIORITY) {
+    if (text.includes(emoji)) {
+      return emoji; // Return highest priority emoji found
+    }
+  }
+  return undefined; // No emoji found
+}

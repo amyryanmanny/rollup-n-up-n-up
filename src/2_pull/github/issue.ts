@@ -1,5 +1,5 @@
 import { getMemory } from "@transform/memory";
-import { getConfig } from "@util/config";
+import { getConfig, isTrueValue } from "@util/config";
 
 import { slugifyProjectFieldName, type IssueField } from "./graphql/project";
 import { CommentWrapper, type Comment } from "./comment";
@@ -159,10 +159,18 @@ export class IssueWrapper {
 
   status(fieldName: string): string {
     // Return the status of the issue by field name
-    if (getConfig("EMOJI_OVERRIDE")) {
-      // If EMOJI_OVERRIDE is enabled, check the body of an update for an emoji
+    const emojiOverride = getConfig("EMOJI_OVERRIDE");
+    if (emojiOverride) {
+      // If EMOJI_OVERRIDE is set, check the body of an update for an emoji
       const update = this.latestUpdate;
-      const emoji = update.emojiStatus;
+      let emojiSections: string[];
+      if (isTrueValue(emojiOverride)) {
+        emojiSections = []; // If just set to true, search entire body
+      } else {
+        // If set to a comma-separated list, search those sections
+        emojiSections = emojiOverride.split(",").map((s) => s.trim());
+      }
+      const emoji = update.emojiStatus(emojiSections);
       if (emoji) {
         const field = this._projectFields.get(fieldName);
         if (field && field.kind === "SingleSelect") {
