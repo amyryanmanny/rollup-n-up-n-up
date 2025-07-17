@@ -37864,6 +37864,9 @@ function getConfig(key, required = false) {
   import_dotenv.default.config();
   return process.env[key] ?? process.env[key.toUpperCase()] ?? process.env[key.toLowerCase()];
 }
+var isTrueValue = (value) => {
+  return value === "true" || value === "1" || value === "yes" || value === "on" || value === "enabled";
+};
 
 // src/4_template/render.ts
 import path2 from "path";
@@ -55384,6 +55387,14 @@ function emojiCompare(a2, b2) {
   }
   return;
 }
+function extractEmoji(text) {
+  for (const emoji of EMOJI_PRIORITY) {
+    if (text.includes(emoji)) {
+      return emoji;
+    }
+  }
+  return;
+}
 
 // src/2_pull/github/graphql/project.ts
 var slugifyProjectFieldName = (field) => {
@@ -55396,7 +55407,7 @@ async function listIssuesForProject(params) {
       organization(login: $organization) {
         projectV2(number: $projectNumber) {
           title
-          items(first: 100, after: $cursor) {
+          items(first: 50, after: $cursor) {
             edges {
               node {
                 id
@@ -55429,7 +55440,7 @@ async function listIssuesForProject(params) {
                         name
                       }
                     }
-                    comments(last: 100) {
+                    comments(last: 25) {
                       nodes {
                         author {
                           login
@@ -56192,11 +56203,12 @@ class CommentWrapper {
     return marker.test(this.comment.body);
   }
   section(name) {
-    const section = this.sections.get(toSnakeCase(name));
+    name = toSnakeCase(name);
+    const section = this.sections.get(name);
     if (section !== undefined) {
       return stripHtml(section).trim();
     }
-    const boldedSection = this.boldedSections.get(toSnakeCase(name));
+    const boldedSection = this.boldedSections.get(name);
     if (boldedSection !== undefined) {
       return stripHtml(boldedSection).trim();
     }
@@ -56218,16 +56230,21 @@ class CommentWrapper {
         throw new Error(`Invalid timeframe for comment filtering: "${timeframe}".`);
     }
   }
-  get emojiStatus() {
+  emojiStatus(sections) {
     if (this.isEmpty) {
       return;
     }
-    for (const emoji of EMOJI_PRIORITY) {
-      if (this.comment.body.includes(emoji)) {
-        return emoji;
+    if (sections) {
+      for (const sectionName of sections) {
+        const section = this.section(sectionName);
+        if (section) {
+          const emoji = extractEmoji(section);
+          if (emoji)
+            return emoji;
+        }
       }
     }
-    return;
+    return extractEmoji(this.comment.body);
   }
   get rendered() {
     return `#### Comment on ${this.issue.type}: ${this.header}
@@ -56340,9 +56357,16 @@ class IssueWrapper {
     }));
   }
   status(fieldName) {
-    if (getConfig("EMOJI_OVERRIDE")) {
+    const emojiOverride = getConfig("EMOJI_OVERRIDE");
+    if (emojiOverride) {
       const update2 = this.latestUpdate;
-      const emoji = update2.emojiStatus;
+      let emojiSections;
+      if (isTrueValue(emojiOverride)) {
+        emojiSections = [];
+      } else {
+        emojiSections = emojiOverride.split(",").map((s2) => s2.trim());
+      }
+      const emoji = update2.emojiStatus(emojiSections);
       if (emoji) {
         const field = this._projectFields.get(fieldName);
         if (field && field.kind === "SingleSelect") {
