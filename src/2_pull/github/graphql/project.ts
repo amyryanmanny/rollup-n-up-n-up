@@ -48,7 +48,7 @@ export async function listIssuesForProject(
       organization(login: $organization) {
         projectV2(number: $projectNumber) {
           title
-          items(first: 100, after: $cursor) {
+          items(first: 50, after: $cursor) {
             edges {
               node {
                 id
@@ -81,7 +81,7 @@ export async function listIssuesForProject(
                         name
                       }
                     }
-                    comments(last: 100) {
+                    comments(last: 25) {
                       nodes {
                         author {
                           login
