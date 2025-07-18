@@ -1,5 +1,11 @@
 import { getOctokit } from "@util/octokit";
 import type { Issue } from "../issue";
+import {
+  ISSUE_PAGE_SIZE,
+  NUM_ISSUE_ASSIGNESS,
+  NUM_ISSUE_COMMENTS,
+  NUM_ISSUE_LABELS,
+} from ".";
 
 export type ListSubissuesForIssueParameters = {
   owner: string;
@@ -25,7 +31,7 @@ export async function listSubissuesForIssue(
           issue(number: $issueNumber) {
             title
             url
-            subIssues(first: 100, after: $cursor) {
+            subIssues(first: ${ISSUE_PAGE_SIZE}, after: $cursor) {
               nodes {
                 title
                 body
@@ -43,17 +49,17 @@ export async function listSubissuesForIssue(
                   }
                   nameWithOwner
                 }
-                assignees(first: 5) {
+                assignees(first: ${NUM_ISSUE_ASSIGNESS}) {
                   nodes {
                     login
                   }
                 }
-                labels(first: 100) {
+                labels(first: ${NUM_ISSUE_LABELS}) {
                   nodes {
                     name
                   }
                 }
-                comments(last: 100) {
+                comments(last: ${NUM_ISSUE_COMMENTS}) {
                   nodes {
                     author {
                       login

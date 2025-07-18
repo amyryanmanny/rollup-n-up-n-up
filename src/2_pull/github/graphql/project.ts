@@ -1,5 +1,11 @@
 import { getOctokit } from "@util/octokit";
 import type { Issue } from "../issue";
+import {
+  ISSUE_PAGE_SIZE,
+  NUM_ISSUE_ASSIGNESS,
+  NUM_ISSUE_COMMENTS,
+  NUM_ISSUE_LABELS,
+} from ".";
 
 export type ListIssuesForProjectParameters = {
   organization: string;
@@ -48,7 +54,7 @@ export async function listIssuesForProject(
       organization(login: $organization) {
         projectV2(number: $projectNumber) {
           title
-          items(first: 50, after: $cursor) {
+          items(first: ${ISSUE_PAGE_SIZE}, after: $cursor) {
             edges {
               node {
                 id
@@ -71,17 +77,17 @@ export async function listIssuesForProject(
                       }
                       nameWithOwner
                     }
-                    assignees(first: 5) {
+                    assignees(first: ${NUM_ISSUE_ASSIGNESS}) {
                       nodes {
                         login
                       }
                     }
-                    labels(first: 100) {
+                    labels(first: ${NUM_ISSUE_LABELS}) {
                       nodes {
                         name
                       }
                     }
-                    comments(last: 25) {
+                    comments(last: ${NUM_ISSUE_COMMENTS}) {
                       nodes {
                         author {
                           login

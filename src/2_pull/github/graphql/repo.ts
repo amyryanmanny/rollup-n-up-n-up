@@ -1,5 +1,11 @@
 import { getOctokit } from "@util/octokit";
 import type { Issue } from "../issue";
+import {
+  ISSUE_PAGE_SIZE,
+  NUM_ISSUE_ASSIGNESS,
+  NUM_ISSUE_COMMENTS,
+  NUM_ISSUE_LABELS,
+} from ".";
 
 type IssueStateParam = "OPEN" | "CLOSED" | "ALL";
 type IssueState = Omit<IssueStateParam, "ALL">; // Doesn't work due to GraphQL weirdness
@@ -42,7 +48,7 @@ export async function listIssuesForRepo(
     query paginate($owner: String!, $repo: String!, $states: [IssueState!], $cursor: String) {
       repositoryOwner(login: $owner) {
         repository(name: $repo) {
-          issues(first: 100, states: $states, after: $cursor) {
+          issues(first: ${ISSUE_PAGE_SIZE}, states: $states, after: $cursor) {
             nodes {
               title
               body
@@ -60,17 +66,17 @@ export async function listIssuesForRepo(
                 }
                 nameWithOwner
               }
-              assignees(first: 5) {
+              assignees(first: ${NUM_ISSUE_ASSIGNESS}) {
                 nodes {
                   login
                 }
               }
-              labels(first: 100) {
+              labels(first: ${NUM_ISSUE_LABELS}) {
                 nodes {
                   name
                 }
               }
-              comments(last: 100) {
+              comments(last: ${NUM_ISSUE_COMMENTS}) {
                 nodes {
                   author {
                     login
