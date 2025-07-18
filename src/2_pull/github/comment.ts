@@ -1,4 +1,4 @@
-import { getMemory } from "@transform/memory";
+import { Memory } from "@transform/memory";
 import { ONE_DAY } from "@util/date";
 import { extractEmoji } from "@util/emoji";
 import {
@@ -19,7 +19,7 @@ export type Comment = {
 };
 
 export class CommentWrapper {
-  private memory = getMemory();
+  private memory = Memory.getInstance();
 
   static NULL_UPDATE = "No updates found";
 

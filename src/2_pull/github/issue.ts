@@ -1,4 +1,4 @@
-import { getMemory } from "@transform/memory";
+import { Memory } from "@transform/memory";
 import { getConfig, isTrueValue } from "@util/config";
 
 import { slugifyProjectFieldName, type IssueField } from "./graphql/project";
@@ -31,7 +31,7 @@ export type Issue = {
 };
 
 export class IssueWrapper {
-  private memory = getMemory();
+  private memory = Memory.getInstance();
 
   private issue: Issue;
 

@@ -6,7 +6,7 @@ import * as plugins from "./plugins";
 
 import { GitHubClient } from "../2_pull/github/client";
 import { getConfig } from "@util/config";
-import { getMemory } from "../3_transform/memory";
+import { Memory } from "../3_transform/memory";
 import { debugMemory, debugTemplate } from "./debug";
 
 // TODO: Configurable templatesDir
@@ -31,7 +31,7 @@ for (const plugin of Object.values(plugins)) {
 
 // Setup Globals
 const github = new GitHubClient();
-const memory = getMemory();
+const memory = Memory.getInstance();
 const today = new Date().toISOString().split("T")[0];
 
 const globals = { github, memory, today };

@@ -2,19 +2,19 @@ import { DefaultDict } from "@util/collections";
 import { summarize as _summarize, query as _query } from "./ai/summarize";
 
 // Singleton
-let memory: Memory;
-
-export function getMemory(): Memory {
-  if (!memory) {
-    memory = new Memory();
-  }
-  return memory;
-}
-
 export class Memory {
   private banks: DefaultDict<number, string[]>;
 
-  constructor() {
+  static memory: Memory;
+
+  static getInstance(): Memory {
+    if (!Memory.memory) {
+      Memory.memory = new Memory();
+    }
+    return Memory.memory;
+  }
+
+  private constructor() {
     this.banks = new DefaultDict<number, string[]>(() => []);
   }
 

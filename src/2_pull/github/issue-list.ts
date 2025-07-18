@@ -1,4 +1,4 @@
-import { getMemory } from "@transform/memory";
+import { Memory } from "@transform/memory";
 import { emojiCompare } from "@util/emoji";
 import { title } from "@util/string";
 
@@ -29,7 +29,7 @@ type SourceOfTruth = {
 };
 
 export class IssueList {
-  private memory = getMemory();
+  private memory = Memory.getInstance();
 
   private sourceOfTruth: SourceOfTruth;
   private issues: IssueWrapper[];
