@@ -56485,7 +56485,9 @@ class IssueList {
     } else {
       this.sourceOfTruth.url += `?filterQuery=${encodeURIComponent(view.filterQuery)}`;
     }
-    this.sourceOfTruth.title += ` (${view.name})`;
+    if (view.name) {
+      this.sourceOfTruth.title += ` (${view.name})`;
+    }
   }
   sort(fieldName, direction = "asc") {
     this.issues.sort((a2, b2) => {
@@ -56549,10 +56551,7 @@ class IssueList {
       if (params.customQuery === undefined) {
         throw new Error("Either projectViewNumber or customQuery must be provided.");
       }
-      view = new ProjectView({
-        name: "Custom Query",
-        filterQuery: params.customQuery
-      });
+      view = new ProjectView({ filterQuery: params.customQuery });
     } else {
       view = await getProjectView(params);
     }

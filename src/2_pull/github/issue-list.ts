@@ -91,7 +91,9 @@ export class IssueList {
         view.filterQuery,
       )}`;
     }
-    this.sourceOfTruth.title += ` (${view.name})`;
+    if (view.name) {
+      this.sourceOfTruth.title += ` (${view.name})`;
+    }
   }
 
   sort(fieldName: string, direction: "asc" | "desc" = "asc"): IssueList {
@@ -206,10 +208,7 @@ export class IssueList {
           "Either projectViewNumber or customQuery must be provided.",
         );
       }
-      view = new ProjectView({
-        name: "Custom Query",
-        filterQuery: params.customQuery,
-      });
+      view = new ProjectView({ filterQuery: params.customQuery });
     } else {
       view = await getProjectView(params);
     }

@@ -14,7 +14,7 @@ export type GetProjectViewParameters = {
 };
 
 type ProjectViewParameters = {
-  name: string;
+  name?: string;
   number?: number;
   filterQuery: string;
 };
@@ -105,7 +105,7 @@ export class ProjectView {
   }
 
   // Properties
-  get name(): string {
+  get name(): string | undefined {
     return this.params.name;
   }
 
