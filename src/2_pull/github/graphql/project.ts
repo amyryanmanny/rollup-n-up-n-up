@@ -65,6 +65,7 @@ export async function listIssuesForProject(
                     body
                     url
                     number
+                    state
                     createdAt
                     updatedAt
                     issueType {
@@ -151,6 +152,7 @@ export async function listIssuesForProject(
                 body: string;
                 url: string;
                 number: number;
+                state: "OPEN" | "CLOSED";
                 createdAt: string; // ISO 8601 date string
                 updatedAt: string; // ISO 8601 date string
                 issueType: {
@@ -222,6 +224,7 @@ export async function listIssuesForProject(
         body: content.body || "",
         url: content.url,
         number: content.number,
+        state: content.state,
         createdAt: new Date(content.createdAt),
         updatedAt: new Date(content.updatedAt),
         type: content.issueType?.name || "Issue",

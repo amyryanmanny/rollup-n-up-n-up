@@ -54,6 +54,7 @@ export async function listIssuesForRepo(
               body
               url
               number
+              state
               createdAt
               updatedAt
               issueType {
@@ -106,6 +107,7 @@ export async function listIssuesForRepo(
             body: string;
             url: string;
             number: number;
+            state: "OPEN" | "CLOSED";
             createdAt: string; // ISO 8601 date string
             updatedAt: string; // ISO 8601 date string
             issueType: {
@@ -149,11 +151,12 @@ export async function listIssuesForRepo(
   });
 
   const issues = response.repositoryOwner.repository.issues.nodes.map(
-    (issue) => ({
+    (issue): Issue => ({
       title: issue.title,
       body: issue.body,
       url: issue.url,
       number: issue.number,
+      state: issue.state,
       createdAt: new Date(issue.createdAt),
       updatedAt: new Date(issue.updatedAt),
       type: issue.issueType?.name || "Issue",

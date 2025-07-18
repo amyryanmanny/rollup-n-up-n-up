@@ -37,6 +37,7 @@ export async function listSubissuesForIssue(
                 body
                 url
                 number
+                state
                 createdAt
                 updatedAt
                 issueType {
@@ -93,6 +94,7 @@ export async function listSubissuesForIssue(
               body: string;
               url: string;
               number: number;
+              state: "OPEN" | "CLOSED";
               createdAt: string; // ISO 8601 date string
               updatedAt: string; // ISO 8601 date string
               issueType: {
@@ -135,11 +137,12 @@ export async function listSubissuesForIssue(
   const subissues =
     response.repositoryOwner.repository.issue.subIssues.nodes.map(
       // TODO: Refactor shared GraphQL logic. mapIssueNodes helper or something
-      (subIssue) => ({
+      (subIssue): Issue => ({
         title: subIssue.title,
         body: subIssue.body,
         url: subIssue.url,
         number: subIssue.number,
+        state: subIssue.state,
         createdAt: new Date(subIssue.createdAt),
         updatedAt: new Date(subIssue.updatedAt),
         type: subIssue.issueType?.name || "Issue",

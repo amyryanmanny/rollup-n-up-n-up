@@ -12,6 +12,7 @@ export type Issue = {
   body: string;
   url: string;
   number: number;
+  state: "OPEN" | "CLOSED";
   createdAt: Date;
   updatedAt: Date;
   type: string;
@@ -62,6 +63,10 @@ export class IssueWrapper {
 
   get number(): number {
     return this.issue.number;
+  }
+
+  get isOpen(): boolean {
+    return this.issue.state === "OPEN";
   }
 
   get createdAt(): Date {
