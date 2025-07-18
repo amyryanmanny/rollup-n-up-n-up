@@ -5,6 +5,8 @@ import { getModelEndpoint, loadPromptFile } from "@config";
 import { getToken } from "@util/octokit";
 import { insertPlaceholders } from "./placeholders";
 
+import { SummaryCache } from "./cache";
+
 export type PromptParameters = {
   name?: string;
   description?: string;
@@ -26,6 +28,13 @@ export type PromptParameters = {
 };
 
 export async function runPrompt(params: PromptParameters): Promise<string> {
+  const summaryCache = SummaryCache.getInstance();
+  const cachedResponse = summaryCache.get(params);
+  if (cachedResponse) {
+    console.log("Using cached response for prompt:", params.name);
+    return cachedResponse;
+  }
+
   const { messages, model, modelParameters } = {
     messages: params.messages,
     model: params.model,
@@ -77,7 +86,14 @@ export async function runPrompt(params: PromptParameters): Promise<string> {
     const modelResponse = response.body.choices[0].message.content;
     if (!modelResponse) {
       throw new Error("No response from model.");
+    } else if (modelResponse.startsWith("ERROR:")) {
+      // Throw so errors don't get cached, or end up in the body
+      throw new Error(modelResponse);
+      // TODO: Exponential backoff for (429) Too Many Requests
     }
+
+    summaryCache.set(params, modelResponse);
+
     return modelResponse;
   } catch (error: unknown) {
     throw new Error(`Unexpected Error: ${JSON.stringify(error)}`);
