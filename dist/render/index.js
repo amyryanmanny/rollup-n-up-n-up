@@ -55396,6 +55396,12 @@ function extractEmoji(text) {
   return;
 }
 
+// src/2_pull/github/graphql/index.ts
+var ISSUE_PAGE_SIZE = 50;
+var NUM_ISSUE_COMMENTS = 25;
+var NUM_ISSUE_LABELS = 100;
+var NUM_ISSUE_ASSIGNESS = 5;
+
 // src/2_pull/github/graphql/project.ts
 var slugifyProjectFieldName = (field) => {
   return field.toLowerCase().replace(/\s+/g, "-");
@@ -55407,7 +55413,7 @@ async function listIssuesForProject(params) {
       organization(login: $organization) {
         projectV2(number: $projectNumber) {
           title
-          items(first: 50, after: $cursor) {
+          items(first: ${ISSUE_PAGE_SIZE}, after: $cursor) {
             edges {
               node {
                 id
@@ -55418,6 +55424,7 @@ async function listIssuesForProject(params) {
                     body
                     url
                     number
+                    state
                     createdAt
                     updatedAt
                     issueType {
@@ -55430,17 +55437,17 @@ async function listIssuesForProject(params) {
                       }
                       nameWithOwner
                     }
-                    assignees(first: 5) {
+                    assignees(first: ${NUM_ISSUE_ASSIGNESS}) {
                       nodes {
                         login
                       }
                     }
-                    labels(first: 100) {
+                    labels(first: ${NUM_ISSUE_LABELS}) {
                       nodes {
                         name
                       }
                     }
-                    comments(last: 25) {
+                    comments(last: ${NUM_ISSUE_COMMENTS}) {
                       nodes {
                         author {
                           login
@@ -55503,6 +55510,7 @@ async function listIssuesForProject(params) {
       body: content.body || "",
       url: content.url,
       number: content.number,
+      state: content.state,
       createdAt: new Date(content.createdAt),
       updatedAt: new Date(content.updatedAt),
       type: content.issueType?.name || "Issue",
@@ -55801,12 +55809,13 @@ async function listIssuesForRepo(params) {
     query paginate($owner: String!, $repo: String!, $states: [IssueState!], $cursor: String) {
       repositoryOwner(login: $owner) {
         repository(name: $repo) {
-          issues(first: 100, states: $states, after: $cursor) {
+          issues(first: ${ISSUE_PAGE_SIZE}, states: $states, after: $cursor) {
             nodes {
               title
               body
               url
               number
+              state
               createdAt
               updatedAt
               issueType {
@@ -55819,17 +55828,17 @@ async function listIssuesForRepo(params) {
                 }
                 nameWithOwner
               }
-              assignees(first: 5) {
+              assignees(first: ${NUM_ISSUE_ASSIGNESS}) {
                 nodes {
                   login
                 }
               }
-              labels(first: 100) {
+              labels(first: ${NUM_ISSUE_LABELS}) {
                 nodes {
                   name
                 }
               }
-              comments(last: 100) {
+              comments(last: ${NUM_ISSUE_COMMENTS}) {
                 nodes {
                   author {
                     login
@@ -55859,6 +55868,7 @@ async function listIssuesForRepo(params) {
     body: issue.body,
     url: issue.url,
     number: issue.number,
+    state: issue.state,
     createdAt: new Date(issue.createdAt),
     updatedAt: new Date(issue.updatedAt),
     type: issue.issueType?.name || "Issue",
@@ -55893,12 +55903,13 @@ async function listSubissuesForIssue(params) {
           issue(number: $issueNumber) {
             title
             url
-            subIssues(first: 100, after: $cursor) {
+            subIssues(first: ${ISSUE_PAGE_SIZE}, after: $cursor) {
               nodes {
                 title
                 body
                 url
                 number
+                state
                 createdAt
                 updatedAt
                 issueType {
@@ -55911,17 +55922,17 @@ async function listSubissuesForIssue(params) {
                   }
                   nameWithOwner
                 }
-                assignees(first: 5) {
+                assignees(first: ${NUM_ISSUE_ASSIGNESS}) {
                   nodes {
                     login
                   }
                 }
-                labels(first: 100) {
+                labels(first: ${NUM_ISSUE_LABELS}) {
                   nodes {
                     name
                   }
                 }
-                comments(last: 100) {
+                comments(last: ${NUM_ISSUE_COMMENTS}) {
                   nodes {
                     author {
                       login
@@ -55948,6 +55959,7 @@ async function listSubissuesForIssue(params) {
     body: subIssue.body,
     url: subIssue.url,
     number: subIssue.number,
+    state: subIssue.state,
     createdAt: new Date(subIssue.createdAt),
     updatedAt: new Date(subIssue.updatedAt),
     type: subIssue.issueType?.name || "Issue",
@@ -56287,6 +56299,9 @@ class IssueWrapper {
   }
   get number() {
     return this.issue.number;
+  }
+  get isOpen() {
+    return this.issue.state === "OPEN";
   }
   get createdAt() {
     return this.issue.createdAt;
