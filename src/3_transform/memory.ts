@@ -3,16 +3,16 @@ import { summarize as _summarize, query as _query } from "./ai/summarize";
 
 // Singleton
 export class Memory {
-  private banks: DefaultDict<number, string[]>;
-
-  static memory: Memory;
+  static instance: Memory;
 
   static getInstance(): Memory {
-    if (!Memory.memory) {
-      Memory.memory = new Memory();
+    if (!Memory.instance) {
+      Memory.instance = new Memory();
     }
-    return Memory.memory;
+    return Memory.instance;
   }
+
+  private banks: DefaultDict<number, string[]>;
 
   private constructor() {
     this.banks = new DefaultDict<number, string[]>(() => []);
