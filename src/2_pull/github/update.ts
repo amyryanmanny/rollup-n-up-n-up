@@ -1,6 +1,6 @@
 import memoize from "memoize";
 
-import { getUpdateDetectionConfig } from "@util/config/update";
+import { UpdateDetection } from "@util/config/update";
 import { CommentWrapper } from "./comment";
 
 export type UpdateDetectionStrategy =
@@ -51,9 +51,9 @@ type FailStrategy = {
 export function findLatestUpdate(
   comments: CommentWrapper[],
 ): CommentWrapper | undefined {
-  const { strategies } = getUpdateDetectionConfig();
+  const updateDetection = UpdateDetection.getInstance();
 
-  for (const strategy of strategies) {
+  for (const strategy of updateDetection.strategies) {
     for (const comment of comments) {
       switch (strategy.kind) {
         case "timebox":
@@ -83,9 +83,9 @@ export function findLatestUpdate(
 }
 
 export function extractUpdate(comment: CommentWrapper): string | undefined {
-  const { strategies } = getUpdateDetectionConfig();
+  const updateDetection = UpdateDetection.getInstance();
 
-  for (const strategy of strategies) {
+  for (const strategy of updateDetection.strategies) {
     const update = memoizedExtractUpdateWithStrategy(comment, strategy);
     if (update !== undefined) {
       return update;

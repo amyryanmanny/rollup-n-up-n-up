@@ -3,7 +3,7 @@ import { summarize as _summarize, query as _query } from "./ai/summarize";
 
 // Singleton
 export class Memory {
-  static instance: Memory;
+  private static instance: Memory;
 
   static getInstance(): Memory {
     if (!Memory.instance) {
