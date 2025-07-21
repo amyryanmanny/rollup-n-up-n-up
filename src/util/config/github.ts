@@ -5,7 +5,7 @@ export type GitHubSecretKind = "app" | "pat" | "default";
 type GitHubAppSecrets = {
   kind: "app";
   appId: string;
-  installationId: number;
+  installationId?: number;
   privateKey: string;
 };
 
@@ -42,14 +42,14 @@ function getGitHubAppSecrets(): GitHubAppSecrets | undefined {
   const installationId = getConfig("GITHUB_APP_INSTALLATION_ID");
   const privateKey = getConfig("GITHUB_APP_PRIVATE_KEY");
 
-  if (!appId || !installationId || !privateKey) {
+  if (!appId || !privateKey) {
     return undefined;
   }
 
   return {
     kind: "app",
     appId,
-    installationId: parseInt(installationId),
+    installationId: installationId ? parseInt(installationId) : undefined,
     privateKey,
   };
 }
