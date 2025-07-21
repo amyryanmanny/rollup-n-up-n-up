@@ -40969,19 +40969,19 @@ var require_logger = __commonJS((exports) => {
       logger: clientLogger
     };
   }
-  var context4 = createLoggerContext2({
+  var context5 = createLoggerContext2({
     logLevelEnvVarName: "TYPESPEC_RUNTIME_LOG_LEVEL",
     namespace: "typeSpecRuntime"
   });
-  exports.TypeSpecRuntimeLogger = context4.logger;
+  exports.TypeSpecRuntimeLogger = context5.logger;
   function setLogLevel2(logLevel) {
-    context4.setLogLevel(logLevel);
+    context5.setLogLevel(logLevel);
   }
   function getLogLevel() {
-    return context4.getLogLevel();
+    return context5.getLogLevel();
   }
   function createClientLogger3(namespace) {
-    return context4.createClientLogger(namespace);
+    return context5.createClientLogger(namespace);
   }
 });
 
@@ -43641,19 +43641,19 @@ var require_commonjs2 = __commonJS((exports) => {
   exports.getLogLevel = getLogLevel;
   exports.createClientLogger = createClientLogger3;
   var logger_1 = require_internal();
-  var context4 = (0, logger_1.createLoggerContext)({
+  var context5 = (0, logger_1.createLoggerContext)({
     logLevelEnvVarName: "AZURE_LOG_LEVEL",
     namespace: "azure"
   });
-  exports.AzureLogger = context4.logger;
+  exports.AzureLogger = context5.logger;
   function setLogLevel2(level) {
-    context4.setLogLevel(level);
+    context5.setLogLevel(level);
   }
   function getLogLevel() {
-    return context4.getLogLevel();
+    return context5.getLogLevel();
   }
   function createClientLogger3(namespace) {
-    return context4.createClientLogger(namespace);
+    return context5.createClientLogger(namespace);
   }
 });
 
@@ -44443,14 +44443,14 @@ var require_tracingContext = __commonJS((exports) => {
     namespace: Symbol.for("@azure/core-tracing namespace")
   };
   function createTracingContext2(options = {}) {
-    let context4 = new TracingContextImpl2(options.parentContext);
+    let context5 = new TracingContextImpl2(options.parentContext);
     if (options.span) {
-      context4 = context4.setValue(exports.knownContextKeys.span, options.span);
+      context5 = context5.setValue(exports.knownContextKeys.span, options.span);
     }
     if (options.namespace) {
-      context4 = context4.setValue(exports.knownContextKeys.namespace, options.namespace);
+      context5 = context5.setValue(exports.knownContextKeys.namespace, options.namespace);
     }
-    return context4;
+    return context5;
   }
 
   class TracingContextImpl2 {
@@ -44566,8 +44566,8 @@ var require_tracingClient = __commonJS((exports) => {
         span.end();
       }
     }
-    function withContext(context4, callback, ...callbackArgs) {
-      return (0, instrumenter_js_1.getInstrumenter)().withContext(context4, callback, ...callbackArgs);
+    function withContext(context5, callback, ...callbackArgs) {
+      return (0, instrumenter_js_1.getInstrumenter)().withContext(context5, callback, ...callbackArgs);
     }
     function parseTraceparentHeader(traceparentHeader) {
       return (0, instrumenter_js_1.getInstrumenter)().parseTraceparentHeader(traceparentHeader);
@@ -76085,13 +76085,13 @@ function getGitHubAppSecrets() {
   const appId = getConfig("GITHUB_APP_ID");
   const installationId = getConfig("GITHUB_APP_INSTALLATION_ID");
   const privateKey = getConfig("GITHUB_APP_PRIVATE_KEY");
-  if (!appId || !installationId || !privateKey) {
+  if (!appId || !privateKey) {
     return;
   }
   return {
     kind: "app",
     appId,
-    installationId: parseInt(installationId),
+    installationId: installationId ? parseInt(installationId) : undefined,
     privateKey
   };
 }
@@ -76169,106 +76169,113 @@ function loadPromptFile(promptFilePath) {
 var import_strftime = __toESM(require_strftime(), 1);
 // src/util/config/update.ts
 var DEFAULT_MARKER = /<!--\s*UPDATE\s*-->/i;
-var updateDetectionConfig;
-function getUpdateDetectionConfig() {
-  if (updateDetectionConfig) {
-    return updateDetectionConfig;
-  }
-  let strategies;
-  const config = getConfig("UPDATE_DETECTION");
-  if (config) {
-    strategies = parseUpdateDetection(config);
-    if (strategies.length === 0) {
-      throw new Error('No valid strategies found in the "update_detection" input. See docs.');
+
+class UpdateDetection {
+  static instance;
+  static getInstance() {
+    if (!UpdateDetection.instance) {
+      UpdateDetection.instance = new UpdateDetection;
     }
-  } else {
-    strategies = [
-      {
-        kind: "section",
-        section: "Update"
-      },
-      {
-        kind: "marker",
-        marker: DEFAULT_MARKER
-      },
-      {
-        kind: "timebox",
-        timeframe: "last-week"
-      },
-      { kind: "skip" }
-    ];
+    return UpdateDetection.instance;
   }
-  updateDetectionConfig = { strategies };
-  return updateDetectionConfig;
-}
-function parseFunctionSyntax(input) {
-  const functionCallRegex = /^([a-zA-Z_][a-zA-Z0-9_]*)\(([^)]*)\)$/;
-  const match = input.match(functionCallRegex);
-  if (match) {
-    const [, functionName, argsString] = match;
-    const args = argsString.split(",").map((arg) => arg.trim()).map((arg) => arg.replace(/^["']|["']$/g, ""));
-    return { name: functionName, args };
-  } else {
-    return { name: input, args: [] };
+  strategies;
+  constructor() {
+    let strategies;
+    const config = getConfig("UPDATE_DETECTION");
+    if (config) {
+      strategies = UpdateDetection.parseStrategies(config);
+      if (strategies.length === 0) {
+        throw new Error('No valid strategies found in the "update_detection" input. See docs.');
+      }
+    } else {
+      strategies = UpdateDetection.defaultStrategies;
+    }
+    this.strategies = strategies;
   }
-}
-function parseUpdateDetection(updateDetectionBlob) {
-  return updateDetectionBlob.split(`
+  static defaultStrategies = [
+    {
+      kind: "section",
+      section: "Update"
+    },
+    {
+      kind: "marker",
+      marker: DEFAULT_MARKER
+    },
+    {
+      kind: "timebox",
+      timeframe: "last-week"
+    },
+    { kind: "skip" }
+  ];
+  static parseFunctionSyntax(input) {
+    const functionCallRegex = /^([a-zA-Z_][a-zA-Z0-9_]*)\(([^)]*)\)$/;
+    const match = input.match(functionCallRegex);
+    if (match) {
+      const [, functionName, argsString] = match;
+      const args = argsString.split(",").map((arg) => arg.trim()).map((arg) => arg.replace(/^["']|["']$/g, ""));
+      return { name: functionName, args };
+    } else {
+      return { name: input, args: [] };
+    }
+  }
+  static parseStrategies(configBlob) {
+    return configBlob.split(`
 `).map((line) => line.trim()).filter((line) => line !== "").map((line) => {
-    const { name: funcName, args } = parseFunctionSyntax(line);
-    switch (funcName) {
-      case "skip":
-        return { kind: "skip" };
-      case "fail":
-        return { kind: "fail" };
-      case "blame":
-        return { kind: "blame" };
-    }
-    let timeframe = undefined;
-    switch (funcName) {
-      case "today":
-        timeframe = "today";
-        break;
-      case "lastWeek":
-        timeframe = "last-week";
-        break;
-      case "lastMonth":
-        timeframe = "last-month";
-        break;
-      case "lastYear":
-        timeframe = "last-year";
-        break;
-      case "allTime":
-        timeframe = "all-time";
-        break;
-      default:
-        if (args.length > 0) {
-          throw new Error(`Invalid function call "${funcName}()" in update_detection config.`);
-        }
-    }
-    if (args.length === 0 && timeframe !== undefined) {
-      return {
-        kind: "timebox",
-        timeframe
-      };
-    }
-    const sectionName = args[0] || funcName;
-    switch (sectionName) {
-      case "MARKER":
-      case "DEFAULT_MARKER":
+      const { name: funcName, args } = UpdateDetection.parseFunctionSyntax(line);
+      switch (funcName) {
+        case "skip":
+          return { kind: "skip" };
+        case "fail":
+          return { kind: "fail" };
+        case "blame":
+          return { kind: "blame" };
+      }
+      let timeframe = undefined;
+      switch (funcName) {
+        case "today":
+          timeframe = "today";
+          break;
+        case "lastWeek":
+          timeframe = "last-week";
+          break;
+        case "lastMonth":
+          timeframe = "last-month";
+          break;
+        case "lastYear":
+          timeframe = "last-year";
+          break;
+        case "allTime":
+          timeframe = "all-time";
+          break;
+        default:
+          if (args.length > 0) {
+            throw new Error(`Invalid function call "${funcName}()" in update_detection config.`);
+          }
+      }
+      if (args.length === 0 && timeframe !== undefined) {
         return {
-          kind: "marker",
-          marker: DEFAULT_MARKER,
+          kind: "timebox",
           timeframe
         };
-      default:
-        return {
-          kind: "section",
-          section: sectionName,
-          timeframe
-        };
-    }
-  });
+      }
+      const sectionName = args[0] || funcName;
+      switch (sectionName) {
+        case "MARKER":
+        case "DEFAULT_MARKER":
+          return {
+            kind: "marker",
+            marker: DEFAULT_MARKER,
+            timeframe
+          };
+        default:
+          return {
+            kind: "section",
+            section: sectionName,
+            timeframe
+          };
+      }
+    });
+  }
 }
 
 // src/util/config/index.ts
@@ -86358,6 +86365,9 @@ function getPathFromMapKey(mapKey) {
 // node_modules/@azure-rest/ai-inference/dist/esm/index.js
 var esm_default = createClient;
 
+// src/util/octokit.ts
+var import_github2 = __toESM(require_github(), 1);
+
 // node_modules/universal-user-agent/index.js
 function getUserAgent() {
   if (typeof navigator === "object" && "userAgent" in navigator) {
@@ -93446,7 +93456,7 @@ function paginateGraphQL(octokit) {
 
 // src/util/octokit.ts
 var OctokitWithPlugins = Octokit2.plugin(paginateGraphQL);
-var octokitInstance = null;
+var octokitInstance;
 function initOctokit() {
   let instance;
   const secrets = getGitHubSecrets();
@@ -93456,13 +93466,12 @@ function initOctokit() {
       auth: token
     });
   } else if (secrets.kind === "app") {
-    const { appId, privateKey, installationId } = secrets;
+    const { appId, privateKey } = secrets;
     instance = new OctokitWithPlugins({
       authStrategy: createAppAuth,
       auth: {
         appId,
-        privateKey,
-        installationId
+        privateKey
       }
     });
   } else {
@@ -93480,11 +93489,17 @@ async function getToken2() {
       kind: secrets.kind
     };
   } else if (secrets.kind === "app") {
-    const { installationId } = secrets;
-    const { data } = await octokit.apps.createInstallationAccessToken({
+    let installationId = secrets.installationId;
+    if (installationId === undefined) {
+      const { data: installation } = await octokit.apps.getOrgInstallation({
+        org: import_github2.context.repo.owner
+      });
+      installationId = installation.id;
+    }
+    const { data: token } = await octokit.apps.createInstallationAccessToken({
       installation_id: installationId
     });
-    return { value: data.token, kind: "app" };
+    return { value: token.token, kind: "app" };
   }
   throw new Error("Unknown authentication method");
 }
@@ -94056,7 +94071,7 @@ async function listIssuesForProject(params) {
 }
 
 // src/2_pull/github/project-view.ts
-var import_github3 = __toESM(require_github(), 1);
+var import_github4 = __toESM(require_github(), 1);
 class ProjectView {
   params;
   filters;
@@ -94081,7 +94096,7 @@ class ProjectView {
         return v2.trim();
       }).map((v2) => {
         if (v2 === "@me") {
-          return import_github3.context.actor;
+          return import_github4.context.actor;
         }
         if (v2.startsWith("@today")) {
           const today = new Date;
@@ -94567,8 +94582,8 @@ function memoize(function_, { cacheKey, cache = new Map, maxAge } = {}) {
 
 // src/2_pull/github/update.ts
 function findLatestUpdate(comments) {
-  const { strategies } = getUpdateDetectionConfig();
-  for (const strategy of strategies) {
+  const updateDetection = UpdateDetection.getInstance();
+  for (const strategy of updateDetection.strategies) {
     for (const comment of comments) {
       switch (strategy.kind) {
         case "timebox":
@@ -94591,8 +94606,8 @@ function findLatestUpdate(comments) {
   return comments[0];
 }
 function extractUpdate(comment) {
-  const { strategies } = getUpdateDetectionConfig();
-  for (const strategy of strategies) {
+  const updateDetection = UpdateDetection.getInstance();
+  for (const strategy of updateDetection.strategies) {
     const update2 = memoizedExtractUpdateWithStrategy(comment, strategy);
     if (update2 !== undefined) {
       return update2;
@@ -95158,11 +95173,11 @@ ${source}
 </details>`;
 }
 function debugMemory(memory, memoryBank) {
-  const context5 = memory.getBankContent(memoryBank);
+  const context6 = memory.getBankContent(memoryBank);
   return `<details><summary>Expand to view the context passed into the inference model!</summary>
 
 \`\`\`
-${context5}
+${context6}
 \`\`\`
 
 </details>`;
