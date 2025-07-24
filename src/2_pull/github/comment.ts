@@ -73,11 +73,16 @@ export class CommentWrapper {
   }
 
   get isEmpty(): boolean {
-    // Check if the comment is empty, or has no update
+    // Check if the comment body is empty or null
     return (
       this.comment.body.trim() === "" ||
       this.comment.body === CommentWrapper.NULL_UPDATE
     );
+  }
+
+  get isUpdate(): boolean {
+    // Check if the comment is an update
+    return !this.isEmpty && this.update !== undefined;
   }
 
   get author(): string {
