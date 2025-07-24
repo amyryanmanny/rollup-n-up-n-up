@@ -3,7 +3,7 @@ import { getConfig, isTrueValue } from "@util/config";
 
 import { slugifyProjectFieldName, type IssueField } from "./graphql/project";
 import { CommentWrapper, type Comment } from "./comment";
-import { findLatestUpdate } from "./update";
+import { findLatestUpdates } from "./update";
 import { IssueList } from "./issue-list";
 
 // Interface
@@ -24,6 +24,7 @@ export type Issue = {
   assignees: string[];
   labels: string[];
   comments: Array<Comment>;
+  isSubissue: boolean; // If this is a subissue of another issue
   project?: {
     number: number;
     fields: Map<string, IssueField>;
@@ -232,16 +233,19 @@ export class IssueWrapper {
   }
 
   get latestUpdate(): CommentWrapper {
-    const comments = this.comments;
-
-    if (comments.length !== 0) {
-      const update = findLatestUpdate(comments);
-      if (update !== undefined) {
-        return update;
-      }
+    const updates = findLatestUpdates(this.comments);
+    if (updates !== undefined) {
+      return updates[0];
     }
-
     return CommentWrapper.empty(this);
+  }
+
+  latestUpdates(n: number): CommentWrapper[] {
+    const updates = findLatestUpdates(this.comments, n);
+    if (updates !== undefined) {
+      return updates;
+    }
+    return [CommentWrapper.empty(this)];
   }
 
   get hasUpdate(): boolean {

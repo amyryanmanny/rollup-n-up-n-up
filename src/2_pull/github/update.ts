@@ -48,38 +48,36 @@ type FailStrategy = {
   kind: "fail";
 };
 
-export function findLatestUpdate(
+export function findLatestUpdates(
   comments: CommentWrapper[],
-): CommentWrapper | undefined {
-  const updateDetection = UpdateDetection.getInstance();
+  n: number = 1,
+): CommentWrapper[] | undefined {
+  if (comments.length === 0) {
+    return undefined; // No comments to process
+  }
 
+  const updates = comments.filter((comment) => comment.isUpdate);
+  if (updates.length > 0) {
+    return updates.slice(0, n);
+  }
+
+  // Handle the special fallback strategies
+  const updateDetection = UpdateDetection.getInstance();
   for (const strategy of updateDetection.strategies) {
-    for (const comment of comments) {
-      switch (strategy.kind) {
-        case "timebox":
-        case "section":
-        case "marker": {
-          // TODO: Timeframe short circuit
-          const update = memoizedExtractUpdateWithStrategy(comment, strategy);
-          if (update !== undefined) {
-            return comment;
-          }
-          break;
-        }
-        // If we've reached these strategies, we couldn't find an update
-        // And need to execute special behavior
-        case "skip":
-        case "blame":
-          return undefined; // Return no comment
-        case "fail":
-          throw new Error(
-            `No valid update found for issue ${comment.issue.title} - ${comment.issue.url}!`,
-          );
+    switch (strategy.kind) {
+      case "skip":
+      case "blame":
+        return undefined; // Return no comment
+      case "fail": {
+        const issue = comments[0].issue;
+        throw new Error(
+          `No valid update found for issue ${issue.title} - ${issue.url}!`,
+        );
       }
     }
   }
 
-  return comments[0]; // By default, just return the latest comment
+  return comments.slice(0, n); // Default strategy is to return regular comments
 }
 
 export function extractUpdate(comment: CommentWrapper): string | undefined {
