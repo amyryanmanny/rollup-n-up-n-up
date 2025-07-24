@@ -263,7 +263,7 @@ export class IssueWrapper {
   }
 
   remember() {
-    this.memory.remember(this.rendered);
+    this.memory.remember({ content: this.rendered, source: this.url });
   }
 
   render(): string {

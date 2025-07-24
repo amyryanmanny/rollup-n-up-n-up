@@ -1,6 +1,13 @@
 import { DefaultDict } from "@util/collections";
 import { summarize as _summarize, query as _query } from "./ai/summarize";
 
+type MemoryItem = {
+  content: string;
+  source: string;
+};
+
+type MemoryBank = Array<MemoryItem>;
+
 // Singleton
 export class Memory {
   private static instance: Memory;
@@ -12,14 +19,14 @@ export class Memory {
     return Memory.instance;
   }
 
-  private banks: DefaultDict<number, string[]>;
+  private banks: DefaultDict<number, MemoryBank>;
 
   private constructor() {
-    this.banks = new DefaultDict<number, string[]>(() => []);
+    this.banks = new DefaultDict<number, MemoryBank>(() => []);
   }
 
-  remember(item: string, memoryBank: number = 0): void {
-    if (item.trim() === "") {
+  remember(item: MemoryItem, memoryBank: number = 0): void {
+    if (item.content.trim() === "") {
       return;
     }
 
@@ -33,14 +40,14 @@ export class Memory {
     bank.push(item);
   }
 
-  private getBank(memoryBank: number = 0): string[] {
+  private getBank(memoryBank: number = 0): MemoryBank {
     const bank = this.banks.get(memoryBank);
     return bank.slice();
   }
 
   getBankContent(memoryBank: number = 0): string {
     const bank = this.getBank(memoryBank);
-    return bank.join("\n\n");
+    return bank.map((item) => item.content).join("\n\n");
   }
 
   async summarize(
