@@ -134,14 +134,18 @@ export class ProjectView {
 
   filter(issue: IssueWrapper): boolean {
     // First check against default fields
+    if (!this.checkCreated(issue.createdAt)) {
+      return false;
+    }
+    if (!this.checkUpdated(issue.updatedAt)) {
+      return false;
+    }
     if (!this.checkType(issue.type)) {
       return false;
     }
-
     if (!this.checkRepo(issue.repoNameWithOwner)) {
       return false;
     }
-
     if (!this.checkAssignees(issue.assignees)) {
       return false;
     }
@@ -221,6 +225,14 @@ export class ProjectView {
 
   // TODO: checkTitle with globbing
 
+  checkCreated(createdAt: Date): boolean {
+    return this.checkDateField("created", createdAt);
+  }
+
+  checkUpdated(updatedAt: Date): boolean {
+    return this.checkDateField("updated", updatedAt);
+  }
+
   checkType(type: string): boolean {
     return this.checkField("type", {
       kind: "SingleSelect",
@@ -251,6 +263,8 @@ export class ProjectView {
 
   static defaultFields(): string[] {
     return [
+      "created",
+      "updated",
       "repository",
       "assignee",
       "label",
