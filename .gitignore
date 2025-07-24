@@ -139,6 +139,7 @@ out
 *.pem
 
 # Output
+cache/
 templates/*
 !templates/main.md.vto
 !templates/interrogator.md.vto

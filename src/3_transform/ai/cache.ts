@@ -1,8 +1,9 @@
 import fs from "fs";
 import path from "path";
 
-import type { PromptParameters } from "@transform/ai/summarize";
 import { saveCache, restoreCache } from "@actions/cache";
+
+import type { PromptParameters } from "./summarize";
 
 const ACTIONS_CACHE_KEY = "summary-cache"; // Just use one until it causes problems
 const ACTIONS_CACHE_FILE = "./cache/summary-cache.json";
@@ -24,19 +25,31 @@ export class SummaryCache {
     this.cache = new Map<string, string>();
   }
 
-  static getPromptCacheKey(prompt: PromptParameters): string {
-    // Generate a cache key from PromptParameters
-    // Not exactly deterministic, but should work
-    return JSON.stringify(prompt);
+  static getPromptCacheKey(
+    prompt: PromptParameters,
+    sources: string[],
+  ): string {
+    // Generate a deterministic cache key from PromptParameters and sources
+    return JSON.stringify({
+      name: prompt.name,
+      prompt: prompt.messages, // Message order is important
+      sources: sources.sort(),
+    });
   }
 
-  get(prompt: PromptParameters): string | undefined {
-    const cacheKey = SummaryCache.getPromptCacheKey(prompt);
-    return this.cache.get(cacheKey);
+  get(prompt: PromptParameters, sources: string[]): string | undefined {
+    const cacheKey = SummaryCache.getPromptCacheKey(prompt, sources);
+    const hit = this.cache.get(cacheKey);
+    if (hit) {
+      console.log("Cache hit for prompt:", prompt.name);
+    } else {
+      console.log("Cache miss for prompt:", prompt.name);
+    }
+    return hit;
   }
 
-  set(prompt: PromptParameters, summary: string) {
-    const cacheKey = SummaryCache.getPromptCacheKey(prompt);
+  set(prompt: PromptParameters, sources: string[], summary: string) {
+    const cacheKey = SummaryCache.getPromptCacheKey(prompt, sources);
     this.cache.set(cacheKey, summary);
   }
 
@@ -56,7 +69,9 @@ export class SummaryCache {
     fs.writeFileSync(file, blob, "utf-8");
 
     // Use @actions/cache to cache file to the runner
-    saveCache([file], ACTIONS_CACHE_KEY);
+    if (process.env.GITHUB_ACTIONS === "true") {
+      saveCache([file], ACTIONS_CACHE_KEY);
+    }
   }
 
   load() {
@@ -66,10 +81,12 @@ export class SummaryCache {
     }
 
     // Use @actions/cache to restore  file from the runner
-    const restored = restoreCache([file], ACTIONS_CACHE_KEY);
-    if (!restored) {
-      console.warn(`No cache hit for ${file}. Using empty cache.`);
-      return;
+    if (process.env.GITHUB_ACTIONS === "true") {
+      const restored = restoreCache([file], ACTIONS_CACHE_KEY);
+      if (!restored) {
+        console.warn(`No cache hit for ${file}. Using empty cache.`);
+        return;
+      }
     }
 
     // Load the cache from the file
@@ -77,5 +94,9 @@ export class SummaryCache {
     const blob = fs.readFileSync(file, "utf-8");
     const entries: [string, string][] = JSON.parse(blob);
     this.cache = new Map<string, string>(entries);
+  }
+
+  clear() {
+    this.cache.clear();
   }
 }
