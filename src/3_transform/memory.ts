@@ -1,12 +1,12 @@
 import { DefaultDict } from "@util/collections";
-import { summarize as _summarize, query as _query } from "./ai/summarize";
+import { generateSummary } from "./ai/summarize";
 
 type MemoryItem = {
   content: string;
   source: string;
 };
 
-type MemoryBank = Array<MemoryItem>;
+export type MemoryBank = Array<MemoryItem>;
 
 // Singleton
 export class Memory {
@@ -45,22 +45,17 @@ export class Memory {
     return bank.slice();
   }
 
-  getBankContent(memoryBank: number = 0): string {
-    const bank = this.getBank(memoryBank);
-    return bank.map((item) => item.content).join("\n\n");
-  }
-
   async summarize(
     promptFilePath: string,
     memoryBank: number = 0,
   ): Promise<string> {
-    const content = this.getBankContent(memoryBank);
-    if (!content || content.trim() === "") {
+    const content = this.getBank(memoryBank);
+    if (content.length === 0) {
       // TODO: Point to a doc explaining how memory works
       return "No content in memory to summarize.";
     }
 
-    return await _summarize(content, promptFilePath);
+    return await generateSummary({ content, prompt: promptFilePath });
   }
 
   async query(
@@ -68,12 +63,12 @@ export class Memory {
     query: string,
     memoryBank: number = 0,
   ): Promise<string> {
-    const content = this.getBankContent(memoryBank);
-    if (!content || content.trim() === "") {
+    const content = this.getBank(memoryBank);
+    if (content.length === 0) {
       return "No content in memory to summarize.";
     }
 
-    return await _query(content, query, promptFilePath);
+    return await generateSummary({ content, prompt: promptFilePath, query });
   }
 
   headbonk(memoryBank?: number): void {

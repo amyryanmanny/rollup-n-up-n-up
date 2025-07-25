@@ -1,11 +1,17 @@
 import ModelClient, { isUnexpected } from "@azure-rest/ai-inference";
 import { AzureKeyCredential } from "@azure/core-auth";
 
-import { getModelEndpoint, loadPromptFile } from "@config";
+import { getConfig, getModelEndpoint, loadPromptFile } from "@config";
 import { getToken } from "@util/octokit";
-import { insertPlaceholders } from "./placeholders";
+
+import { type MemoryBank } from "@transform/memory";
 
 import { SummaryCache } from "./cache";
+import { insertPlaceholders } from "./hydration";
+export type Message = {
+  role: "system" | "user" | "assistant" | "developer";
+  content: string;
+};
 
 export type PromptParameters = {
   name?: string;
@@ -21,21 +27,10 @@ export type PromptParameters = {
     // Most models are different, so need to handle unknown parameters too
     [key: string]: string | number | boolean | undefined;
   };
-  messages: Array<{
-    role: "system" | "user" | "assistant" | "developer";
-    content: string;
-  }>;
+  messages: Array<Message>;
 };
 
 export async function runPrompt(params: PromptParameters): Promise<string> {
-  // Check for a cache hit to avoid unnecessary generations
-  const summaryCache = SummaryCache.getInstance();
-  const cachedResponse = summaryCache.get(params);
-  if (cachedResponse) {
-    console.log("Using cached response for prompt:", params.name);
-    return cachedResponse;
-  }
-
   const { messages, model, modelParameters } = {
     messages: params.messages,
     model: params.model,
@@ -93,56 +88,63 @@ export async function runPrompt(params: PromptParameters): Promise<string> {
       // TODO: Exponential backoff for (429) Too Many Requests
     }
 
-    summaryCache.set(params, modelResponse);
-
     return modelResponse;
   } catch (error: unknown) {
     throw new Error(`Unexpected Error: ${JSON.stringify(error)}`);
   }
 }
 
-export async function summarize(
-  content: string,
-  promptFilePath: string,
+type SummaryParameters = {
+  content: string | MemoryBank;
+  prompt: string | PromptParameters;
+  query?: string;
+};
+
+export async function generateSummary(
+  params: SummaryParameters,
 ): Promise<string> {
-  if (!content || content.trim() === "") {
-    throw new Error("content cannot be empty.");
+  let { content, prompt } = params;
+
+  if (typeof prompt === "string") {
+    // Try to load the prompt file if a string is provided
+    if (!prompt || prompt.trim() === "") {
+      throw new Error("prompt cannot be empty.");
+    }
+    prompt = loadPromptFile(prompt);
   }
 
-  if (!promptFilePath || promptFilePath.trim() === "") {
-    throw new Error("promptFilePath cannot be empty.");
+  if (typeof content === "string") {
+    // Convert string literal to MemoryBank format
+    content = [{ content, source: content }] as MemoryBank;
   }
 
-  const prompt = loadPromptFile(promptFilePath);
+  // Check for a cache hit to avoid unnecessary generations
+  const summaryCache = SummaryCache.getInstance();
+  const cachedResponse = summaryCache.get(
+    prompt,
+    content.map((item) => item.source),
+  );
+  if (cachedResponse) {
+    console.log("Using cached response for prompt:", prompt.name);
+    return cachedResponse;
+  }
+
+  const input = content.map((item) => item.content).join("\n\n");
+
   const summary = await runPrompt(
     insertPlaceholders(prompt, {
-      input: content, // Try 'input' as well since it's common in prompts
-      content,
+      input,
+      content: input,
+      query: params.query || "",
     }),
   );
+
+  // Save the summary in the cache
+  summaryCache.set(
+    prompt,
+    content.map((item) => item.source),
+    summary,
+  );
+
   return summary;
-}
-
-export async function query(
-  content: string,
-  query: string,
-  promptFilePath: string,
-): Promise<string> {
-  if (!content || content.trim() === "") {
-    throw new Error("content cannot be empty.");
-  }
-
-  if (!promptFilePath || promptFilePath.trim() === "") {
-    throw new Error("promptFilePath cannot be empty.");
-  }
-
-  const prompt = loadPromptFile(promptFilePath);
-  const response = await runPrompt(
-    insertPlaceholders(prompt, {
-      input: content,
-      content,
-      query,
-    }),
-  );
-  return response;
 }

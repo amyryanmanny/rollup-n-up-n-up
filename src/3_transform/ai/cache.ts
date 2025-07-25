@@ -39,13 +39,7 @@ export class SummaryCache {
 
   get(prompt: PromptParameters, sources: string[]): string | undefined {
     const cacheKey = SummaryCache.getPromptCacheKey(prompt, sources);
-    const hit = this.cache.get(cacheKey);
-    if (hit) {
-      console.log("Cache hit for prompt:", prompt.name);
-    } else {
-      console.log("Cache miss for prompt:", prompt.name);
-    }
-    return hit;
+    return this.cache.get(cacheKey);
   }
 
   set(prompt: PromptParameters, sources: string[], summary: string) {

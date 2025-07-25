@@ -1,8 +1,7 @@
-import { runPrompt } from "@transform/ai/summarize";
+import { generateSummary } from "@transform/ai/summarize";
 
 // Exports
 export { stripHtml, toSnakeCase, title } from "@util/string";
-export { summarize } from "@transform/ai/summarize";
 
 export function accessible(markdown: string): string {
   // Inject accessibility features into the markdown
@@ -60,20 +59,35 @@ export function stripFormatting(markdown: string): string {
     .trim();
 }
 
+export async function summarize(
+  markdown: string,
+  promptFilePath: string,
+): Promise<string> {
+  return await generateSummary({
+    prompt: promptFilePath,
+    content: markdown,
+  });
+}
+
 export async function summarizeToSentence(markdown: string): Promise<string> {
   if (!markdown.trim().includes("\n")) {
     // If the markdown is already a single sentence, return it as is
     return markdown.trim();
   }
-  return await runPrompt({
-    messages: [
-      {
-        role: "system",
-        content:
-          "Summarize the following content into a single sentence. Try to sacrifice as little meaning as possible.",
-      },
-      { role: "user", content: markdown },
-    ],
-    model: "openai/gpt-4.1-mini", // Use a lighter model for this task
+
+  // If the markdown contains multiple lines, summarize it to a single sentence
+  return await generateSummary({
+    prompt: {
+      model: "openai/gpt-4.1-mini", // Use a lighter model for this task
+      messages: [
+        {
+          role: "system",
+          content:
+            "Summarize the following content into a single sentence. Try to sacrifice as little meaning as possible.",
+        },
+        { role: "user", content: markdown },
+      ],
+    },
+    content: markdown,
   });
 }
