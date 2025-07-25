@@ -40,7 +40,7 @@ export class Memory {
     bank.push(item);
   }
 
-  private getBank(memoryBank: number = 0): MemoryBank {
+  getBank(memoryBank: number = 0): MemoryBank {
     const bank = this.banks.get(memoryBank);
     return bank.slice();
   }

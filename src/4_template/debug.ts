@@ -1,12 +1,33 @@
 import type { Template } from "ventojs/src/environment.js";
-import type { Memory } from "@transform/memory";
+import { Memory } from "@transform/memory";
+import { SummaryCache } from "@transform/ai/cache";
 
-export function debugTemplate(template: Template): string {
-  const source = template.source;
-  return `<details><summary>Expand to view the full rollup-n-up-n-up template!</summary>\n\n\`\`\`\n${source}\n\`\`\`\n\n</details>`;
+function formatDetails(summary: string, dropdown: string): string {
+  return `<details><summary>${summary}</summary>\n\n\`\`\`\n${dropdown}\n\`\`\`\n\n</details>`;
 }
 
-export function debugMemory(memory: Memory, memoryBank: number): string {
-  const context = memory.getBankContent(memoryBank);
-  return `<details><summary>Expand to view the context passed into the inference model!</summary>\n\n\`\`\`\n${context}\n\`\`\`\n\n</details>`;
+export function debugTemplate(template: Template): string {
+  return formatDetails(
+    "Expand to view the full rollup-n-up-n-up template!",
+    template.source,
+  );
+}
+
+export function debugMemory(memoryBank: number): string {
+  return formatDetails(
+    "Expand to view the context passed into the inference model!",
+    Memory.getInstance()
+      .getBank(memoryBank)
+      .map((item) => item.content)
+      .join("\n\n"),
+  );
+}
+
+export function debugSources(): string {
+  const sources = SummaryCache.getInstance().sources();
+  const sourcesBulletList = sources.map((source) => `- ${source}`).join("\n");
+  return formatDetails(
+    "Expand to view the sources used in the inference model!",
+    sourcesBulletList,
+  );
 }

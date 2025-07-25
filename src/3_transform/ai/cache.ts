@@ -99,4 +99,9 @@ export class SummaryCache {
   clear() {
     this.cache.clear();
   }
+
+  // For debugging purposes
+  sources(): string[] {
+    return Array.from(this.cache.keys()).sort();
+  }
 }

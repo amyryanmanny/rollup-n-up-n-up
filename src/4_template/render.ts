@@ -9,7 +9,7 @@ import { GitHubClient } from "@pull/github/client";
 import { getConfig } from "@util/config";
 import { Memory } from "@transform/memory";
 import { SummaryCache } from "@transform/ai/cache";
-import { debugMemory, debugTemplate } from "./debug";
+import { debugMemory, debugSources, debugTemplate } from "./debug";
 
 // TODO: Configurable templatesDir
 const templatesDir = path.join(process.cwd(), "templates");
@@ -50,7 +50,8 @@ export async function renderTemplate(templatePath: string): Promise<string> {
     ...globals,
     getConfig: (config: string) => getConfig(config),
     debugTemplate: () => debugTemplate(template),
-    debugMemory: (memoryBank: number = 0) => debugMemory(memory, memoryBank),
+    debugSources: () => debugSources(),
+    debugMemory: (memoryBank: number = 0) => debugMemory(memoryBank),
   });
 
   memory.headbonk(); // Reset memory after rendering
