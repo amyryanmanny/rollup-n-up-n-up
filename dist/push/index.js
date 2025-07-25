@@ -37801,10 +37801,43 @@ var import_yaml = __toESM(require_dist(), 1);
 var import_github = __toESM(require_github(), 1);
 // src/util/config/push.ts
 var import_strftime = __toESM(require_strftime(), 1);
+function getTitleDate(titleDateOption) {
+  const today = new Date;
+  if (titleDateOption === undefined) {
+    return today;
+  }
+  titleDateOption = titleDateOption.toUpperCase();
+  if (titleDateOption === "TODAY") {
+    return today;
+  }
+  if (titleDateOption.startsWith("LAST_")) {
+    const dayName = titleDateOption.slice(5);
+    const offset = [
+      "SUNDAY",
+      "MONDAY",
+      "TUESDAY",
+      "WEDNESDAY",
+      "THURSDAY",
+      "FRIDAY",
+      "SATURDAY"
+    ].indexOf(dayName);
+    if (offset === -1) {
+      throw new Error(`Invalid TITLE_DATE option: ${titleDateOption}`);
+    }
+    const day = today.getDay();
+    const diff = (day - offset + 7) % 7 || 7;
+    const lastWeekday = new Date(today);
+    lastWeekday.setDate(today.getDate() - diff);
+    return lastWeekday;
+  }
+  throw new Error(`Invalid TITLE_DATE option: ${titleDateOption}`);
+}
 function getPushConfig() {
   let title = getConfig("TITLE");
   if (title) {
-    title = import_strftime.default(title, new Date);
+    const titleDateOption = getConfig("TITLE_DATE");
+    const titleDate = getTitleDate(titleDateOption);
+    title = import_strftime.default(title, titleDate);
   }
   const body = getConfig("BODY");
   if (!body) {
