@@ -8,6 +8,8 @@ import { type MemoryBank } from "@transform/memory";
 
 import { SummaryCache } from "./cache";
 import { insertPlaceholders } from "./hydration";
+import { countTokens, truncate } from "./tokens";
+
 export type Message = {
   role: "system" | "user" | "assistant" | "developer";
   content: string;
@@ -46,8 +48,15 @@ export async function runPrompt(params: PromptParameters): Promise<string> {
     throw new Error("xai models are not supported");
   }
 
-  // TODO: Count tokens
-  // import { encoding_for_model, TiktokenModel } from "@dqbd/tiktoken";
+  const truncateTokens = getConfig("TRUNCATE_TOKENS");
+  if (truncateTokens !== undefined) {
+    truncate(model, messages, Number(truncateTokens));
+  }
+
+  const totalTokens = countTokens(model, messages);
+  if (totalTokens !== undefined) {
+    console.log("Total tokens used:", totalTokens);
+  }
 
   // TODO: Replace Markdown image tags by image_url messages
 
