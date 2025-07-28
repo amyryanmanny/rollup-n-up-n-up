@@ -17,6 +17,7 @@ import {
 } from "./discussion";
 import { createOrUpdateRepoFile } from "./repo-file";
 import { addLinkToSummary } from "@util/log";
+import { matchDiscussionCategoryUrl } from "./url";
 
 export type PushTarget = {
   type: PushType;
@@ -28,6 +29,7 @@ export type PushType =
   | "issue"
   | "issue-comment"
   | "discussion"
+  | "discussion-append"
   | "discussion-comment";
 
 export class GitHubPushClient {
@@ -71,6 +73,12 @@ export class GitHubPushClient {
           throw new Error("Title is required for 'discussion' target.");
         }
         return this.pushToDiscussion(url, title, body);
+      case "discussion-append":
+        if (!title) {
+          throw new Error("Title is required for 'discussion-append' target.");
+        }
+        return this.appendToDiscussion(url, title, body);
+      case "discussion-comment":
       default:
         throw new Error(`Unsupported target: ${type}`);
     }
@@ -176,18 +184,7 @@ export class GitHubPushClient {
   }
 
   async pushToDiscussion(url: string, title: string, body: string) {
-    // Handle repo path, including /discussions subpath
-    const match = url.match(
-      /https:\/\/github\.com\/([^/]+)\/([^/]+)\/discussions(?:\/categories\/([^/]+))?/,
-    );
-    if (!match) {
-      throw new Error(`Invalid GitHub URL: ${url}`);
-    }
-    const [, owner, repo, categoryName] = match;
-
-    if (!owner || !repo) {
-      throw new Error(`Invalid GitHub URL: ${url}`);
-    }
+    const { owner, repo, categoryName } = matchDiscussionCategoryUrl(url);
     if (!categoryName) {
       throw new Error(
         `Category name is required. Ex: .../discussions/categories/reporting-dogfooding`,
@@ -222,5 +219,27 @@ export class GitHubPushClient {
     }
 
     addLinkToSummary("Discussion Post Created / Updated", discussion.url);
+  }
+
+  async appendToDiscussion(url: string, title: string, append: string) {
+    // Handle repo path, including /discussions subpath
+    const { owner, repo, categoryName } = matchDiscussionCategoryUrl(url);
+    if (!categoryName) {
+      throw new Error(
+        `Category name is required. Ex: .../discussions/categories/reporting-dogfooding`,
+      );
+    }
+
+    const discussion = await getDiscussionByTitle(this, owner, repo, title);
+    if (!discussion) {
+      // If the discussion already exists, update the body
+      throw new Error(
+        `Discussion with title "${title}" not found in ${owner}/${repo}.`,
+      );
+    }
+
+    updateDiscussion(this, discussion.id, `${discussion.body}\n\n${append}`);
+
+    addLinkToSummary("Discussion Post Updated", discussion.url);
   }
 }
