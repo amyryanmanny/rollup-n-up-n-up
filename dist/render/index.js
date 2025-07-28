@@ -99571,7 +99571,7 @@ var stripHtml = (s2) => {
   return s2.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>|<.*?>|<!--[\s\S]*?-->/g, "");
 };
 var toSnakeCase = (str) => {
-  return str.replace(":", "").replace(/([a-z])([A-Z])/g, "$1_$2").replace(/\s+/g, "_").toLowerCase();
+  return str.replace(/[^a-zA-Z0-9\s]/g, "").trim().replace(/([a-z])([A-Z])/g, "$1_$2").replace(/\s+/g, "_").toLowerCase();
 };
 var title = (s2) => {
   return s2.toLowerCase().split(" ").map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
@@ -99739,47 +99739,6 @@ class Memory {
   }
 }
 
-// src/util/emoji.ts
-var EMOJI_PRIORITY = [
-  "\uD83D\uDD34",
-  "\uD83D\uDFE5",
-  "\uD83D\uDFE0",
-  "\uD83D\uDFE7",
-  "\uD83D\uDFE1",
-  "\uD83D\uDFE8",
-  "\uD83D\uDFE2",
-  "\uD83D\uDFE9",
-  "\uD83D\uDD35",
-  "\uD83D\uDFE6",
-  "\uD83D\uDFE3",
-  "\uD83D\uDFEA",
-  "\uD83D\uDFE4",
-  "\uD83D\uDFEB",
-  "⚪️",
-  "⬜️",
-  "⚫️",
-  "⬛️"
-];
-function emojiCompare(a2, b2) {
-  for (const emoji of EMOJI_PRIORITY) {
-    if (a2.includes(emoji) && !b2.includes(emoji)) {
-      return -1;
-    }
-    if (!a2.includes(emoji) && b2.includes(emoji)) {
-      return 1;
-    }
-  }
-  return;
-}
-function extractEmoji(text) {
-  for (const emoji of EMOJI_PRIORITY) {
-    if (text.includes(emoji)) {
-      return emoji;
-    }
-  }
-  return;
-}
-
 // src/2_pull/github/graphql/index.ts
 var ISSUE_PAGE_SIZE = 50;
 var NUM_ISSUE_COMMENTS = 25;
@@ -99911,6 +99870,7 @@ async function listIssuesForProject(params) {
         createdAt: new Date(comment.createdAt),
         url: comment.url
       })),
+      isSubissue: false,
       project: {
         number: params.projectNumber,
         fields: edge.node.fieldValues.edges.reduce((acc, fieldEdge) => {
@@ -99952,6 +99912,337 @@ async function listIssuesForProject(params) {
     title: response.organization.projectV2.title,
     url: `https://github.com/orgs/${params.organization}/projects/${params.projectNumber}`
   };
+}
+
+// src/util/date.ts
+var ONE_DAY = 86400000;
+
+// src/util/emoji.ts
+var EMOJI_PRIORITY = [
+  "\uD83D\uDD34",
+  "\uD83D\uDFE5",
+  "\uD83D\uDFE0",
+  "\uD83D\uDFE7",
+  "\uD83D\uDFE1",
+  "\uD83D\uDFE8",
+  "\uD83D\uDFE2",
+  "\uD83D\uDFE9",
+  "\uD83D\uDD35",
+  "\uD83D\uDFE6",
+  "\uD83D\uDFE3",
+  "\uD83D\uDFEA",
+  "\uD83D\uDFE4",
+  "\uD83D\uDFEB",
+  "⚪️",
+  "⬜️",
+  "⚫️",
+  "⬛️"
+];
+function emojiCompare(a2, b2) {
+  for (const emoji of EMOJI_PRIORITY) {
+    if (a2.includes(emoji) && !b2.includes(emoji)) {
+      return -1;
+    }
+    if (!a2.includes(emoji) && b2.includes(emoji)) {
+      return 1;
+    }
+  }
+  return;
+}
+function extractEmoji(text) {
+  for (const emoji of EMOJI_PRIORITY) {
+    if (text.includes(emoji)) {
+      return emoji;
+    }
+  }
+  return;
+}
+
+// node_modules/mimic-function/index.js
+var copyProperty = (to, from, property, ignoreNonConfigurable) => {
+  if (property === "length" || property === "prototype") {
+    return;
+  }
+  if (property === "arguments" || property === "caller") {
+    return;
+  }
+  const toDescriptor = Object.getOwnPropertyDescriptor(to, property);
+  const fromDescriptor = Object.getOwnPropertyDescriptor(from, property);
+  if (!canCopyProperty(toDescriptor, fromDescriptor) && ignoreNonConfigurable) {
+    return;
+  }
+  Object.defineProperty(to, property, fromDescriptor);
+};
+var canCopyProperty = function(toDescriptor, fromDescriptor) {
+  return toDescriptor === undefined || toDescriptor.configurable || toDescriptor.writable === fromDescriptor.writable && toDescriptor.enumerable === fromDescriptor.enumerable && toDescriptor.configurable === fromDescriptor.configurable && (toDescriptor.writable || toDescriptor.value === fromDescriptor.value);
+};
+var changePrototype = (to, from) => {
+  const fromPrototype = Object.getPrototypeOf(from);
+  if (fromPrototype === Object.getPrototypeOf(to)) {
+    return;
+  }
+  Object.setPrototypeOf(to, fromPrototype);
+};
+var wrappedToString = (withName, fromBody) => `/* Wrapped ${withName}*/
+${fromBody}`;
+var toStringDescriptor = Object.getOwnPropertyDescriptor(Function.prototype, "toString");
+var toStringName = Object.getOwnPropertyDescriptor(Function.prototype.toString, "name");
+var changeToString = (to, from, name) => {
+  const withName = name === "" ? "" : `with ${name.trim()}() `;
+  const newToString = wrappedToString.bind(null, withName, from.toString());
+  Object.defineProperty(newToString, "name", toStringName);
+  const { writable, enumerable, configurable } = toStringDescriptor;
+  Object.defineProperty(to, "toString", { value: newToString, writable, enumerable, configurable });
+};
+function mimicFunction(to, from, { ignoreNonConfigurable = false } = {}) {
+  const { name } = to;
+  for (const property of Reflect.ownKeys(from)) {
+    copyProperty(to, from, property, ignoreNonConfigurable);
+  }
+  changePrototype(to, from);
+  changeToString(to, from, name);
+  return to;
+}
+
+// node_modules/memoize/distribution/index.js
+var cacheStore = new WeakMap;
+var cacheTimerStore = new WeakMap;
+function memoize(function_, { cacheKey, cache = new Map, maxAge } = {}) {
+  if (maxAge === 0) {
+    return function_;
+  }
+  if (typeof maxAge === "number") {
+    const maxSetIntervalValue = 2147483647;
+    if (maxAge > maxSetIntervalValue) {
+      throw new TypeError(`The \`maxAge\` option cannot exceed ${maxSetIntervalValue}.`);
+    }
+    if (maxAge < 0) {
+      throw new TypeError("The `maxAge` option should not be a negative number.");
+    }
+  }
+  const memoized = function(...arguments_) {
+    const key = cacheKey ? cacheKey(arguments_) : arguments_[0];
+    const cacheItem = cache.get(key);
+    if (cacheItem) {
+      return cacheItem.data;
+    }
+    const result = function_.apply(this, arguments_);
+    const computedMaxAge = typeof maxAge === "function" ? maxAge(...arguments_) : maxAge;
+    cache.set(key, {
+      data: result,
+      maxAge: computedMaxAge ? Date.now() + computedMaxAge : Number.POSITIVE_INFINITY
+    });
+    if (computedMaxAge && computedMaxAge > 0 && computedMaxAge !== Number.POSITIVE_INFINITY) {
+      const timer = setTimeout(() => {
+        cache.delete(key);
+      }, computedMaxAge);
+      timer.unref?.();
+      const timers = cacheTimerStore.get(function_) ?? new Set;
+      timers.add(timer);
+      cacheTimerStore.set(function_, timers);
+    }
+    return result;
+  };
+  mimicFunction(memoized, function_, {
+    ignoreNonConfigurable: true
+  });
+  cacheStore.set(memoized, cache);
+  return memoized;
+}
+
+// src/2_pull/github/update.ts
+function findLatestUpdates(comments, n2 = 1) {
+  if (comments.length === 0) {
+    return;
+  }
+  const updates = comments.filter((comment) => comment.isUpdate);
+  if (updates.length > 0) {
+    return updates.slice(0, n2);
+  }
+  const updateDetection = UpdateDetection.getInstance();
+  for (const strategy of updateDetection.strategies) {
+    switch (strategy.kind) {
+      case "skip":
+      case "blame":
+        return;
+      case "fail": {
+        const issue = comments[0].issue;
+        throw new Error(`No valid update found for issue ${issue.title} - ${issue.url}!`);
+      }
+    }
+  }
+  return comments.slice(0, n2);
+}
+function extractUpdate(comment) {
+  const updateDetection = UpdateDetection.getInstance();
+  for (const strategy of updateDetection.strategies) {
+    const update2 = memoizedExtractUpdateWithStrategy(comment, strategy);
+    if (update2 !== undefined) {
+      return update2;
+    }
+  }
+  return comment._body;
+}
+function extractUpdateWithStrategy(comment, strategy) {
+  if (comment.isEmpty) {
+    return;
+  }
+  if ("timeframe" in strategy) {
+    const { timeframe } = strategy;
+    if (timeframe && !comment.isWithinTimeframe(timeframe)) {
+      return;
+    }
+  }
+  switch (strategy.kind) {
+    case "timebox": {
+      return comment._body;
+    }
+    case "marker": {
+      const { marker } = strategy;
+      if (comment.hasMarker(marker)) {
+        return comment._body;
+      }
+      break;
+    }
+    case "section": {
+      const { section: sectionName } = strategy;
+      const section = comment.section(sectionName);
+      if (section !== undefined && section.trim() !== "") {
+        return section;
+      }
+      break;
+    }
+  }
+  return;
+}
+var memoizedExtractUpdateWithStrategy = memoize(extractUpdateWithStrategy, {
+  cacheKey: ([comment, strategy]) => comment.url + JSON.stringify(strategy)
+});
+
+// src/2_pull/github/comment.ts
+class CommentWrapper {
+  memory = Memory.getInstance();
+  static NULL_UPDATE = "No updates found";
+  comment;
+  issue;
+  sections;
+  boldedSections;
+  constructor(issue, comment) {
+    this.issue = issue;
+    this.comment = comment;
+    this.sections = splitMarkdownByHeaders(comment.body);
+    this.boldedSections = splitMarkdownByBoldedText(comment.body);
+  }
+  static empty(issue) {
+    return new CommentWrapper(issue, {
+      author: "",
+      body: CommentWrapper.NULL_UPDATE,
+      createdAt: new Date(0),
+      url: issue.url
+    });
+  }
+  get header() {
+    return `[${this.issue.title}](${this.url})`;
+  }
+  get url() {
+    return this.comment.url;
+  }
+  get _body() {
+    return stripHtml(this.comment.body).trim();
+  }
+  get body() {
+    this.remember();
+    return this._body;
+  }
+  get update() {
+    this.remember();
+    return extractUpdate(this);
+  }
+  get isEmpty() {
+    return this.comment.body.trim() === "" || this.comment.body === CommentWrapper.NULL_UPDATE;
+  }
+  get isUpdate() {
+    return !this.isEmpty && this.update !== undefined;
+  }
+  get author() {
+    return this.comment.author;
+  }
+  get createdAt() {
+    return this.comment.createdAt;
+  }
+  get wasPostedToday() {
+    return new Date().getTime() - this.createdAt.getTime() < ONE_DAY;
+  }
+  get wasPostedThisWeek() {
+    return new Date().getTime() - this.createdAt.getTime() < 7 * ONE_DAY;
+  }
+  get wasPostedThisMonth() {
+    return new Date().getTime() - this.createdAt.getTime() < 31 * ONE_DAY;
+  }
+  get wasPostedThisYear() {
+    return new Date().getTime() - this.createdAt.getTime() < 365 * ONE_DAY;
+  }
+  hasMarker(marker) {
+    return marker.test(this.comment.body);
+  }
+  section(name) {
+    name = toSnakeCase(name);
+    const section = this.sections.get(name);
+    if (section !== undefined) {
+      return stripHtml(section).trim();
+    }
+    const boldedSection = this.boldedSections.get(name);
+    if (boldedSection !== undefined) {
+      return stripHtml(boldedSection).trim();
+    }
+    return;
+  }
+  isWithinTimeframe(timeframe) {
+    switch (timeframe) {
+      case "all-time":
+        return true;
+      case "today":
+        return this.wasPostedToday;
+      case "last-week":
+        return this.wasPostedThisWeek;
+      case "last-month":
+        return this.wasPostedThisMonth;
+      case "last-year":
+        return this.wasPostedThisYear;
+      default:
+        throw new Error(`Invalid timeframe for comment filtering: "${timeframe}".`);
+    }
+  }
+  emojiStatus(sections) {
+    if (this.isEmpty) {
+      return;
+    }
+    if (sections) {
+      for (const sectionName of sections) {
+        const section = this.section(sectionName);
+        if (section) {
+          const emoji = extractEmoji(section);
+          if (emoji)
+            return emoji;
+        }
+      }
+    }
+    return extractEmoji(this.comment.body);
+  }
+  get rendered() {
+    return `#### Comment on ${this.issue.type}: ${this.header}
+
+${this._body}
+
+`;
+  }
+  remember() {
+    this.memory.remember({ content: this.rendered, source: this.url });
+  }
+  render() {
+    this.remember();
+    return this.rendered;
+  }
 }
 
 // src/2_pull/github/project-view.ts
@@ -100282,7 +100573,8 @@ async function listIssuesForRepo(params) {
       body: comment.body,
       createdAt: new Date(comment.createdAt),
       url: comment.url
-    }))
+    })),
+    isSubissue: false
   }));
   return {
     issues,
@@ -100373,7 +100665,8 @@ async function listSubissuesForIssue(params) {
       body: comment.body,
       createdAt: new Date(comment.createdAt),
       url: comment.url
-    }))
+    })),
+    isSubissue: true
   }));
   const issueTitle = response.repositoryOwner.repository.issue.title;
   return {
@@ -100383,286 +100676,133 @@ async function listSubissuesForIssue(params) {
   };
 }
 
-// src/util/date.ts
-var ONE_DAY = 86400000;
-
-// node_modules/mimic-function/index.js
-var copyProperty = (to, from, property, ignoreNonConfigurable) => {
-  if (property === "length" || property === "prototype") {
-    return;
-  }
-  if (property === "arguments" || property === "caller") {
-    return;
-  }
-  const toDescriptor = Object.getOwnPropertyDescriptor(to, property);
-  const fromDescriptor = Object.getOwnPropertyDescriptor(from, property);
-  if (!canCopyProperty(toDescriptor, fromDescriptor) && ignoreNonConfigurable) {
-    return;
-  }
-  Object.defineProperty(to, property, fromDescriptor);
-};
-var canCopyProperty = function(toDescriptor, fromDescriptor) {
-  return toDescriptor === undefined || toDescriptor.configurable || toDescriptor.writable === fromDescriptor.writable && toDescriptor.enumerable === fromDescriptor.enumerable && toDescriptor.configurable === fromDescriptor.configurable && (toDescriptor.writable || toDescriptor.value === fromDescriptor.value);
-};
-var changePrototype = (to, from) => {
-  const fromPrototype = Object.getPrototypeOf(from);
-  if (fromPrototype === Object.getPrototypeOf(to)) {
-    return;
-  }
-  Object.setPrototypeOf(to, fromPrototype);
-};
-var wrappedToString = (withName, fromBody) => `/* Wrapped ${withName}*/
-${fromBody}`;
-var toStringDescriptor = Object.getOwnPropertyDescriptor(Function.prototype, "toString");
-var toStringName = Object.getOwnPropertyDescriptor(Function.prototype.toString, "name");
-var changeToString = (to, from, name) => {
-  const withName = name === "" ? "" : `with ${name.trim()}() `;
-  const newToString = wrappedToString.bind(null, withName, from.toString());
-  Object.defineProperty(newToString, "name", toStringName);
-  const { writable, enumerable, configurable } = toStringDescriptor;
-  Object.defineProperty(to, "toString", { value: newToString, writable, enumerable, configurable });
-};
-function mimicFunction(to, from, { ignoreNonConfigurable = false } = {}) {
-  const { name } = to;
-  for (const property of Reflect.ownKeys(from)) {
-    copyProperty(to, from, property, ignoreNonConfigurable);
-  }
-  changePrototype(to, from);
-  changeToString(to, from, name);
-  return to;
-}
-
-// node_modules/memoize/distribution/index.js
-var cacheStore = new WeakMap;
-var cacheTimerStore = new WeakMap;
-function memoize(function_, { cacheKey, cache = new Map, maxAge } = {}) {
-  if (maxAge === 0) {
-    return function_;
-  }
-  if (typeof maxAge === "number") {
-    const maxSetIntervalValue = 2147483647;
-    if (maxAge > maxSetIntervalValue) {
-      throw new TypeError(`The \`maxAge\` option cannot exceed ${maxSetIntervalValue}.`);
-    }
-    if (maxAge < 0) {
-      throw new TypeError("The `maxAge` option should not be a negative number.");
-    }
-  }
-  const memoized = function(...arguments_) {
-    const key = cacheKey ? cacheKey(arguments_) : arguments_[0];
-    const cacheItem = cache.get(key);
-    if (cacheItem) {
-      return cacheItem.data;
-    }
-    const result = function_.apply(this, arguments_);
-    const computedMaxAge = typeof maxAge === "function" ? maxAge(...arguments_) : maxAge;
-    cache.set(key, {
-      data: result,
-      maxAge: computedMaxAge ? Date.now() + computedMaxAge : Number.POSITIVE_INFINITY
-    });
-    if (computedMaxAge && computedMaxAge > 0 && computedMaxAge !== Number.POSITIVE_INFINITY) {
-      const timer = setTimeout(() => {
-        cache.delete(key);
-      }, computedMaxAge);
-      timer.unref?.();
-      const timers = cacheTimerStore.get(function_) ?? new Set;
-      timers.add(timer);
-      cacheTimerStore.set(function_, timers);
-    }
-    return result;
-  };
-  mimicFunction(memoized, function_, {
-    ignoreNonConfigurable: true
-  });
-  cacheStore.set(memoized, cache);
-  return memoized;
-}
-
-// src/2_pull/github/update.ts
-function findLatestUpdates(comments, n2 = 1) {
-  if (comments.length === 0) {
-    return;
-  }
-  const updates = comments.filter((comment) => comment.isUpdate);
-  if (updates.length > 0) {
-    return updates.slice(0, n2);
-  }
-  const updateDetection = UpdateDetection.getInstance();
-  for (const strategy of updateDetection.strategies) {
-    switch (strategy.kind) {
-      case "skip":
-      case "blame":
-        return;
-      case "fail": {
-        const issue = comments[0].issue;
-        throw new Error(`No valid update found for issue ${issue.title} - ${issue.url}!`);
-      }
-    }
-  }
-  return comments.slice(0, n2);
-}
-function extractUpdate(comment) {
-  const updateDetection = UpdateDetection.getInstance();
-  for (const strategy of updateDetection.strategies) {
-    const update2 = memoizedExtractUpdateWithStrategy(comment, strategy);
-    if (update2 !== undefined) {
-      return update2;
-    }
-  }
-  return comment._body;
-}
-function extractUpdateWithStrategy(comment, strategy) {
-  if (comment.isEmpty) {
-    return;
-  }
-  if ("timeframe" in strategy) {
-    const { timeframe } = strategy;
-    if (timeframe && !comment.isWithinTimeframe(timeframe)) {
-      return;
-    }
-  }
-  switch (strategy.kind) {
-    case "timebox": {
-      return comment._body;
-    }
-    case "marker": {
-      const { marker } = strategy;
-      if (comment.hasMarker(marker)) {
-        return comment._body;
-      }
-      break;
-    }
-    case "section": {
-      const { section: sectionName } = strategy;
-      const section = comment.section(sectionName);
-      if (section !== undefined && section.trim() !== "") {
-        return section;
-      }
-      break;
-    }
-  }
-  return;
-}
-var memoizedExtractUpdateWithStrategy = memoize(extractUpdateWithStrategy, {
-  cacheKey: ([comment, strategy]) => comment.url + JSON.stringify(strategy)
-});
-
-// src/2_pull/github/comment.ts
-class CommentWrapper {
+// src/2_pull/github/issue-list.ts
+class IssueList {
   memory = Memory.getInstance();
-  static NULL_UPDATE = "No updates found";
-  comment;
-  issue;
-  sections;
-  boldedSections;
-  constructor(issue, comment) {
-    this.issue = issue;
-    this.comment = comment;
-    this.sections = splitMarkdownByHeaders(comment.body);
-    this.boldedSections = splitMarkdownByBoldedText(comment.body);
-  }
-  static empty(issue) {
-    return new CommentWrapper(issue, {
-      author: "",
-      body: CommentWrapper.NULL_UPDATE,
-      createdAt: new Date(0),
-      url: issue.url
-    });
-  }
-  get header() {
-    return `[${this.issue.title}](${this.url})`;
-  }
-  get url() {
-    return this.comment.url;
-  }
-  get _body() {
-    return stripHtml(this.comment.body).trim();
-  }
-  get body() {
-    this.remember();
-    return this._body;
-  }
-  get update() {
-    this.remember();
-    return extractUpdate(this);
+  sourceOfTruth;
+  issues;
+  get length() {
+    return this.issues.length;
   }
   get isEmpty() {
-    return this.comment.body.trim() === "" || this.comment.body === CommentWrapper.NULL_UPDATE;
+    return this.issues.length === 0;
   }
-  get isUpdate() {
-    return !this.isEmpty && this.update !== undefined;
+  [Symbol.iterator]() {
+    return this.issues[Symbol.iterator]();
   }
-  get author() {
-    return this.comment.author;
+  find(predicate) {
+    return this.issues.find(predicate);
   }
-  get createdAt() {
-    return this.comment.createdAt;
+  filter(predicate) {
+    const filteredIssues = this.issues.filter(predicate);
+    return new IssueList(filteredIssues, this.sourceOfTruth);
   }
-  get wasPostedToday() {
-    return new Date().getTime() - this.createdAt.getTime() < ONE_DAY;
+  get header() {
+    return `[${this.sourceOfTruth.title}](${this.sourceOfTruth.url})`;
   }
-  get wasPostedThisWeek() {
-    return new Date().getTime() - this.createdAt.getTime() < 7 * ONE_DAY;
+  get title() {
+    return this.sourceOfTruth.title;
   }
-  get wasPostedThisMonth() {
-    return new Date().getTime() - this.createdAt.getTime() < 31 * ONE_DAY;
+  get url() {
+    return this.sourceOfTruth.url;
   }
-  get wasPostedThisYear() {
-    return new Date().getTime() - this.createdAt.getTime() < 365 * ONE_DAY;
-  }
-  hasMarker(marker) {
-    return marker.test(this.comment.body);
-  }
-  section(name) {
-    name = toSnakeCase(name);
-    const section = this.sections.get(name);
-    if (section !== undefined) {
-      return stripHtml(section).trim();
+  get groupKey() {
+    if (!this.sourceOfTruth.groupKey) {
+      throw new Error("Don't use groupKey without a groupBy.");
     }
-    const boldedSection = this.boldedSections.get(name);
-    if (boldedSection !== undefined) {
-      return stripHtml(boldedSection).trim();
-    }
-    return;
+    return this.sourceOfTruth.groupKey;
   }
-  isWithinTimeframe(timeframe) {
-    switch (timeframe) {
-      case "all-time":
-        return true;
-      case "today":
-        return this.wasPostedToday;
-      case "last-week":
-        return this.wasPostedThisWeek;
-      case "last-month":
-        return this.wasPostedThisMonth;
-      case "last-year":
-        return this.wasPostedThisYear;
-      default:
-        throw new Error(`Invalid timeframe for comment filtering: "${timeframe}".`);
+  applyViewFilter(view) {
+    this.issues = this.issues.filter((issue) => view.filter(issue));
+    if (view.number) {
+      this.sourceOfTruth.url += `/views/${view.number}`;
+    } else {
+      this.sourceOfTruth.url += `?filterQuery=${encodeURIComponent(view.filterQuery)}`;
+    }
+    if (view.name) {
+      this.sourceOfTruth.title += ` (${view.name})`;
     }
   }
-  emojiStatus(sections) {
-    if (this.isEmpty) {
-      return;
-    }
-    if (sections) {
-      for (const sectionName of sections) {
-        const section = this.section(sectionName);
-        if (section) {
-          const emoji = extractEmoji(section);
-          if (emoji)
-            return emoji;
-        }
+  sort(fieldName, direction = "asc") {
+    this.issues.sort((a2, b2) => {
+      const aValue = a2.field(fieldName);
+      const bValue = b2.field(fieldName);
+      const comparison = emojiCompare(aValue, bValue) ?? aValue.localeCompare(bValue, undefined, { sensitivity: "base" });
+      return direction === "asc" ? comparison : -comparison;
+    });
+    return this;
+  }
+  groupBy(fieldName) {
+    const groups = new Map;
+    for (const issue of this.issues) {
+      const key = issue.field(fieldName);
+      if (!groups.has(key)) {
+        groups.set(key, new IssueList([], {
+          title: this.sourceOfTruth.title,
+          url: this.sourceOfTruth.url,
+          groupKey: key || "No " + title(fieldName)
+        }));
       }
+      groups.get(key).issues.push(issue);
     }
-    return extractEmoji(this.comment.body);
+    return Array.from(groups.entries()).sort(([a2], [b2]) => emojiCompare(a2, b2) ?? a2.localeCompare(b2)).map(([, group]) => group);
+  }
+  overallStatus(fieldName) {
+    return this.issues.map((issue) => issue.field(fieldName) ?? "").sort((a2, b2) => emojiCompare(a2, b2) ?? a2.localeCompare(b2))[0];
+  }
+  get hasUpdates() {
+    return this.issues.some((issue) => issue.hasUpdate);
+  }
+  get blame() {
+    const issuesWithNoUpdate = this.issues.filter((issue) => !issue.hasUpdate);
+    return new IssueList(issuesWithNoUpdate, {
+      title: `${this.sourceOfTruth.title} - Missing Updates`,
+      url: this.sourceOfTruth.url
+    });
+  }
+  constructor(issues, sourceOfTruth) {
+    this.sourceOfTruth = sourceOfTruth;
+    this.issues = issues;
+  }
+  static async forRepo(params) {
+    const response = await listIssuesForRepo(params);
+    const { issues, title: title2, url } = response;
+    return new IssueList(issues.map((issue) => new IssueWrapper(issue)), { title: title2, url });
+  }
+  static async forSubissues(params) {
+    const response = await listSubissuesForIssue(params);
+    const { subissues, title: title2, url } = response;
+    return new IssueList(subissues.map((issue) => new IssueWrapper(issue)), { title: title2, url });
+  }
+  static async forProject(params) {
+    const response = await listIssuesForProject(params);
+    const { issues, title: title2, url } = response;
+    return new IssueList(issues.map((issue) => new IssueWrapper(issue)), { title: title2, url });
+  }
+  static async forProjectView(params) {
+    let view;
+    if (params.projectViewNumber === undefined) {
+      if (params.customQuery === undefined) {
+        throw new Error("Either projectViewNumber or customQuery must be provided.");
+      }
+      view = new ProjectView({ filterQuery: params.customQuery });
+    } else {
+      view = await getProjectView(params);
+    }
+    const issueList = await this.forProject({
+      organization: params.organization,
+      projectNumber: params.projectNumber,
+      typeFilter: view.getFilterType()
+    });
+    issueList.applyViewFilter(view);
+    return issueList;
   }
   get rendered() {
-    return `#### Comment on ${this.issue.type}: ${this.header}
+    return `## ${this.header}
 
-${this._body}
+${this.issues.map((issue) => issue.rendered).join(`
 
-`;
+`)}`;
   }
   remember() {
     this.memory.remember({ content: this.rendered, source: this.url });
@@ -100673,12 +100813,98 @@ ${this._body}
   }
 }
 
+// src/2_pull/github/graphql/issue.ts
+async function getIssue(params) {
+  const octokit = getOctokit();
+  const query = `
+    query ($organization: String!, $repo: String!, $issueNumber: Int!) {
+      organization(login: $organization) {
+        repository(name: $repo) {
+          issue(number: $issueNumber) {
+            title
+            body
+            url
+            number
+            state
+            createdAt
+            updatedAt
+            issueType {
+              name
+            }
+            repository {
+              name
+              owner {
+                login
+              }
+              nameWithOwner
+            }
+            assignees(first: ${NUM_ISSUE_ASSIGNESS}) {
+              nodes {
+                login
+              }
+            }
+            labels(first: ${NUM_ISSUE_LABELS}) {
+              nodes {
+                name
+              }
+            }
+            comments(last: ${NUM_ISSUE_COMMENTS}) {
+              nodes {
+                author {
+                  login
+                }
+                body
+                createdAt
+                url
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+  const response = await octokit.graphql(query, {
+    organization: params.owner,
+    repo: params.repo,
+    issueNumber: params.issueNumber
+  });
+  const issue = response.organization.repository.issue;
+  return {
+    title: issue.title,
+    body: issue.body,
+    url: issue.url,
+    number: issue.number,
+    state: issue.state,
+    createdAt: new Date(issue.createdAt),
+    updatedAt: new Date(issue.updatedAt),
+    type: issue.issueType?.name || "Issue",
+    repository: {
+      name: issue.repository.name,
+      owner: issue.repository.owner.login,
+      nameWithOwner: issue.repository.nameWithOwner
+    },
+    assignees: issue.assignees.nodes.map((assignee) => assignee.login),
+    labels: issue.labels.nodes.map((label) => label.name),
+    comments: issue.comments.nodes.map((comment) => ({
+      author: comment.author?.login || "Unknown",
+      body: comment.body,
+      createdAt: new Date(comment.createdAt),
+      url: comment.url
+    })),
+    isSubissue: false
+  };
+}
+
 // src/2_pull/github/issue.ts
 class IssueWrapper {
   memory = Memory.getInstance();
   issue;
   constructor(issue) {
     this.issue = issue;
+  }
+  static async forIssue(params) {
+    const issue = await getIssue(params);
+    return new IssueWrapper(issue);
   }
   get header() {
     return `[${this.title}](${this.url})`;
@@ -100820,6 +101046,13 @@ class IssueWrapper {
     }
     return CommentWrapper.empty(this);
   }
+  latestComments(n2) {
+    const comments = this.comments;
+    if (comments.length !== 0) {
+      return comments.slice(0, n2);
+    }
+    return [CommentWrapper.empty(this)];
+  }
   get latestUpdate() {
     const updates = findLatestUpdates(this.comments);
     if (updates !== undefined) {
@@ -100860,143 +101093,6 @@ ${update2.rendered}`;
   }
 }
 
-// src/2_pull/github/issue-list.ts
-class IssueList {
-  memory = Memory.getInstance();
-  sourceOfTruth;
-  issues;
-  get length() {
-    return this.issues.length;
-  }
-  get isEmpty() {
-    return this.issues.length === 0;
-  }
-  [Symbol.iterator]() {
-    return this.issues[Symbol.iterator]();
-  }
-  find(predicate) {
-    return this.issues.find(predicate);
-  }
-  filter(predicate) {
-    const filteredIssues = this.issues.filter(predicate);
-    return new IssueList(filteredIssues, this.sourceOfTruth);
-  }
-  get header() {
-    return `[${this.sourceOfTruth.title}](${this.sourceOfTruth.url})`;
-  }
-  get title() {
-    return this.sourceOfTruth.title;
-  }
-  get url() {
-    return this.sourceOfTruth.url;
-  }
-  get groupKey() {
-    if (!this.sourceOfTruth.groupKey) {
-      throw new Error("Don't use groupKey without a groupBy.");
-    }
-    return this.sourceOfTruth.groupKey;
-  }
-  applyViewFilter(view) {
-    this.issues = this.issues.filter((issue) => view.filter(issue));
-    if (view.number) {
-      this.sourceOfTruth.url += `/views/${view.number}`;
-    } else {
-      this.sourceOfTruth.url += `?filterQuery=${encodeURIComponent(view.filterQuery)}`;
-    }
-    if (view.name) {
-      this.sourceOfTruth.title += ` (${view.name})`;
-    }
-  }
-  sort(fieldName, direction = "asc") {
-    this.issues.sort((a2, b2) => {
-      const aValue = a2.field(fieldName);
-      const bValue = b2.field(fieldName);
-      const comparison = emojiCompare(aValue, bValue) ?? aValue.localeCompare(bValue, undefined, { sensitivity: "base" });
-      return direction === "asc" ? comparison : -comparison;
-    });
-    return this;
-  }
-  groupBy(fieldName) {
-    const groups = new Map;
-    for (const issue of this.issues) {
-      const key = issue.field(fieldName);
-      if (!groups.has(key)) {
-        groups.set(key, new IssueList([], {
-          title: this.sourceOfTruth.title,
-          url: this.sourceOfTruth.url,
-          groupKey: key || "No " + title(fieldName)
-        }));
-      }
-      groups.get(key).issues.push(issue);
-    }
-    return Array.from(groups.entries()).sort(([a2], [b2]) => emojiCompare(a2, b2) ?? a2.localeCompare(b2)).map(([, group]) => group);
-  }
-  overallStatus(fieldName) {
-    return this.issues.map((issue) => issue.field(fieldName) ?? "").sort((a2, b2) => emojiCompare(a2, b2) ?? a2.localeCompare(b2))[0];
-  }
-  get hasUpdates() {
-    return this.issues.some((issue) => issue.hasUpdate);
-  }
-  get blame() {
-    const issuesWithNoUpdate = this.issues.filter((issue) => !issue.hasUpdate);
-    return new IssueList(issuesWithNoUpdate, {
-      title: `${this.sourceOfTruth.title} - Missing Updates`,
-      url: this.sourceOfTruth.url
-    });
-  }
-  constructor(issues, sourceOfTruth) {
-    this.sourceOfTruth = sourceOfTruth;
-    this.issues = issues;
-  }
-  static async forRepo(params) {
-    const response = await listIssuesForRepo(params);
-    const { issues, title: title2, url } = response;
-    return new IssueList(issues.map((issue) => new IssueWrapper(issue)), { title: title2, url });
-  }
-  static async forSubissues(params) {
-    const response = await listSubissuesForIssue(params);
-    const { subissues, title: title2, url } = response;
-    return new IssueList(subissues.map((issue) => new IssueWrapper(issue)), { title: title2, url });
-  }
-  static async forProject(params) {
-    const response = await listIssuesForProject(params);
-    const { issues, title: title2, url } = response;
-    return new IssueList(issues.map((issue) => new IssueWrapper(issue)), { title: title2, url });
-  }
-  static async forProjectView(params) {
-    let view;
-    if (params.projectViewNumber === undefined) {
-      if (params.customQuery === undefined) {
-        throw new Error("Either projectViewNumber or customQuery must be provided.");
-      }
-      view = new ProjectView({ filterQuery: params.customQuery });
-    } else {
-      view = await getProjectView(params);
-    }
-    const issueList = await this.forProject({
-      organization: params.organization,
-      projectNumber: params.projectNumber,
-      typeFilter: view.getFilterType()
-    });
-    issueList.applyViewFilter(view);
-    return issueList;
-  }
-  get rendered() {
-    return `## ${this.header}
-
-${this.issues.map((issue) => issue.rendered).join(`
-
-`)}`;
-  }
-  remember() {
-    this.memory.remember({ content: this.rendered, source: this.url });
-  }
-  render() {
-    this.remember();
-    return this.rendered;
-  }
-}
-
 // src/2_pull/github/client.ts
 class GitHubClient {
   octokit = getOctokit();
@@ -101005,6 +101101,13 @@ class GitHubClient {
     let match;
     if (urlParts.hostname !== "github.com") {
       throw new Error(`Unsupported hostname: ${urlParts.hostname}. Please provide a valid GitHub URL.`);
+    }
+    match = urlParts.pathname.match(/\/([^/]+)\/([^/]+)\/issues\/(\d+)/);
+    if (match) {
+      const owner = match[1];
+      const repo = match[2];
+      const issueNumber = parseInt(match[3], 10);
+      return this.issue(owner, repo, issueNumber);
     }
     match = urlParts.pathname.match(/\/([^/]+)\/([^/]+)\/issues/);
     if (match) {
@@ -101027,6 +101130,9 @@ class GitHubClient {
       return this.issuesForProject(organization, projectNumber);
     }
     throw new Error(`Unsupported URL: ${url}. Please provide a valid GitHub issues URL.`);
+  }
+  issue(owner, repo, issueNumber) {
+    return IssueWrapper.forIssue({ owner, repo, issueNumber });
   }
   issuesForRepo(owner, repo) {
     return IssueList.forRepo({ owner, repo });
@@ -101120,6 +101226,7 @@ async function renderTemplate(templatePath) {
   });
   memory.headbonk();
   summaryCache.save();
+  console.info(result.content);
   return result.content;
 }
 
