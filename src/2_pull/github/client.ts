@@ -78,9 +78,13 @@ export class GitHubClient {
   issue(
     owner: string,
     repo: string,
-    issueNumber: number,
+    issueNumber: string | number,
   ): Promise<IssueWrapper> {
-    return IssueWrapper.forIssue({ owner, repo, issueNumber });
+    return IssueWrapper.forIssue({
+      owner,
+      repo,
+      issueNumber: parseInt(issueNumber as string, 10),
+    });
   }
 
   issuesForRepo(owner: string, repo: string): Promise<IssueList> {
@@ -90,12 +94,12 @@ export class GitHubClient {
   subissuesForIssue(
     owner: string,
     repo: string,
-    issueNumber: number,
+    issueNumber: string,
   ): Promise<IssueList> {
     return IssueList.forSubissues({
       owner,
       repo,
-      issueNumber,
+      issueNumber: parseInt(issueNumber as string, 10),
     });
   }
 
