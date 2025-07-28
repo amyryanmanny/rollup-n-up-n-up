@@ -5,6 +5,7 @@ import { slugifyProjectFieldName, type IssueField } from "./graphql/project";
 import { CommentWrapper, type Comment } from "./comment";
 import { findLatestUpdates } from "./update";
 import { IssueList } from "./issue-list";
+import { getIssue, type GetIssueParameters } from "./graphql/issue";
 
 // Interface
 export type Issue = {
@@ -38,6 +39,12 @@ export class IssueWrapper {
 
   constructor(issue: Issue) {
     this.issue = issue;
+  }
+
+  static async forIssue(params: GetIssueParameters): Promise<IssueWrapper> {
+    // Create an IssueWrapper for a specific issue
+    const issue = await getIssue(params);
+    return new IssueWrapper(issue);
   }
 
   // Properties
@@ -228,8 +235,16 @@ export class IssueWrapper {
     if (comments.length !== 0) {
       return comments[0];
     }
-
     return CommentWrapper.empty(this);
+  }
+
+  latestComments(n: number): CommentWrapper[] {
+    const comments = this.comments;
+
+    if (comments.length !== 0) {
+      return comments.slice(0, n);
+    }
+    return [CommentWrapper.empty(this)];
   }
 
   get latestUpdate(): CommentWrapper {

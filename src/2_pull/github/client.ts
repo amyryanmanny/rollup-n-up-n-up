@@ -1,3 +1,4 @@
+import { IssueWrapper } from "./issue";
 import { IssueList } from "./issue-list";
 
 import { getOctokit } from "@util/octokit";
@@ -6,7 +7,7 @@ export class GitHubClient {
   // The Client class is a wrapper around the GitHub API client.
   public octokit = getOctokit();
 
-  url(url: string): Promise<IssueList> {
+  url(url: string): Promise<IssueList | IssueWrapper> {
     const urlParts = new URL(url);
     let match: RegExpMatchArray | null;
 
@@ -15,6 +16,16 @@ export class GitHubClient {
       throw new Error(
         `Unsupported hostname: ${urlParts.hostname}. Please provide a valid GitHub URL.`,
       );
+    }
+
+    // Single Issue
+    match = urlParts.pathname.match(/\/([^/]+)\/([^/]+)\/issues\/(\d+)/);
+    if (match) {
+      const owner = match[1];
+      const repo = match[2];
+      const issueNumber = parseInt(match[3], 10);
+
+      return this.issue(owner, repo, issueNumber);
     }
 
     // Repo Issues
@@ -62,6 +73,14 @@ export class GitHubClient {
     throw new Error(
       `Unsupported URL: ${url}. Please provide a valid GitHub issues URL.`,
     );
+  }
+
+  issue(
+    owner: string,
+    repo: string,
+    issueNumber: number,
+  ): Promise<IssueWrapper> {
+    return IssueWrapper.forIssue({ owner, repo, issueNumber });
   }
 
   issuesForRepo(owner: string, repo: string): Promise<IssueList> {

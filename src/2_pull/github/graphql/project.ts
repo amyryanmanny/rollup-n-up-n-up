@@ -241,6 +241,7 @@ export async function listIssuesForProject(
           createdAt: new Date(comment.createdAt),
           url: comment.url,
         })),
+        isSubissue: false,
         project: {
           number: params.projectNumber,
           fields: edge.node.fieldValues.edges.reduce((acc, fieldEdge) => {

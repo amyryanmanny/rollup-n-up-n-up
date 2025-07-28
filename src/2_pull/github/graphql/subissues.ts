@@ -159,6 +159,7 @@ export async function listSubissuesForIssue(
           createdAt: new Date(comment.createdAt),
           url: comment.url,
         })),
+        isSubissue: true, // Mark as subissue
       }),
     );
 

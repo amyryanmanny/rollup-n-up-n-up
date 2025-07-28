@@ -46,7 +46,8 @@ export const stripHtml = (s: string): string => {
 export const toSnakeCase = (str: string): string => {
   // Convert a string to snake_case
   return str
-    .replace(":", "") // Remove colons
+    .replace(/[^a-zA-Z0-9\s]/g, "") // Remove non-alphanumeric characters
+    .trim() // Trim whitespace
     .replace(/([a-z])([A-Z])/g, "$1_$2") // Add underscore before uppercase letters
     .replace(/\s+/g, "_") // Replace spaces with underscores
     .toLowerCase(); // Convert to lowercase

@@ -173,6 +173,7 @@ export async function listIssuesForRepo(
         createdAt: new Date(comment.createdAt),
         url: comment.url,
       })),
+      isSubissue: false,
     }),
   );
 
