@@ -81,7 +81,7 @@ export class GitHubClient {
     issueNumber: string | number,
   ): Promise<IssueWrapper> {
     return IssueWrapper.forIssue({
-      owner,
+      organization: owner,
       repo,
       issueNumber: parseInt(issueNumber as string),
     });
