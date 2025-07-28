@@ -1,8 +1,4 @@
-import {
-  encoding_for_model,
-  Tiktoken,
-  type TiktokenModel,
-} from "@dqbd/tiktoken";
+import { encodingForModel, Tiktoken, type TiktokenModel } from "js-tiktoken";
 import type { Message } from "./summarize";
 
 function getEncoding(githubModelName: string): Tiktoken | undefined {
@@ -11,7 +7,7 @@ function getEncoding(githubModelName: string): Tiktoken | undefined {
     return undefined;
   }
   try {
-    return encoding_for_model(modelName as TiktokenModel);
+    return encodingForModel(modelName as TiktokenModel);
   } catch (error: unknown) {
     // Don't throw if Tiktoken doesn't support the model yet, let Models throw instead
     console.error(`Failed to count tokens for model ${githubModelName}`, error);
@@ -53,8 +49,8 @@ export function truncate(
 
   if (userMessageTokens.length > remainingTokens) {
     // Replace the user message content with truncated content
-    messages[userMessageIndex].content = new TextDecoder().decode(
-      encoding.decode(userMessageTokens.slice(0, remainingTokens)),
+    messages[userMessageIndex].content = encoding.decode(
+      userMessageTokens.slice(0, remainingTokens),
     );
   }
 }

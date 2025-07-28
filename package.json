@@ -26,7 +26,7 @@
     "@actions/github": "^6.0.1",
     "@azure-rest/ai-inference": "latest",
     "@azure/core-auth": "latest",
-    "@dqbd/tiktoken": "^1.0.21",
+    "js-tiktoken": "latest",
     "@octokit/auth-app": "^7.2.2",
     "@octokit/plugin-paginate-graphql": "^6.0.0",
     "@octokit/request-error": "^7.0.0",
