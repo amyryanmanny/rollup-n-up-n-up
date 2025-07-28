@@ -28,12 +28,13 @@ function initOctokit(): OctokitType {
       auth: token,
     });
   } else if (secrets.kind === "app") {
-    const { appId, privateKey } = secrets;
+    const { appId, installationId, privateKey } = secrets;
 
     instance = new OctokitWithPlugins({
       authStrategy: createAppAuth,
       auth: {
         appId,
+        installationId,
         privateKey,
       },
     });
