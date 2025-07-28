@@ -37,6 +37,39 @@ async function getRepositoryId(
   return response.repository.id;
 }
 
+export async function getDiscussionByNumber(
+  client: GitHubPushClient,
+  owner: string,
+  repo: string,
+  discussionNumber: number,
+): Promise<Discussion | undefined> {
+  const query = `
+    query ($owner: String!, $repo: String!, $discussionNumber: Int!) {
+      repository(owner: $owner, name: $repo) {
+        discussion(number: $discussionNumber) {
+          id
+          number
+          title
+          body
+          url
+        }
+      }
+    }
+  `;
+
+  const response = await client.octokit.graphql<{
+    repository: {
+      discussion: Discussion;
+    };
+  }>(query, {
+    owner,
+    repo,
+    discussionNumber,
+  });
+
+  return response.repository.discussion;
+}
+
 export async function getDiscussionByTitle(
   client: GitHubPushClient,
   owner: string,

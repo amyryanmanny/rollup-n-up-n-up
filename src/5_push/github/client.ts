@@ -1,5 +1,7 @@
 import path from "path";
 
+import { setOutput } from "@actions/core";
+
 import { getOctokit } from "@util/octokit";
 import {
   getIssueByTitle,
@@ -10,11 +12,14 @@ import {
 } from "./issue";
 import {
   createDiscussion,
+  getDiscussionByNumber,
   getDiscussionByTitle,
   getDiscussionCategoryId,
   updateDiscussion,
   type Discussion,
 } from "./discussion";
+import { createDiscussionComment } from "./discussion-comment";
+
 import { createOrUpdateRepoFile } from "./repo-file";
 import { addLinkToSummary } from "@util/log";
 import { matchDiscussionCategoryUrl } from "./url";
@@ -80,7 +85,7 @@ export class GitHubPushClient {
         return this.appendToDiscussion(url, title, body);
       case "discussion-comment":
       default:
-        throw new Error(`Unsupported target: ${type}`);
+        return this.pushToDiscussionComment(url, body);
     }
   }
 
@@ -172,7 +177,6 @@ export class GitHubPushClient {
       throw new Error(`Invalid GitHub URL: ${url}`);
     }
 
-    // Add a comment to the existing issue
     const comment = await this.octokit.issues.createComment({
       owner,
       repo,
@@ -218,6 +222,8 @@ export class GitHubPushClient {
       );
     }
 
+    setOutput("discussion_url", discussion.url);
+
     addLinkToSummary("Discussion Post Created / Updated", discussion.url);
   }
 
@@ -241,5 +247,33 @@ export class GitHubPushClient {
     updateDiscussion(this, discussion.id, `${discussion.body}\n\n${append}`);
 
     addLinkToSummary("Discussion Post Updated", discussion.url);
+  }
+
+  async pushToDiscussionComment(url: string, body: string) {
+    // Handle repo path, including /discussions subpath
+    const match = url.match(
+      /https:\/\/github\.com\/([^/]+)\/([^/]+)\/discussions\/(\d+)/,
+    );
+    if (!match) {
+      throw new Error(`Invalid GitHub URL: ${url}`);
+    }
+
+    const [, owner, repo, discussionNumber] = match;
+    const discussion = await getDiscussionByNumber(
+      this,
+      owner,
+      repo,
+      parseInt(discussionNumber, 10),
+    );
+
+    if (!discussion) {
+      throw new Error(
+        `Discussion with number ${discussionNumber} not found in ${owner}/${repo}.`,
+      );
+    }
+
+    const comment = await createDiscussionComment(this, discussion.id, body);
+
+    addLinkToSummary("Discussion Comment Created", comment.url);
   }
 }
