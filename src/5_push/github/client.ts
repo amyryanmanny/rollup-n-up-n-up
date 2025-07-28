@@ -168,7 +168,7 @@ export class GitHubPushClient {
       throw new Error(`Invalid GitHub URL: ${url}`);
     }
     const [, owner, repo, issueNumber] = match;
-    const issue_number = parseInt(issueNumber, 10);
+    const issue_number = parseInt(issueNumber);
     if (isNaN(issue_number)) {
       throw new Error(`Invalid issue number in URL: ${url}`);
     }
@@ -263,7 +263,7 @@ export class GitHubPushClient {
       this,
       owner,
       repo,
-      parseInt(discussionNumber, 10),
+      parseInt(discussionNumber),
     );
 
     if (!discussion) {

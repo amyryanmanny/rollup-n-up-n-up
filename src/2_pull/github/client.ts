@@ -23,7 +23,7 @@ export class GitHubClient {
     if (match) {
       const owner = match[1];
       const repo = match[2];
-      const issueNumber = parseInt(match[3], 10);
+      const issueNumber = parseInt(match[3]);
 
       return this.issue(owner, repo, issueNumber);
     }
@@ -43,8 +43,8 @@ export class GitHubClient {
     );
     if (match) {
       const organization = match[1];
-      const projectNumber = parseInt(match[2], 10);
-      const projectViewNumber = parseInt(match[3], 10) || null;
+      const projectNumber = parseInt(match[2]);
+      const projectViewNumber = parseInt(match[3]) || null;
 
       const customQuery = urlParts.searchParams.get("filterQuery");
 
@@ -83,7 +83,7 @@ export class GitHubClient {
     return IssueWrapper.forIssue({
       owner,
       repo,
-      issueNumber: parseInt(issueNumber as string, 10),
+      issueNumber: parseInt(issueNumber as string),
     });
   }
 
@@ -99,7 +99,7 @@ export class GitHubClient {
     return IssueList.forSubissues({
       owner,
       repo,
-      issueNumber: parseInt(issueNumber as string, 10),
+      issueNumber: parseInt(issueNumber as string),
     });
   }
 

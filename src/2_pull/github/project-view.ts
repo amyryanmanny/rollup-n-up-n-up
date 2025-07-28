@@ -69,18 +69,18 @@ export class ProjectView {
             if (rest) {
               // Calculate number of days (e.g., @today-7d, @today-1m, @today-1y)
               if (rest.endsWith("d")) {
-                days = parseInt(rest.slice(0, -1), 10);
+                days = parseInt(rest.slice(0, -1));
               }
               if (rest.endsWith("w")) {
-                const weeks = parseInt(rest.slice(0, -1), 10);
+                const weeks = parseInt(rest.slice(0, -1));
                 days = weeks * 7; // Convert weeks to days
               }
               if (rest.endsWith("m")) {
-                const months = parseInt(rest.slice(0, -1), 10);
+                const months = parseInt(rest.slice(0, -1));
                 days = months * 30; // Approximate month as 30 days
               }
               if (rest.endsWith("y")) {
-                const years = parseInt(rest.slice(0, -1), 10);
+                const years = parseInt(rest.slice(0, -1));
                 days = years * 365; // Approximate year as 365 days
               }
             }

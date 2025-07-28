@@ -3,7 +3,7 @@ import type { Issue } from "../issue";
 import { NUM_ISSUE_ASSIGNESS, NUM_ISSUE_COMMENTS, NUM_ISSUE_LABELS } from ".";
 
 export type GetIssueParameters = {
-  owner: string;
+  organization: string;
   repo: string;
   issueNumber: number;
 };
@@ -99,11 +99,7 @@ export async function getIssue(params: GetIssueParameters): Promise<Issue> {
         };
       };
     };
-  }>(query, {
-    organization: params.owner,
-    repo: params.repo,
-    issueNumber: params.issueNumber,
-  });
+  }>(query, params);
 
   const issue = response.organization.repository.issue;
 
