@@ -253,7 +253,7 @@ export class GitHubPushClient {
       );
     }
 
-    updateDiscussion(this, discussion.id, `${discussion.body}\n\n${append}`);
+    updateDiscussion(this, discussion.id, `${discussion.body}\n${append}`);
 
     setOutput("discussion_url", discussion.url);
 

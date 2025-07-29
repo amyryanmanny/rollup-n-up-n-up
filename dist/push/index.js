@@ -38349,7 +38349,6 @@ class GitHubPushClient {
       throw new Error(`Discussion with title "${title}" not found in ${owner}/${repo}.`);
     }
     updateDiscussion(this, discussion.id, `${discussion.body}
-
 ${append}`);
     import_core4.setOutput("discussion_url", discussion.url);
     addLinkToSummary("Discussion Post Updated", discussion.url);
