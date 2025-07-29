@@ -38282,6 +38282,7 @@ class GitHubPushClient {
       throw new Error(`Failed to create or update file: ${filePath} in ${owner}/${repo}`);
     }
     const repoFileUrl = data.content.html_url;
+    import_core4.setOutput("repo_file_url", repoFileUrl);
     addLinkToSummary("Repo File Created / Updated", repoFileUrl);
   }
   async pushToIssue(url, title, body) {
@@ -38310,6 +38311,7 @@ class GitHubPushClient {
         body
       });
     }
+    import_core4.setOutput("issue_url", issue.html_url);
     addLinkToSummary("Issue Created / Updated", issue.html_url);
   }
   async pushToIssueComment(url, body) {
@@ -38331,6 +38333,7 @@ class GitHubPushClient {
       issue_number,
       body
     });
+    import_core4.setOutput("issue_comment_url", comment.data.html_url);
     addLinkToSummary("Issue Comment Created", comment.data.html_url);
   }
   async pushToDiscussion(url, title, body) {
@@ -38361,6 +38364,7 @@ class GitHubPushClient {
     updateDiscussion(this, discussion.id, `${discussion.body}
 
 ${append}`);
+    import_core4.setOutput("discussion_url", discussion.url);
     addLinkToSummary("Discussion Post Updated", discussion.url);
   }
   async pushToDiscussionComment(url, body) {
@@ -38374,6 +38378,7 @@ ${append}`);
       throw new Error(`Discussion with number ${discussionNumber} not found in ${owner}/${repo}.`);
     }
     const comment = await createDiscussionComment(this, discussion.id, body);
+    import_core4.setOutput("discussion_comment_url", comment.url);
     addLinkToSummary("Discussion Comment Created", comment.url);
   }
 }

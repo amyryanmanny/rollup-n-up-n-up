@@ -121,6 +121,8 @@ export class GitHubPushClient {
     }
     const repoFileUrl = data.content.html_url;
 
+    setOutput("repo_file_url", repoFileUrl);
+
     addLinkToSummary("Repo File Created / Updated", repoFileUrl);
   }
 
@@ -159,6 +161,8 @@ export class GitHubPushClient {
       });
     }
 
+    setOutput("issue_url", issue.html_url);
+
     addLinkToSummary("Issue Created / Updated", issue.html_url);
   }
 
@@ -186,6 +190,8 @@ export class GitHubPushClient {
       issue_number,
       body,
     });
+
+    setOutput("issue_comment_url", comment.data.html_url);
 
     addLinkToSummary("Issue Comment Created", comment.data.html_url);
   }
@@ -249,6 +255,8 @@ export class GitHubPushClient {
 
     updateDiscussion(this, discussion.id, `${discussion.body}\n\n${append}`);
 
+    setOutput("discussion_url", discussion.url);
+
     addLinkToSummary("Discussion Post Updated", discussion.url);
   }
 
@@ -276,6 +284,8 @@ export class GitHubPushClient {
     }
 
     const comment = await createDiscussionComment(this, discussion.id, body);
+
+    setOutput("discussion_comment_url", comment.url);
 
     addLinkToSummary("Discussion Comment Created", comment.url);
   }
