@@ -9,12 +9,39 @@ type PushConfig = {
   body: string;
 };
 
+function getTitleDate(titleDateOption: string | undefined): Date {
+  // TODO: Timezone handling
+  const today = new Date();
+  if (!titleDateOption) {
+    return today;
+  }
+
+  titleDateOption = titleDateOption.toUpperCase();
+  if (titleDateOption === "TODAY") {
+    return today;
+  }
+
+  // Week ending this Friday
+  // TODO: Support other days of the week
+  if (titleDateOption === "FRIDAY") {
+    const day = today.getDay();
+    // 5 is Friday (0 = Sunday, 6 = Saturday)
+    const diff = (5 - day + 7) % 7;
+    const thisFriday = new Date(today);
+    thisFriday.setDate(today.getDate() + diff);
+    return thisFriday;
+  }
+
+  throw new Error(`Invalid TITLE_DATE option: ${titleDateOption}`);
+}
+
 export function getPushConfig(): PushConfig {
   let title = getConfig("TITLE");
   if (title) {
     // Format date fields in the title if necessary
-    // TODO: Timezone handling
-    title = strftime(title, new Date());
+    const titleDateOption = getConfig("TITLE_DATE");
+    const titleDate = getTitleDate(titleDateOption);
+    title = strftime(title, titleDate);
   }
 
   const body = getConfig("BODY");

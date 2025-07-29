@@ -37782,32 +37782,19 @@ var import_github = __toESM(require_github(), 1);
 var import_strftime = __toESM(require_strftime(), 1);
 function getTitleDate(titleDateOption) {
   const today = new Date;
-  if (titleDateOption === undefined) {
+  if (!titleDateOption) {
     return today;
   }
   titleDateOption = titleDateOption.toUpperCase();
   if (titleDateOption === "TODAY") {
     return today;
   }
-  if (titleDateOption.startsWith("LAST_")) {
-    const dayName = titleDateOption.slice(5);
-    const offset = [
-      "SUNDAY",
-      "MONDAY",
-      "TUESDAY",
-      "WEDNESDAY",
-      "THURSDAY",
-      "FRIDAY",
-      "SATURDAY"
-    ].indexOf(dayName);
-    if (offset === -1) {
-      throw new Error(`Invalid TITLE_DATE option: ${titleDateOption}`);
-    }
+  if (titleDateOption === "FRIDAY") {
     const day = today.getDay();
-    const diff = (day - offset + 7) % 7 || 7;
-    const lastWeekday = new Date(today);
-    lastWeekday.setDate(today.getDate() - diff);
-    return lastWeekday;
+    const diff = (5 - day + 7) % 7;
+    const thisFriday = new Date(today);
+    thisFriday.setDate(today.getDate() + diff);
+    return thisFriday;
   }
   throw new Error(`Invalid TITLE_DATE option: ${titleDateOption}`);
 }

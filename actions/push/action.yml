@@ -7,6 +7,11 @@ inputs:
   title:
     description: The title of the document.
     required: false
+  title_date:
+    description: |
+      Override the date to be used by strftime in the title.
+      Defaults to TODAY, also supports FRIDAY.
+    required: false
   body:
     description: The Markdown string to push.
     required: true
