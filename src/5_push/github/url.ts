@@ -8,8 +8,9 @@ export function matchDiscussionCategoryUrl(
   url: string,
 ): DiscussionCategoryMatch {
   // Handle repo path, including /discussions/categories/{category} subpath
-  const match = url.match(
-    /https:\/\/github\.com\/([^/]+)\/([^/]+)\/discussions(?:\/categories\/([^/]+))?/,
+  const urlParts = new URL(url);
+  const match = urlParts.pathname.match(
+    /\/([^/]+)\/([^/]+)\/discussions(?:\/categories\/([^/]+))?/,
   );
   if (!match) {
     throw new Error(`Invalid GitHub URL: ${url}`);

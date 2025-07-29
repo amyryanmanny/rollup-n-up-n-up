@@ -84,8 +84,11 @@ export class GitHubPushClient {
         }
         return this.appendToDiscussion(url, title, body);
       case "discussion-comment":
-      default:
         return this.pushToDiscussionComment(url, body);
+      default:
+        throw new Error(
+          `Unsupported push type: ${type}. Supported types are: repo-file, issue, issue-comment, discussion, discussion-append, discussion-comment.`,
+        );
     }
   }
 
