@@ -169,8 +169,11 @@ export class CommentWrapper {
 
   // Render / Memory Functions
   get rendered(): string {
-    // IssueComments are Level 4
-    return `#### Comment on ${this.issue.type}: ${this.header}\n\n${this._body}\n\n`;
+    // Issue Comments are Level 4
+    // Subissue Comments are Level 5
+    return !this.issue.isSubissue
+      ? `#### Comment on ${this.issue.type}: ${this.header}\n\n${this._body}\n\n`
+      : `##### Comment on Subissue / ${this.issue.type}: ${this.header}\n\n${this._body}\n\n`;
   }
 
   remember() {

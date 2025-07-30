@@ -77,6 +77,10 @@ export class IssueWrapper {
     return this.issue.state === "OPEN";
   }
 
+  get isSubissue(): boolean {
+    return this.issue.isSubissue;
+  }
+
   get createdAt(): Date {
     return this.issue.createdAt;
   }
@@ -270,7 +274,10 @@ export class IssueWrapper {
   // Render / Memory Functions
   get rendered(): string {
     // Issues are Level 3
-    const rendered = `### ${this.type}: ${this.header}\n\n${this._body}\n\n`;
+    // Subissues are Level 4
+    const rendered = !this.isSubissue
+      ? `### ${this.type}: ${this.header}`
+      : `#### Subissue / ${this.type}: ${this.header}`;
 
     // Include the latest update if it exists
     const update = this.latestUpdate;
