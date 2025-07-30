@@ -63,13 +63,19 @@ export class CommentWrapper {
   }
 
   get body(): string {
+    // Beware using this for logic checks! Use _body internally
     this.remember();
     return this._body;
   }
 
-  get update(): string | undefined {
-    this.remember();
+  get _update(): string | undefined {
     return extractUpdate(this);
+  }
+
+  get update(): string | undefined {
+    // Beware using this for logic checks! Use _update internally
+    this.remember();
+    return this._update;
   }
 
   get isEmpty(): boolean {
@@ -82,7 +88,7 @@ export class CommentWrapper {
 
   get isUpdate(): boolean {
     // Check if the comment is an update
-    return !this.isEmpty && this.update !== undefined;
+    return !this.isEmpty && this._update !== undefined;
   }
 
   get author(): string {
