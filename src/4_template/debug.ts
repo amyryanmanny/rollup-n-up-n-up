@@ -1,6 +1,5 @@
 import type { Template } from "ventojs/src/environment.js";
 import { Memory } from "@transform/memory";
-import { SummaryCache } from "@transform/ai/cache";
 
 function formatDetails(summary: string, dropdown: string): string {
   return `<details><summary>${summary}</summary>\n\n\`\`\`\n${dropdown}\n\`\`\`\n\n</details>`;
@@ -24,8 +23,8 @@ export function debugMemory(memoryBank: number): string {
 }
 
 export function debugSources(): string {
-  const sources = SummaryCache.getInstance().sources();
-  const sourcesBulletList = sources.map((source) => `- ${source}`).join("\n");
+  const bank = Memory.getInstance().getBank();
+  const sourcesBulletList = bank.map((item) => `- ${item.source}`).join("\n");
   return formatDetails(
     "Expand to view the sources used in the inference model!",
     sourcesBulletList,
