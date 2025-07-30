@@ -2,6 +2,7 @@ import strftime from "strftime";
 
 import { getConfig } from "@util/config";
 import { type PushTarget, type PushType } from "@push/github/client";
+import { getDayOfThisWeek, type DayOfWeek } from "@util/date";
 
 type PushConfig = {
   targets: PushTarget[];
@@ -17,19 +18,16 @@ function getTitleDate(titleDateOption: string | undefined): Date {
   }
 
   titleDateOption = titleDateOption.toUpperCase();
+
+  // Explicit TODAY
   if (titleDateOption === "TODAY") {
     return today;
   }
 
-  // Week ending this Friday
-  // TODO: Support other days of the week
-  if (titleDateOption === "FRIDAY") {
-    const day = today.getDay();
-    // 5 is Friday (0 = Sunday, 6 = Saturday)
-    const diff = (5 - day + 7) % 7;
-    const thisFriday = new Date(today);
-    thisFriday.setDate(today.getDate() + diff);
-    return thisFriday;
+  // Check if it's a day of the week (e.g., MONDAY, TUESDAY, etc.)
+  const dayOfWeek = getDayOfThisWeek(titleDateOption as DayOfWeek);
+  if (dayOfWeek) {
+    return dayOfWeek;
   }
 
   throw new Error(`Invalid TITLE_DATE option: ${titleDateOption}`);
