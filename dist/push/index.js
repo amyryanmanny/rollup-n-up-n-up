@@ -37780,6 +37780,29 @@ var import_yaml = __toESM(require_dist(), 1);
 var import_github = __toESM(require_github(), 1);
 // src/util/config/push.ts
 var import_strftime = __toESM(require_strftime(), 1);
+
+// src/util/date.ts
+function getDayOfThisWeek(day) {
+  const dayMap = new Map([
+    ["MONDAY", 1],
+    ["TUESDAY", 2],
+    ["WEDNESDAY", 3],
+    ["THURSDAY", 4],
+    ["FRIDAY", 5],
+    ["SATURDAY", 6],
+    ["SUNDAY", 0]
+  ]);
+  if (dayMap.has(day)) {
+    const today = new Date;
+    const dayIndex = dayMap.get(day);
+    const diff = (dayIndex - today.getDay() + 7) % 7;
+    const dayOfThisWeek = new Date(today);
+    dayOfThisWeek.setDate(today.getDate() + diff);
+    return dayOfThisWeek;
+  }
+}
+
+// src/util/config/push.ts
 function getTitleDate(titleDateOption) {
   const today = new Date;
   if (!titleDateOption) {
@@ -37789,12 +37812,9 @@ function getTitleDate(titleDateOption) {
   if (titleDateOption === "TODAY") {
     return today;
   }
-  if (titleDateOption === "FRIDAY") {
-    const day = today.getDay();
-    const diff = (5 - day + 7) % 7;
-    const thisFriday = new Date(today);
-    thisFriday.setDate(today.getDate() + diff);
-    return thisFriday;
+  const dayOfWeek = getDayOfThisWeek(titleDateOption);
+  if (dayOfWeek) {
+    return dayOfWeek;
   }
   throw new Error(`Invalid TITLE_DATE option: ${titleDateOption}`);
 }
@@ -37916,6 +37936,82 @@ function getOctokit() {
     octokitInstance = initOctokit();
   }
   return octokitInstance;
+}
+
+// node_modules/@octokit/request-error/dist-src/index.js
+class RequestError7 extends Error {
+  name;
+  status;
+  request;
+  response;
+  constructor(message, statusCode, options) {
+    super(message);
+    this.name = "HttpError";
+    this.status = Number.parseInt(statusCode);
+    if (Number.isNaN(this.status)) {
+      this.status = 0;
+    }
+    if ("response" in options) {
+      this.response = options.response;
+    }
+    const requestCopy = Object.assign({}, options.request);
+    if (options.request.headers.authorization) {
+      requestCopy.headers = Object.assign({}, options.request.headers, {
+        authorization: options.request.headers.authorization.replace(/(?<! ) .*$/, " [REDACTED]")
+      });
+    }
+    requestCopy.url = requestCopy.url.replace(/\bclient_secret=\w+/g, "client_secret=[REDACTED]").replace(/\baccess_token=\w+/g, "access_token=[REDACTED]");
+    this.request = requestCopy;
+  }
+}
+
+// src/util/error.ts
+function isOctokitRequestError(error) {
+  return error instanceof RequestError7 || error.name === "HttpError";
+}
+
+// src/5_push/github/repo-file.ts
+async function checkRepoFile(client, params) {
+  try {
+    const response = await client.octokit.repos.getContent(params);
+    const data = response.data;
+    if (Array.isArray(data)) {
+      return { kind: "is-directory" };
+    }
+    if (data.type === "file") {
+      return {
+        kind: "exists",
+        sha: data.sha
+      };
+    }
+  } catch (error) {
+    if (isOctokitRequestError(error) && error.status === 404) {
+      return { kind: "not-found" };
+    }
+    throw error;
+  }
+  throw new Error(`Unexpected response type when checking repo-file: ${params.path}`);
+}
+async function createOrUpdateRepoFile(client, params) {
+  const checkResult = await checkRepoFile(client, {
+    owner: params.owner,
+    repo: params.repo,
+    path: params.path,
+    ref: params.branch
+  });
+  let sha;
+  if (checkResult.kind === "is-directory") {
+    throw new Error(`Cannot create a file at a directory path. Filename is missing: ${params.path}`);
+  } else if (checkResult.kind === "not-found") {
+    sha = undefined;
+  } else if (checkResult.kind === "exists") {
+    sha = checkResult.sha;
+  }
+  const response = await client.octokit.repos.createOrUpdateFileContents({
+    ...params,
+    sha
+  });
+  return response.data;
 }
 
 // src/5_push/github/issue.ts
@@ -38111,80 +38207,88 @@ async function createDiscussionComment(client, discussionId, body) {
   return response.addDiscussionComment.comment;
 }
 
-// node_modules/@octokit/request-error/dist-src/index.js
-class RequestError7 extends Error {
-  name;
-  status;
-  request;
-  response;
-  constructor(message, statusCode, options) {
-    super(message);
-    this.name = "HttpError";
-    this.status = Number.parseInt(statusCode);
-    if (Number.isNaN(this.status)) {
-      this.status = 0;
-    }
-    if ("response" in options) {
-      this.response = options.response;
-    }
-    const requestCopy = Object.assign({}, options.request);
-    if (options.request.headers.authorization) {
-      requestCopy.headers = Object.assign({}, options.request.headers, {
-        authorization: options.request.headers.authorization.replace(/(?<! ) .*$/, " [REDACTED]")
-      });
-    }
-    requestCopy.url = requestCopy.url.replace(/\bclient_secret=\w+/g, "client_secret=[REDACTED]").replace(/\baccess_token=\w+/g, "access_token=[REDACTED]");
-    this.request = requestCopy;
-  }
-}
-
-// src/util/error.ts
-function isOctokitRequestError(error) {
-  return error instanceof RequestError7 || error.name === "HttpError";
-}
-
-// src/5_push/github/repo-file.ts
-async function checkRepoFile(client, params) {
+// src/util/github-url.ts
+function validateUrl(url) {
+  let urlParts;
   try {
-    const response = await client.octokit.repos.getContent(params);
-    const data = response.data;
-    if (Array.isArray(data)) {
-      return { kind: "is-directory" };
-    }
-    if (data.type === "file") {
-      return {
-        kind: "exists",
-        sha: data.sha
-      };
-    }
-  } catch (error) {
-    if (isOctokitRequestError(error) && error.status === 404) {
-      return { kind: "not-found" };
-    }
-    throw error;
+    urlParts = new URL(url);
+  } catch {
+    urlParts = new URL(`https://${url}`);
   }
-  throw new Error(`Unexpected response type when checking repo-file: ${params.path}`);
+  if (urlParts.hostname !== "github.com") {
+    throw new Error(`Unsupported hostname: ${urlParts.hostname}. Please provide a valid GitHub URL.`);
+  }
+  return urlParts;
 }
-async function createOrUpdateRepoFile(client, params) {
-  const checkResult = await checkRepoFile(client, {
-    owner: params.owner,
-    repo: params.repo,
-    path: params.path,
-    ref: params.branch
-  });
-  let sha;
-  if (checkResult.kind === "is-directory") {
-    throw new Error(`Cannot create a file at a directory path. Filename is missing: ${params.path}`);
-  } else if (checkResult.kind === "not-found") {
-    sha = undefined;
-  } else if (checkResult.kind === "exists") {
-    sha = checkResult.sha;
+function matchRepoTreeUrl(url) {
+  const urlParts = validateUrl(url);
+  const match = urlParts.pathname.match(/\/([^/]+)\/([^/]+)\/tree\/([^/]+)\/(.+)/);
+  if (!match) {
+    return;
   }
-  const response = await client.octokit.repos.createOrUpdateFileContents({
-    ...params,
-    sha
-  });
-  return response.data;
+  const [, owner, repo, branch, directory] = match;
+  if (!owner || !repo || !branch || !directory) {
+    throw new Error(`Invalid GitHub URL: ${url}`);
+  }
+  return { owner, repo, branch, directory };
+}
+function matchIssueUrl(url) {
+  const urlParts = validateUrl(url);
+  const match = urlParts.pathname.match(/^\/([^/]+)\/([^/]+)(?:\/issues(?:\/(\d+))?)?$/);
+  if (!match) {
+    return;
+  }
+  const [, owner, repo, issueNumber] = match;
+  if (!owner || !repo) {
+    throw new Error(`Invalid GitHub URL: ${url}`);
+  }
+  let parsedIssueNumber;
+  if (issueNumber) {
+    parsedIssueNumber = parseInt(issueNumber);
+    if (isNaN(parsedIssueNumber)) {
+      throw new Error(`Invalid issue number in URL: ${url}`);
+    }
+  }
+  return {
+    owner,
+    repo,
+    issueNumber: parsedIssueNumber
+  };
+}
+function matchDiscussionUrl(url) {
+  const urlParts = validateUrl(url);
+  const match = urlParts.pathname.match(/\/([^/]+)\/([^/]+)\/discussions\/(\d+)/);
+  if (!match) {
+    return;
+  }
+  const [, owner, repo, discussionNumber] = match;
+  if (!owner || !repo) {
+    throw new Error(`Invalid GitHub URL: ${url}`);
+  }
+  let parsedDiscussionNumber;
+  if (discussionNumber) {
+    parsedDiscussionNumber = parseInt(discussionNumber);
+    if (isNaN(parsedDiscussionNumber)) {
+      throw new Error(`Invalid discussion number in URL: ${url}`);
+    }
+  }
+  return {
+    owner,
+    repo,
+    discussionNumber: parsedDiscussionNumber
+  };
+}
+function matchDiscussionCategoryUrl(url) {
+  const urlParts = validateUrl(url);
+  const match = urlParts.pathname.match(/\/([^/]+)\/([^/]+)\/discussions(?:\/categories\/([^/]+))?/);
+  if (!match) {
+    return;
+  }
+  const [, owner, repo, categoryName] = match;
+  if (!owner || !repo || !categoryName) {
+    throw new Error(`Invalid GitHub URL: ${url}`);
+  }
+  return { owner, repo, categoryName };
 }
 
 // src/util/log.ts
@@ -38196,20 +38300,6 @@ function addLinkToSummary(message, url) {
   } else {
     console.debug(`${message}: ${url}`);
   }
-}
-
-// src/5_push/github/url.ts
-function matchDiscussionCategoryUrl(url) {
-  const urlParts = new URL(url);
-  const match = urlParts.pathname.match(/\/([^/]+)\/([^/]+)\/discussions(?:\/categories\/([^/]+))?/);
-  if (!match) {
-    throw new Error(`Invalid GitHub URL: ${url}`);
-  }
-  const [, owner, repo, categoryName] = match;
-  if (!owner || !repo) {
-    throw new Error(`Invalid GitHub URL: ${url}`);
-  }
-  return { owner, repo, categoryName };
 }
 
 // src/5_push/github/client.ts
@@ -38250,11 +38340,11 @@ class GitHubPushClient {
     }
   }
   async pushToRepoFile(url, filename, body) {
-    const match = url.match(/https:\/\/github\.com\/([^/]+)\/([^/]+)\/tree\/([^/]+)\/(.+)/);
+    const match = matchRepoTreeUrl(url);
     if (!match) {
       throw new Error(`Invalid GitHub URL: ${url}`);
     }
-    const [, owner, repo, branch, directory] = match;
+    const { owner, repo, branch, directory } = match;
     const content = Buffer.from(body).toString("base64");
     const filePath = path.join(directory, filename);
     const data = await createOrUpdateRepoFile(this, {
@@ -38273,14 +38363,11 @@ class GitHubPushClient {
     addLinkToSummary("Repo File Created / Updated", repoFileUrl);
   }
   async pushToIssue(url, title, body) {
-    const match = url.match(/https:\/\/github\.com\/([^/]+)\/([^/]+)(?:\/issues\/\d+)?/);
+    const match = matchIssueUrl(url);
     if (!match) {
       throw new Error(`Invalid GitHub URL: ${url}`);
     }
-    const [, owner, repo] = match;
-    if (!owner || !repo) {
-      throw new Error(`Invalid GitHub URL: ${url}`);
-    }
+    const { owner, repo } = match;
     let issue;
     const existingIssue = await getIssueByTitle(this, owner, repo, title);
     if (existingIssue) {
@@ -38302,29 +38389,29 @@ class GitHubPushClient {
     addLinkToSummary("Issue Created / Updated", issue.html_url);
   }
   async pushToIssueComment(url, body) {
-    const match = url.match(/https:\/\/github\.com\/([^/]+)\/([^/]+)\/issues\/(\d+)/);
+    const match = matchIssueUrl(url);
     if (!match) {
       throw new Error(`Invalid GitHub URL: ${url}`);
     }
-    const [, owner, repo, issueNumber] = match;
-    const issue_number = parseInt(issueNumber);
-    if (isNaN(issue_number)) {
-      throw new Error(`Invalid issue number in URL: ${url}`);
-    }
-    if (!owner || !repo || !issue_number) {
-      throw new Error(`Invalid GitHub URL: ${url}`);
+    const { owner, repo, issueNumber } = match;
+    if (!issueNumber) {
+      throw new Error(`Issue number is required. Ex: .../issues/123`);
     }
     const comment = await this.octokit.issues.createComment({
       owner,
       repo,
-      issue_number,
+      issue_number: issueNumber,
       body
     });
     import_core4.setOutput("issue_comment_url", comment.data.html_url);
     addLinkToSummary("Issue Comment Created", comment.data.html_url);
   }
   async pushToDiscussion(url, title, body) {
-    const { owner, repo, categoryName } = matchDiscussionCategoryUrl(url);
+    const match = matchDiscussionCategoryUrl(url);
+    if (!match) {
+      throw new Error(`Invalid GitHub URL: ${url}`);
+    }
+    const { owner, repo, categoryName } = match;
     if (!categoryName) {
       throw new Error(`Category name is required. Ex: .../discussions/categories/reporting-dogfooding`);
     }
@@ -38340,7 +38427,11 @@ class GitHubPushClient {
     addLinkToSummary("Discussion Post Created / Updated", discussion.url);
   }
   async appendToDiscussion(url, title, append) {
-    const { owner, repo, categoryName } = matchDiscussionCategoryUrl(url);
+    const match = matchDiscussionCategoryUrl(url);
+    if (!match) {
+      throw new Error(`Invalid GitHub URL: ${url}`);
+    }
+    const { owner, repo, categoryName } = match;
     if (!categoryName) {
       throw new Error(`Category name is required. Ex: .../discussions/categories/reporting-dogfooding`);
     }
@@ -38354,12 +38445,15 @@ ${append}`);
     addLinkToSummary("Discussion Post Updated", discussion.url);
   }
   async pushToDiscussionComment(url, body) {
-    const match = url.match(/https:\/\/github\.com\/([^/]+)\/([^/]+)\/discussions\/(\d+)/);
+    const match = matchDiscussionUrl(url);
     if (!match) {
       throw new Error(`Invalid GitHub URL: ${url}`);
     }
-    const [, owner, repo, discussionNumber] = match;
-    const discussion = await getDiscussionByNumber(this, owner, repo, parseInt(discussionNumber));
+    const { owner, repo, discussionNumber } = match;
+    if (!discussionNumber) {
+      throw new Error(`Discussion number is required. Ex: .../discussions/123`);
+    }
+    const discussion = await getDiscussionByNumber(this, owner, repo, discussionNumber);
     if (!discussion) {
       throw new Error(`Discussion with number ${discussionNumber} not found in ${owner}/${repo}.`);
     }
