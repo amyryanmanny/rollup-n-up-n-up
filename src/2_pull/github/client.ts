@@ -1,3 +1,4 @@
+import { matchIssueUrl, matchProjectViewUrl } from "@util/github-url";
 import { IssueWrapper } from "./issue";
 import { IssueList } from "./issue-list";
 
@@ -8,45 +9,25 @@ export class GitHubClient {
   public octokit = getOctokit();
 
   url(url: string): Promise<IssueList | IssueWrapper> {
-    const urlParts = new URL(url);
-    let match: RegExpMatchArray | null;
-
-    if (urlParts.hostname !== "github.com") {
-      // Troublemakers
-      throw new Error(
-        `Unsupported hostname: ${urlParts.hostname}. Please provide a valid GitHub URL.`,
-      );
-    }
-
     // Single Issue
-    match = urlParts.pathname.match(/\/([^/]+)\/([^/]+)\/issues\/(\d+)/);
-    if (match) {
-      const owner = match[1];
-      const repo = match[2];
-      const issueNumber = parseInt(match[3]);
+    const issueMatch = matchIssueUrl(url);
+    if (issueMatch) {
+      const { owner, repo, issueNumber } = issueMatch;
 
-      return this.issue(owner, repo, issueNumber);
-    }
-
-    // Repo Issues
-    match = urlParts.pathname.match(/\/([^/]+)\/([^/]+)\/issues/);
-    if (match) {
-      const owner = match[1];
-      const repo = match[2];
-
-      return this.issuesForRepo(owner, repo);
+      if (issueNumber) {
+        // If issueNumber is defined, return the specific issue
+        return this.issue(owner, repo, issueNumber);
+      } else {
+        // Else return all issues for the repo
+        return this.issuesForRepo(owner, repo);
+      }
     }
 
     // Projects
-    match = urlParts.pathname.match(
-      /orgs\/([^/]+)\/projects\/(\d+)(?:\/views\/(\d+))?/,
-    );
-    if (match) {
-      const organization = match[1];
-      const projectNumber = parseInt(match[2]);
-      const projectViewNumber = parseInt(match[3]) || null;
-
-      const customQuery = urlParts.searchParams.get("filterQuery");
+    const projectMatch = matchProjectViewUrl(url);
+    if (projectMatch) {
+      const { organization, projectNumber, projectViewNumber, customQuery } =
+        projectMatch;
 
       // Custom Query - Discard the View if it exists
       if (customQuery) {

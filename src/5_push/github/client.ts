@@ -3,6 +3,8 @@ import path from "path";
 import { setOutput } from "@actions/core";
 
 import { getOctokit } from "@util/octokit";
+
+import { createOrUpdateRepoFile } from "./repo-file";
 import {
   getIssueByTitle,
   createIssue,
@@ -20,9 +22,13 @@ import {
 } from "./discussion";
 import { createDiscussionComment } from "./discussion-comment";
 
-import { createOrUpdateRepoFile } from "./repo-file";
+import {
+  matchRepoTreeUrl,
+  matchIssueUrl,
+  matchDiscussionCategoryUrl,
+  matchDiscussionUrl,
+} from "@util/github-url";
 import { addLinkToSummary } from "@util/log";
-import { matchDiscussionCategoryUrl } from "./url";
 
 export type PushTarget = {
   type: PushType;
@@ -93,14 +99,12 @@ export class GitHubPushClient {
   }
 
   async pushToRepoFile(url: string, filename: string, body: string) {
-    // Handle repo path, including /tree subpath
-    const match = url.match(
-      /https:\/\/github\.com\/([^/]+)\/([^/]+)\/tree\/([^/]+)\/(.+)/,
-    );
+    const match = matchRepoTreeUrl(url);
     if (!match) {
       throw new Error(`Invalid GitHub URL: ${url}`);
     }
-    const [, owner, repo, branch, directory] = match;
+
+    const { owner, repo, branch, directory } = match;
 
     const content = Buffer.from(body).toString("base64");
     const filePath = path.join(directory, filename);
@@ -127,18 +131,11 @@ export class GitHubPushClient {
   }
 
   async pushToIssue(url: string, title: string, body: string) {
-    // Handle repo path, including /issues subpath
-    const match = url.match(
-      /https:\/\/github\.com\/([^/]+)\/([^/]+)(?:\/issues\/\d+)?/,
-    );
+    const match = matchIssueUrl(url);
     if (!match) {
       throw new Error(`Invalid GitHub URL: ${url}`);
     }
-    const [, owner, repo] = match;
-
-    if (!owner || !repo) {
-      throw new Error(`Invalid GitHub URL: ${url}`);
-    }
+    const { owner, repo } = match;
 
     // Check if the issue already exists
     let issue: IssueCreateResponse | IssueUpdateResponse;
@@ -167,27 +164,20 @@ export class GitHubPushClient {
   }
 
   async pushToIssueComment(url: string, body: string) {
-    // Handle repo path, including /issues subpath
-    const match = url.match(
-      /https:\/\/github\.com\/([^/]+)\/([^/]+)\/issues\/(\d+)/,
-    );
+    const match = matchIssueUrl(url);
     if (!match) {
       throw new Error(`Invalid GitHub URL: ${url}`);
     }
-    const [, owner, repo, issueNumber] = match;
-    const issue_number = parseInt(issueNumber);
-    if (isNaN(issue_number)) {
-      throw new Error(`Invalid issue number in URL: ${url}`);
-    }
+    const { owner, repo, issueNumber } = match;
 
-    if (!owner || !repo || !issue_number) {
-      throw new Error(`Invalid GitHub URL: ${url}`);
+    if (!issueNumber) {
+      throw new Error(`Issue number is required. Ex: .../issues/123`);
     }
 
     const comment = await this.octokit.issues.createComment({
       owner,
       repo,
-      issue_number,
+      issue_number: issueNumber,
       body,
     });
 
@@ -197,7 +187,12 @@ export class GitHubPushClient {
   }
 
   async pushToDiscussion(url: string, title: string, body: string) {
-    const { owner, repo, categoryName } = matchDiscussionCategoryUrl(url);
+    const match = matchDiscussionCategoryUrl(url);
+    if (!match) {
+      throw new Error(`Invalid GitHub URL: ${url}`);
+    }
+    const { owner, repo, categoryName } = match;
+
     if (!categoryName) {
       throw new Error(
         `Category name is required. Ex: .../discussions/categories/reporting-dogfooding`,
@@ -237,8 +232,12 @@ export class GitHubPushClient {
   }
 
   async appendToDiscussion(url: string, title: string, append: string) {
-    // Handle repo path, including /discussions subpath
-    const { owner, repo, categoryName } = matchDiscussionCategoryUrl(url);
+    const match = matchDiscussionCategoryUrl(url);
+    if (!match) {
+      throw new Error(`Invalid GitHub URL: ${url}`);
+    }
+    const { owner, repo, categoryName } = match;
+
     if (!categoryName) {
       throw new Error(
         `Category name is required. Ex: .../discussions/categories/reporting-dogfooding`,
@@ -261,20 +260,21 @@ export class GitHubPushClient {
   }
 
   async pushToDiscussionComment(url: string, body: string) {
-    // Handle repo path, including /discussions subpath
-    const match = url.match(
-      /https:\/\/github\.com\/([^/]+)\/([^/]+)\/discussions\/(\d+)/,
-    );
+    const match = matchDiscussionUrl(url);
     if (!match) {
       throw new Error(`Invalid GitHub URL: ${url}`);
     }
+    const { owner, repo, discussionNumber } = match;
 
-    const [, owner, repo, discussionNumber] = match;
+    if (!discussionNumber) {
+      throw new Error(`Discussion number is required. Ex: .../discussions/123`);
+    }
+
     const discussion = await getDiscussionByNumber(
       this,
       owner,
       repo,
-      parseInt(discussionNumber),
+      discussionNumber,
     );
 
     if (!discussion) {
