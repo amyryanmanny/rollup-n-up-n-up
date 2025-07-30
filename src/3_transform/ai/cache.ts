@@ -58,7 +58,7 @@ export class SummaryCache {
 
     // Write the cache to a file
     console.log(`Saving summary cache to ${file}`);
-    const entries = Array.from(this.cache.entries());
+    const entries = Object.fromEntries(this.cache.entries());
     const blob = JSON.stringify(entries, null, 2);
     fs.writeFileSync(file, blob, "utf-8");
 
@@ -86,8 +86,8 @@ export class SummaryCache {
     // Load the cache from the file
     console.log(`Loading summary cache from ${file}`);
     const blob = fs.readFileSync(file, "utf-8");
-    const entries: [string, string][] = JSON.parse(blob);
-    this.cache = new Map<string, string>(entries);
+    const entries: Map<string, string> = JSON.parse(blob);
+    this.cache = new Map<string, string>(Object.entries(entries));
   }
 
   clear() {
