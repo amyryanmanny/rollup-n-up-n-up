@@ -1,3 +1,5 @@
+import { RateLimiter } from "limiter";
+
 import ModelClient, { isUnexpected } from "@azure-rest/ai-inference";
 import { AzureKeyCredential } from "@azure/core-auth";
 
@@ -31,6 +33,12 @@ export type PromptParameters = {
   };
   messages: Array<Message>;
 };
+
+// Only make up to 15 requests per minute to the Models API
+const limiter = new RateLimiter({
+  tokensPerInterval: 15,
+  interval: "minute",
+});
 
 export async function runPrompt(params: PromptParameters): Promise<string> {
   const { messages, model, modelParameters } = {
@@ -71,6 +79,8 @@ export async function runPrompt(params: PromptParameters): Promise<string> {
       userAgentOptions: { userAgentPrefix: "github-actions-rollup-n-up-n-up" },
     });
 
+    await limiter.removeTokens(1); // Wait for rate limit
+
     const response = await client.path("/chat/completions").post({
       body: {
         ...modelParameters,
@@ -94,7 +104,6 @@ export async function runPrompt(params: PromptParameters): Promise<string> {
     } else if (modelResponse.startsWith("ERROR:")) {
       // Throw so errors don't get cached, or end up in the body
       throw new Error(modelResponse);
-      // TODO: Exponential backoff for (429) Too Many Requests
     }
 
     return modelResponse;
