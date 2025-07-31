@@ -1,14 +1,19 @@
-name: TL;DR (o1)
+name: TL;DR
 description: Summarizes input text into a TL;DR report for an engineering team
-model: openai/o1
-modelParameters: {}
+model: openai/gpt-4.1
+modelParameters:
+  temperature: 0.7
+  # max_tokens: 4096
 messages:
+  - role: system
+    content: >
+      Summarize the given GitHub Issues, Comments, and Discussions into a Markdown report for leadership, including less technical audiences.
   - role: user
     content: |
-      Summarize the given GitHub Issues, Comments, and Discussions into a Markdown report for leadership, including less technical audiences.
+      Summarize the given updates into a rollup for an engineering team.
+      Each Initiative is followed immediately by its Subissue or Epic updates, which are grouped together.
 
       Use the following sections for the output:
-
       - ## TL;DR
       - ## 🎉 Wins/Accomplishments 
         - ### What We Shipped
@@ -17,18 +22,16 @@ messages:
       - ## 🆘 SOS/Need Support
 
       Make sure:
-
-      - Never include line breaks (like ---), or meta text like "here you go".
       - For the TL;DR, pay extra attention to examples, big ships, demos, and dogfooding time saved.
-      - Group updates for each Initiative (but not Epics)
+      - Group updates for each Initiative (but not Epics or Issues)
         - Include the title heading, and link to the comment the update was taken from.
       - Include links from the original update that are appropriate.
-        - Always use the format [text](link) for links.
-        - Don't break issue comment links. (e.g. https://github.com/github/repo/issues/4#issuecomment-123456789)
+        - Always use the format [text](link) for links. No comma-separated links.
       - Include specific GitHub handles (example @amyryanmanny) if they're in the summary, but if they're not, names are fine.
       - Include the reason why an update is important for senior leadership.
       - Include additional information in the summary rather than saying "Updates and continued progress" or "For more context on each project."
+      - Never include line breaks (like ---), or meta text like "here you go".
 
-      <content>
+      <text>
       {{content}}
-      </content>
+      </text>
