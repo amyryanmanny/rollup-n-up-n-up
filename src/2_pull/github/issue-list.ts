@@ -226,15 +226,27 @@ export class IssueList {
   // Render / Memory Functions
   get rendered(): string {
     // IssueLists are Level 2
-    return `## ${this.header}\n\n${this.issues.map((issue) => issue.rendered).join("\n\n")}`;
+    return `## ${this.header}\n\n`;
   }
 
-  remember() {
+  rememberUpdates() {
     this.memory.remember({ content: this.rendered, source: this.url });
+    for (const issue of this.issues) {
+      issue.rememberUpdates();
+    }
+  }
+
+  renderUpdates(): string {
+    this.rememberUpdates();
+    let rendered = this.rendered;
+    for (const issue of this.issues) {
+      rendered += `\n\n${issue.renderUpdates()}`;
+    }
+    rendered += `\n\n---\n\n`;
+    return rendered;
   }
 
   render(): string {
-    this.remember();
-    return this.rendered;
+    return this.renderUpdates();
   }
 }

@@ -174,9 +174,7 @@ export class CommentWrapper {
   get rendered(): string {
     // Issue Comments are Level 4
     // Subissue Comments are Level 5
-    return !this.issue.isSubissue
-      ? `#### Comment on ${this.issue.type}: ${this.header}\n\n${this._update}\n\n`
-      : `##### Comment on Subissue: ${this.header}\n\n${this._update}\n\n`;
+    return `${this._update}\n\n`;
   }
 
   remember() {

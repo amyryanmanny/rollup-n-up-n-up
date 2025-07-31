@@ -36,6 +36,7 @@ export class IssueWrapper {
   private memory = Memory.getInstance();
 
   private issue: Issue;
+  private subissues: IssueList | undefined;
 
   constructor(issue: Issue) {
     this.issue = issue;
@@ -61,7 +62,8 @@ export class IssueWrapper {
   }
 
   get body(): string {
-    this.remember();
+    // TODO: Way to remember the body of the issue
+    // this.remember();
     return this._body;
   }
 
@@ -211,12 +213,14 @@ export class IssueWrapper {
   }
 
   // Subissues
-  async subissues(): Promise<IssueList> {
-    return IssueList.forSubissues({
+  async fetchSubissues(): Promise<IssueList> {
+    const subissues = await IssueList.forSubissues({
       owner: this.owner,
       repo: this.repo,
       issueNumber: this.number,
     });
+    this.subissues = subissues;
+    return subissues;
   }
 
   // Comment
@@ -275,25 +279,47 @@ export class IssueWrapper {
   get rendered(): string {
     // Issues are Level 3
     // Subissues are Level 4
-    const rendered = !this.isSubissue
-      ? `### ${this.type}: ${this.header}`
-      : `#### Subissue: ${this.header}`;
-
-    // Include the latest update if it exists
-    const update = this.latestUpdate;
-    if (update.isEmpty) {
-      return rendered;
-    }
-
-    return `${rendered}\n\n${update.rendered}`;
+    return !this.isSubissue
+      ? `### ${this.type}: ${this.header}\n\n`
+      : `#### Subissue: ${this.header}\n\n`;
   }
 
-  remember() {
+  rememberUpdates() {
+    if (!this.hasUpdate && !this.subissues) {
+      return;
+    }
+
     this.memory.remember({ content: this.rendered, source: this.url });
+    if (this.hasUpdate) {
+      this.latestUpdate.remember();
+    }
+    if (this.subissues) {
+      // Remember subissues updates
+      this.subissues.rememberUpdates();
+    }
+  }
+
+  renderUpdates(): string {
+    // TODO: Work on the code reuse
+    if (!this.hasUpdate && !this.subissues) {
+      return "";
+    }
+    this.rememberUpdates();
+
+    let rendered = this.rendered;
+    if (this.hasUpdate) {
+      rendered += this.latestUpdate.render();
+    }
+    if (this.subissues) {
+      for (const subissue of this.subissues) {
+        rendered += `\n\n${subissue.renderUpdates()}`;
+      }
+    }
+    rendered += "\n\n";
+    return rendered;
   }
 
   render(): string {
-    this.remember();
-    return this.rendered;
+    return this.renderUpdates();
   }
 }
