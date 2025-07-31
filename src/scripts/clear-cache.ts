@@ -5,7 +5,6 @@ export default function clear() {
 
   const cache = SummaryCache.getInstance();
   cache.clear();
-  cache.save();
 }
 
 clear();

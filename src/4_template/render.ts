@@ -8,7 +8,6 @@ import { GitHubClient } from "@pull/github/client";
 
 import { getConfig } from "@util/config";
 import { Memory } from "@transform/memory";
-import { SummaryCache } from "@transform/ai/cache";
 import { debugMemory, debugSources, debugTemplate } from "./debug";
 
 // TODO: Configurable templatesDir
@@ -31,10 +30,6 @@ for (const plugin of Object.values(plugins)) {
   env.use(plugin());
 }
 
-// Load Cache
-const summaryCache = SummaryCache.getInstance();
-summaryCache.load();
-
 // Setup Globals
 const github = new GitHubClient();
 const memory = Memory.getInstance();
@@ -55,7 +50,6 @@ export async function renderTemplate(templatePath: string): Promise<string> {
   });
 
   memory.headbonk(); // Reset memory after rendering
-  summaryCache.save(); // Save the summary cache
 
   return result.content;
 }
