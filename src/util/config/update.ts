@@ -41,6 +41,10 @@ export class UpdateDetection {
       strategies = UpdateDetection.defaultStrategies;
     }
 
+    console.debug(
+      `Using update detection strategies: ${JSON.stringify(strategies, null, 2)}`,
+    );
+
     this.strategies = strategies;
   }
 
@@ -48,10 +52,12 @@ export class UpdateDetection {
     {
       kind: "section",
       section: "Update",
+      timeframe: "last-week",
     },
     {
       kind: "marker",
       marker: DEFAULT_MARKER,
+      timeframe: "last-week",
     },
     {
       kind: "timebox",
