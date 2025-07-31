@@ -85,7 +85,7 @@ export class CommentWrapper {
 
   get isUpdate(): boolean {
     // Check if the comment is an update
-    return !this.isEmpty && this._update !== undefined;
+    return !this.isEmpty && extractUpdate(this) !== undefined;
   }
 
   get author(): string {
