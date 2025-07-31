@@ -6,15 +6,12 @@ function formatDetails(summary: string, dropdown: string): string {
 }
 
 export function debugTemplate(template: Template): string {
-  return formatDetails(
-    "Expand to view the full rollup-n-up-n-up template!",
-    template.source,
-  );
+  return formatDetails("Rollup-n-up-n-up Template", template.source);
 }
 
 export function debugMemory(memoryBank: number): string {
   return formatDetails(
-    "Expand to view the context passed into the inference model!",
+    "Inference Model Context",
     Memory.getInstance()
       .getBank(memoryBank)
       .map((item) => item.content)
@@ -24,9 +21,6 @@ export function debugMemory(memoryBank: number): string {
 
 export function debugSources(): string {
   const bank = Memory.getInstance().getBank();
-  const sourcesBulletList = bank.map((item) => `- ${item.source}`).join("\n");
-  return formatDetails(
-    "Expand to view the sources used in the inference model!",
-    sourcesBulletList,
-  );
+  const sourcesList = bank.map((item) => `${item.source}`).join("\n");
+  return formatDetails("Report Sources", sourcesList);
 }
