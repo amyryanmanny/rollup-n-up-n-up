@@ -277,7 +277,7 @@ export class IssueWrapper {
     // Subissues are Level 4
     const rendered = !this.isSubissue
       ? `### ${this.type}: ${this.header}`
-      : `#### Subissue / ${this.type}: ${this.header}`;
+      : `#### Subissue: ${this.header}`;
 
     // Include the latest update if it exists
     const update = this.latestUpdate;

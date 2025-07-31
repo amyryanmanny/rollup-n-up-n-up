@@ -175,8 +175,8 @@ export class CommentWrapper {
     // Issue Comments are Level 4
     // Subissue Comments are Level 5
     return !this.issue.isSubissue
-      ? `#### Comment on ${this.issue.type}: ${this.header}\n\n${this._body}\n\n`
-      : `##### Comment on Subissue / ${this.issue.type}: ${this.header}\n\n${this._body}\n\n`;
+      ? `#### Comment on ${this.issue.type}: ${this.header}\n\n${this._update}\n\n`
+      : `##### Comment on Subissue: ${this.header}\n\n${this._update}\n\n`;
   }
 
   remember() {
