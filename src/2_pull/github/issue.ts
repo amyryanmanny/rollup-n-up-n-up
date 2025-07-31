@@ -272,7 +272,14 @@ export class IssueWrapper {
   }
 
   get hasUpdate(): boolean {
-    return !this.latestUpdate.isEmpty;
+    // Check if this issue or any subissue has an update
+    if (!this.latestUpdate.isEmpty) {
+      return true;
+    }
+    if (this.subissues) {
+      return this.subissues.hasUpdates;
+    }
+    return false;
   }
 
   // Render / Memory Functions
