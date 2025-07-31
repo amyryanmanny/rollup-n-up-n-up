@@ -271,7 +271,7 @@ export class IssueWrapper {
     return [CommentWrapper.empty(this)];
   }
 
-  get hasUpdate(): boolean {
+  get hasUpdates(): boolean {
     // Check if this issue or any subissue has an update
     if (!this.latestUpdate.isEmpty) {
       return true;
@@ -292,12 +292,12 @@ export class IssueWrapper {
   }
 
   rememberUpdates() {
-    if (!this.hasUpdate && !this.subissues) {
+    if (!this.hasUpdates) {
       return;
     }
 
     this.memory.remember({ content: this.rendered, source: this.url });
-    if (this.hasUpdate) {
+    if (!this.latestUpdate.isEmpty) {
       this.latestUpdate.remember();
     }
     if (this.subissues) {
@@ -308,14 +308,14 @@ export class IssueWrapper {
 
   renderUpdates(): string {
     // TODO: Work on the code reuse
-    if (!this.hasUpdate && !this.subissues) {
+    if (!this.hasUpdates) {
       return "";
     }
     this.rememberUpdates();
 
     let rendered = this.rendered;
-    if (this.hasUpdate) {
-      rendered += this.latestUpdate.render();
+    if (!this.latestUpdate.isEmpty) {
+      rendered += `\n\n${this.latestUpdate.render()}`;
     }
     if (this.subissues) {
       for (const subissue of this.subissues) {

@@ -147,7 +147,7 @@ export class IssueList {
   // Updates
   get hasUpdates(): boolean {
     // Check if any issue has an update
-    return this.issues.some((issue) => issue.hasUpdate);
+    return this.issues.some((issue) => issue.hasUpdates);
   }
 
   get blame(): IssueList {
