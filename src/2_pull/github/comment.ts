@@ -80,10 +80,7 @@ export class CommentWrapper {
 
   get isEmpty(): boolean {
     // Check if the comment body is empty or null
-    return (
-      this.comment.body.trim() === "" ||
-      this.comment.body === CommentWrapper.NULL_UPDATE
-    );
+    return this._body === "" || this._body === CommentWrapper.NULL_UPDATE;
   }
 
   get isUpdate(): boolean {
