@@ -57,6 +57,5 @@ export async function renderTemplate(templatePath: string): Promise<string> {
   memory.headbonk(); // Reset memory after rendering
   summaryCache.save(); // Save the summary cache
 
-  console.info(result.content);
   return result.content;
 }
