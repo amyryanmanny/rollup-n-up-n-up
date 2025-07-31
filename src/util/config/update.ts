@@ -26,6 +26,37 @@ export class UpdateDetection {
 
   public strategies: UpdateDetectionStrategy[];
 
+  debug() {
+    for (const strategy of this.strategies) {
+      if (strategy.kind === "timebox") {
+        console.log(
+          `Strategy: ${strategy.kind}, Timeframe: ${strategy.timeframe}`,
+        );
+      }
+      if (strategy.kind === "section") {
+        console.log(
+          `Strategy: ${strategy.kind}, Section: ${strategy.section}, Timeframe: ${strategy.timeframe}`,
+        );
+      }
+      if (strategy.kind === "marker" && strategy.marker instanceof RegExp) {
+        // Regex can't be JSON stringified, which is why I added this function
+        console.log(
+          `Strategy: ${strategy.kind}, Marker: ${strategy.marker.toString()}, Timeframe: ${strategy.timeframe}`,
+        );
+      }
+
+      if (strategy.kind === "skip") {
+        console.log(`Strategy: ${strategy.kind}`);
+      }
+      if (strategy.kind === "fail") {
+        console.log(`Strategy: ${strategy.kind}`);
+      }
+      if (strategy.kind === "blame") {
+        console.log(`Strategy: ${strategy.kind}`);
+      }
+    }
+  }
+
   private constructor() {
     let strategies: UpdateDetectionStrategy[];
 
@@ -40,10 +71,6 @@ export class UpdateDetection {
     } else {
       strategies = UpdateDetection.defaultStrategies;
     }
-
-    console.debug(
-      `Using update detection strategies: ${JSON.stringify(strategies, null, 2)}`,
-    );
 
     this.strategies = strategies;
   }
