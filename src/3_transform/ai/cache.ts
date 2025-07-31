@@ -2,10 +2,12 @@ import fs from "fs";
 import path from "path";
 
 import { saveCache, restoreCache } from "@actions/cache";
+import { context } from "@actions/github";
 
 import type { PromptParameters } from "./summarize";
 
-const ACTIONS_CACHE_KEY = "summary-cache"; // Just use one until it causes problems
+// Scope the cache to the current repository
+const ACTIONS_CACHE_KEY = `summary-cache-${context.repo.owner}-${context.repo.repo}`;
 const ACTIONS_CACHE_FILE = "./cache/summary-cache.json";
 
 // Singleton
