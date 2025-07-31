@@ -20,10 +20,11 @@ export class SummaryCache {
     return SummaryCache.instance;
   }
 
-  private cache: Map<string, string>;
-
   private constructor() {
-    this.cache = new Map<string, string>();
+    // Ensure the directory exists
+    if (!fs.existsSync(ACTIONS_CACHE_DIR)) {
+      fs.mkdirSync(ACTIONS_CACHE_DIR, { recursive: true });
+    }
   }
 
   static getPromptCacheKey(
@@ -43,65 +44,60 @@ export class SummaryCache {
     return path.join(ACTIONS_CACHE_DIR, `summary-cache-${cacheKey}.json`);
   }
 
-  get(prompt: PromptParameters, sources: string[]): string | undefined {
+  async get(
+    prompt: PromptParameters,
+    sources: string[],
+  ): Promise<string | undefined> {
     const cacheKey = SummaryCache.getPromptCacheKey(prompt, sources);
-    this.load(cacheKey);
-    return this.cache.get(cacheKey);
+    return this.load(cacheKey);
   }
 
-  set(prompt: PromptParameters, sources: string[], summary: string) {
+  async set(prompt: PromptParameters, sources: string[], summary: string) {
     const cacheKey = SummaryCache.getPromptCacheKey(prompt, sources);
-    this.cache.set(cacheKey, summary);
-    this.save(cacheKey);
+    await this.save(cacheKey, summary);
   }
 
-  private save(key: string) {
+  private async save(key: string, summary: string) {
     const file = SummaryCache.getCacheFile(key);
-
-    // Ensure the directory exists
-    if (!fs.existsSync(ACTIONS_CACHE_DIR)) {
-      fs.mkdirSync(ACTIONS_CACHE_DIR, { recursive: true });
-    }
 
     // Write the cache to a file
     console.log(`Saving summary cache to ${file}`);
-    const entries = Object.fromEntries(this.cache.entries());
-    const blob = JSON.stringify(entries, null, 2);
-    fs.writeFileSync(file, blob, "utf-8");
+    await fs.promises.writeFile(file, summary, "utf-8");
 
     // Use @actions/cache to cache file to the runner
     if (process.env.GITHUB_ACTIONS === "true") {
-      saveCache([file], key);
+      await saveCache([file], key);
     }
   }
 
-  private load(key: string) {
+  private async load(key: string): Promise<string | undefined> {
     const file = SummaryCache.getCacheFile(key);
-
-    if (!fs.existsSync(file)) {
-      return;
-    }
 
     // Use @actions/cache to restore  file from the runner
     if (process.env.GITHUB_ACTIONS === "true") {
-      const restored = restoreCache([file], key);
+      const restored = await restoreCache([file], key);
       if (!restored) {
-        console.warn(`No cache hit for ${file}. Using empty cache.`);
         return;
       }
     }
 
+    // Check if the file exists
+    const exists = await fs.promises.exists(file);
+    if (!exists) {
+      return;
+    }
+
     // Load the cache from the file
     console.log(`Loading summary cache from ${file}`);
-    const blob = fs.readFileSync(file, "utf-8");
-    const entries: Map<string, string> = JSON.parse(blob);
-    this.cache = new Map<string, string>(Object.entries(entries));
+    return fs.promises.readFile(file, "utf-8");
   }
 
-  clear() {
-    this.cache.clear();
-    for (const file of fs.readdirSync(ACTIONS_CACHE_DIR)) {
-      fs.unlinkSync(path.join(ACTIONS_CACHE_DIR, file));
-    }
+  async clear() {
+    const files = await fs.promises.readdir(ACTIONS_CACHE_DIR);
+    await Promise.all(
+      files.map((file) =>
+        fs.promises.unlink(path.join(ACTIONS_CACHE_DIR, file)),
+      ),
+    );
   }
 }

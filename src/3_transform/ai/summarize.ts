@@ -138,7 +138,7 @@ export async function generateSummary(
 
   // Check for a cache hit to avoid unnecessary generations
   const summaryCache = SummaryCache.getInstance();
-  const cachedResponse = summaryCache.get(
+  const cachedResponse = await summaryCache.get(
     prompt,
     content.map((item) => item.source),
   );
