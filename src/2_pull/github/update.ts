@@ -77,7 +77,7 @@ export function findLatestUpdates(
     }
   }
 
-  return comments.slice(0, n); // Default strategy is to return regular comments
+  return comments.slice(0, n); // Default strategy is to return latest comment(s)
 }
 
 export function extractUpdate(comment: CommentWrapper): string | undefined {
@@ -89,7 +89,8 @@ export function extractUpdate(comment: CommentWrapper): string | undefined {
       return update;
     }
   }
-  return comment._body;
+
+  return undefined;
 }
 
 function extractUpdateWithStrategy(

@@ -69,7 +69,7 @@ export class CommentWrapper {
   }
 
   get _update(): string | undefined {
-    return extractUpdate(this);
+    return extractUpdate(this) || this._body;
   }
 
   get update(): string | undefined {
