@@ -102,7 +102,7 @@ export async function runPrompt(params: PromptParameters): Promise<string> {
     if (!modelResponse) {
       throw new Error("No response from model.");
     } else if (modelResponse.startsWith("ERROR:")) {
-      // Throw so errors don't get cached, or end up in the body
+      // Fail fast. Prevent errors from ending up in the body, or being cached
       throw new Error(modelResponse);
     }
 
