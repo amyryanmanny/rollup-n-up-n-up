@@ -34,6 +34,7 @@ export class SummaryCache {
     // Generate a deterministic cache key from PromptParameters and sources
     const json = JSON.stringify({
       name: prompt.name,
+      modelParameters: prompt.modelParameters,
       prompt: prompt.messages, // Message order is important
       sources: sources.sort(),
     });
@@ -65,6 +66,7 @@ export class SummaryCache {
     await fs.promises.writeFile(file, summary, "utf-8");
 
     // Use @actions/cache to cache file to the runner
+    // TODO: Don't try to save twice
     if (process.env.GITHUB_ACTIONS === "true") {
       await saveCache([file], key);
     }
@@ -82,7 +84,7 @@ export class SummaryCache {
     }
 
     // Check if the file exists
-    const exists = await fs.promises.exists(file);
+    const exists = fs.existsSync(file);
     if (!exists) {
       return;
     }
