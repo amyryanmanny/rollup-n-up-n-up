@@ -36,7 +36,7 @@ export class SummaryCache {
       prompt: prompt.messages, // Message order is important
       sources: sources.sort(),
     });
-    return crypto.createHash("sha256").update(json).digest("hex");
+    return crypto.createHash("sha256").update(json).digest("hex").slice(0, 8);
   }
 
   static getCacheFile(cacheKey: string): string {
