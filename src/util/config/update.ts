@@ -26,35 +26,31 @@ export class UpdateDetection {
 
   public strategies: UpdateDetectionStrategy[];
 
-  debug() {
+  debug(): string {
+    let output = "";
     for (const strategy of this.strategies) {
       if (strategy.kind === "timebox") {
-        console.log(
-          `Strategy: ${strategy.kind}, Timeframe: ${strategy.timeframe}`,
-        );
+        output += `- Strategy: ${strategy.kind}, Timeframe: ${strategy.timeframe}\n`;
       }
       if (strategy.kind === "section") {
-        console.log(
-          `Strategy: ${strategy.kind}, Section: ${strategy.section}, Timeframe: ${strategy.timeframe}`,
-        );
+        output += `- Strategy: ${strategy.kind}, Section: ${strategy.section}, Timeframe: ${strategy.timeframe}\n`;
       }
       if (strategy.kind === "marker" && strategy.marker instanceof RegExp) {
-        // Regex can't be JSON stringified, which is why I added this function
-        console.log(
-          `Strategy: ${strategy.kind}, Marker: ${strategy.marker.toString()}, Timeframe: ${strategy.timeframe}`,
-        );
+        // Regex can't be JSON stringified, which is why this function is the way it is
+        output += `- Strategy: ${strategy.kind}, Marker: ${strategy.marker.toString()}, Timeframe: ${strategy.timeframe}\n`;
       }
 
       if (strategy.kind === "skip") {
-        console.log(`Strategy: ${strategy.kind}`);
+        output += `- Strategy: ${strategy.kind}\n`;
       }
       if (strategy.kind === "fail") {
-        console.log(`Strategy: ${strategy.kind}`);
+        output += `- Strategy: ${strategy.kind}\n`;
       }
       if (strategy.kind === "blame") {
-        console.log(`Strategy: ${strategy.kind}`);
+        output += `- Strategy: ${strategy.kind}\n`;
       }
     }
+    return output;
   }
 
   private constructor() {
