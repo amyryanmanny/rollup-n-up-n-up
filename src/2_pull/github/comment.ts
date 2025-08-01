@@ -152,10 +152,13 @@ export class CommentWrapper {
     }
   }
 
-  emojiStatus(sections?: string[]): string | undefined {
+  emojiStatus(sections?: string | string[]): string | undefined {
     // Extract a status emoji from the comment body
     if (this.isEmpty) {
       return undefined;
+    }
+    if (typeof sections === "string") {
+      sections = [sections];
     }
     if (sections) {
       for (const sectionName of sections) {

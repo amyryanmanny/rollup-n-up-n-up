@@ -265,7 +265,7 @@ export class IssueWrapper {
 
   latestUpdates(n: number): CommentWrapper[] {
     const updates = findLatestUpdates(this.comments, n);
-    if (updates !== undefined) {
+    if (updates !== undefined && updates.length > 0) {
       return updates;
     }
     return [CommentWrapper.empty(this)];
