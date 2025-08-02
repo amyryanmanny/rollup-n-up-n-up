@@ -18,7 +18,7 @@ export function title(s: string): string {
 export function toSnakeCase(s: string): string {
   // Convert a string to snake_case
   return s
-    .replace(/[^a-zA-Z0-9\s]/g, "") // Remove non-alphanumeric characters
+    .replace(/[^a-zA-Z0-9_\s]/g, "") // Remove non-alphanumeric characters except underscores
     .trim() // Trim whitespace
     .replace(/([a-z])([A-Z])/g, "$1_$2") // Add underscore before uppercase letters
     .replace(/\s+/g, "_") // Replace spaces with underscores
