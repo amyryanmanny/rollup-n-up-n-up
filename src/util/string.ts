@@ -1,7 +1,35 @@
-const splitMarkdownByRegex = (
+export function stripHtml(s: string): string {
+  // Remove HTML comments from Markdown - from Liquidjs
+  return s.replace(
+    /<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>|<.*?>|<!--[\s\S]*?-->/g,
+    "",
+  );
+}
+
+export function title(s: string): string {
+  // Convert a string to title case
+  return s
+    .toLowerCase()
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+export function toSnakeCase(s: string): string {
+  // Convert a string to snake_case
+  return s
+    .replace(/[^a-zA-Z0-9\s]/g, "") // Remove non-alphanumeric characters
+    .trim() // Trim whitespace
+    .replace(/([a-z])([A-Z])/g, "$1_$2") // Add underscore before uppercase letters
+    .replace(/\s+/g, "_") // Replace spaces with underscores
+    .toLowerCase(); // Convert to lowercase
+}
+
+// Regexes for parsing Sections
+function splitMarkdownByRegex(
   markdown: string,
   regex: RegExp,
-): Map<string, string> => {
+): Map<string, string> {
   // Thanks Copilot
   const sections = new Map<string, string>();
   let match: RegExpExecArray | null;
@@ -21,43 +49,32 @@ const splitMarkdownByRegex = (
   }
 
   return sections;
-};
+}
 
-export const splitMarkdownByHeaders = (
-  markdown: string,
-): Map<string, string> => {
+export function splitMarkdownByHeaders(markdown: string): Map<string, string> {
+  // Split markdown by headers (e.g. # Header, ## Subheader)
+  // Only match headers at the start of a line
   return splitMarkdownByRegex(markdown, /^#+\s+(.*)$/gm);
-};
+}
 
-export const splitMarkdownByBoldedText = (
+export function splitMarkdownByBoldedText(
   markdown: string,
-): Map<string, string> => {
+): Map<string, string> {
+  // Split markdown by bolded text (e.g. **bolded text**)
+  // Not as strict as the header one, so it can match bolded text anywhere
   return splitMarkdownByRegex(markdown, /\*\*(.*?)\*\*/g);
-};
+}
 
-export const stripHtml = (s: string): string => {
-  // Remove HTML comments from the markdown - from Liquidjs
-  return s.replace(
-    /<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>|<.*?>|<!--[\s\S]*?-->/g,
-    "",
-  );
-};
-
-export const toSnakeCase = (str: string): string => {
-  // Convert a string to snake_case
-  return str
-    .replace(/[^a-zA-Z0-9\s]/g, "") // Remove non-alphanumeric characters
-    .trim() // Trim whitespace
-    .replace(/([a-z])([A-Z])/g, "$1_$2") // Add underscore before uppercase letters
-    .replace(/\s+/g, "_") // Replace spaces with underscores
-    .toLowerCase(); // Convert to lowercase
-};
-
-export const title = (s: string): string => {
-  // Convert a string to title case
-  return s
-    .toLowerCase()
-    .split(" ")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
-};
+export function extractDataBlocks(markdown: string): Map<string, string> {
+  // Extract content between <!-- data key="..." start --> and <!-- data end -->
+  const regex =
+    /<!--\s*data\s+key="([^"]+)"\s+start\s*-->([\s\S]*?)<!--\s*data\s+end\s*-->/g;
+  const blocks = new Map<string, string>();
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(markdown)) !== null) {
+    const key = toSnakeCase(match[1].trim());
+    const content = match[2].trim();
+    blocks.set(key, content);
+  }
+  return blocks;
+}

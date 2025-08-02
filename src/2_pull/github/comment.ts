@@ -2,6 +2,7 @@ import { Memory } from "@transform/memory";
 import { ONE_DAY } from "@util/date";
 import { extractEmoji } from "@util/emoji";
 import {
+  extractDataBlocks,
   splitMarkdownByBoldedText,
   splitMarkdownByHeaders,
   stripHtml,
@@ -28,6 +29,7 @@ export class CommentWrapper {
 
   private sections: Map<string, string>;
   private boldedSections: Map<string, string>;
+  private dataBlocks: Map<string, string>;
 
   constructor(issue: IssueWrapper, comment: Comment) {
     // TODO: Move this.issue onto CommentList class instead
@@ -37,6 +39,7 @@ export class CommentWrapper {
 
     this.sections = splitMarkdownByHeaders(comment.body);
     this.boldedSections = splitMarkdownByBoldedText(comment.body);
+    this.dataBlocks = extractDataBlocks(comment.body);
   }
 
   static empty(issue: IssueWrapper): CommentWrapper {
@@ -121,6 +124,11 @@ export class CommentWrapper {
   section(name: string): string | undefined {
     // Get a section of the body by name
     name = toSnakeCase(name);
+
+    const dataBlock = this.dataBlocks.get(name);
+    if (dataBlock !== undefined) {
+      return stripHtml(dataBlock).trim();
+    }
     const section = this.sections.get(name);
     if (section !== undefined) {
       return stripHtml(section).trim();
@@ -129,6 +137,7 @@ export class CommentWrapper {
     if (boldedSection !== undefined) {
       return stripHtml(boldedSection).trim();
     }
+
     return undefined;
   }
 
