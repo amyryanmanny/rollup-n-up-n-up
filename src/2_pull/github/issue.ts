@@ -1,11 +1,14 @@
 import { Memory } from "@transform/memory";
 import { getConfig, isTrueValue } from "@util/config";
 
-import { slugifyProjectFieldName, type IssueField } from "./graphql/project";
+import type { FetchParameters } from "./client";
+
 import { CommentWrapper, type Comment } from "./comment";
 import { findLatestUpdates } from "./update";
 import { IssueList } from "./issue-list";
+
 import { getIssue, type GetIssueParameters } from "./graphql/issue";
+import { slugifyProjectFieldName, type IssueField } from "./graphql/project";
 
 // Interface
 export type Issue = {
@@ -36,16 +39,25 @@ export class IssueWrapper {
   private memory = Memory.getInstance();
 
   private issue: Issue;
-  private subissues: IssueList | undefined;
+  public subissues: IssueList | undefined;
 
   constructor(issue: Issue) {
     this.issue = issue;
   }
 
-  static async forIssue(params: GetIssueParameters): Promise<IssueWrapper> {
+  static async forIssue(
+    params: GetIssueParameters & FetchParameters,
+  ): Promise<IssueWrapper> {
     // Create an IssueWrapper for a specific issue
     const issue = await getIssue(params);
-    return new IssueWrapper(issue);
+    return new IssueWrapper(issue).fetch(params);
+  }
+
+  async fetch(params: FetchParameters): Promise<IssueWrapper> {
+    if (params.subissues) {
+      await this.fetchSubissues();
+    }
+    return this;
   }
 
   // Properties
@@ -213,14 +225,12 @@ export class IssueWrapper {
   }
 
   // Subissues
-  async fetchSubissues(): Promise<IssueList> {
-    const subissues = await IssueList.forSubissues({
+  private async fetchSubissues() {
+    this.subissues = await IssueList.forSubissues({
       owner: this.owner,
       repo: this.repo,
       issueNumber: this.number,
     });
-    this.subissues = subissues;
-    return subissues;
   }
 
   // Comment

@@ -3,14 +3,15 @@ import { emojiCompare } from "@util/emoji";
 import { title } from "@util/string";
 
 import {
-  listIssuesForProject,
-  type ListIssuesForProjectParameters,
-} from "./graphql/project";
-import {
   getProjectView,
   ProjectView,
   type GetProjectViewParameters,
 } from "./project-view";
+
+import {
+  listIssuesForProject,
+  type ListIssuesForProjectParameters,
+} from "./graphql/project";
 import {
   listIssuesForRepo,
   type ListIssuesForRepoParameters,
@@ -21,6 +22,7 @@ import {
 } from "./graphql/subissues";
 
 import { IssueWrapper } from "./issue";
+import type { FetchParameters } from "./client";
 
 type SourceOfTruth = {
   title: string;
@@ -79,7 +81,7 @@ export class IssueList {
   }
 
   // Issue Filtering / Grouping / Sorting
-  private applyViewFilter(view: ProjectView) {
+  private applyViewFilter(view: ProjectView): IssueList {
     // Filter the issues by the view's query
     this.issues = this.issues.filter((issue) => view.filter(issue));
 
@@ -94,6 +96,7 @@ export class IssueList {
     if (view.name) {
       this.sourceOfTruth.title += ` (${view.name})`;
     }
+    return this;
   }
 
   sort(fieldName: string, direction: "asc" | "desc" = "asc"): IssueList {
@@ -151,8 +154,10 @@ export class IssueList {
   }
 
   get blame(): IssueList {
-    const issuesWithNoUpdate = this.issues.filter((issue) => !issue.hasUpdate);
-    return new IssueList(issuesWithNoUpdate, {
+    const issuesWithNoUpdates = this.issues.filter(
+      (issue) => !issue.hasUpdates,
+    );
+    return new IssueList(issuesWithNoUpdates, {
       title: `${this.sourceOfTruth.title} - Missing Updates`,
       url: this.sourceOfTruth.url,
     });
@@ -164,41 +169,48 @@ export class IssueList {
     this.issues = issues;
   }
 
+  async fetch(params: FetchParameters): Promise<IssueList> {
+    for (const issue of this.issues) {
+      await issue.fetch(params);
+    }
+    return this;
+  }
+
   static async forRepo(
-    params: ListIssuesForRepoParameters,
+    params: ListIssuesForRepoParameters & FetchParameters,
   ): Promise<IssueList> {
     const response = await listIssuesForRepo(params);
     const { issues, title, url } = response;
     return new IssueList(
       issues.map((issue) => new IssueWrapper(issue)),
       { title, url },
-    );
+    ).fetch(params);
   }
 
   static async forSubissues(
-    params: ListSubissuesForIssueParameters,
+    params: ListSubissuesForIssueParameters & FetchParameters,
   ): Promise<IssueList> {
     const response = await listSubissuesForIssue(params);
     const { subissues, title, url } = response;
     return new IssueList(
       subissues.map((issue) => new IssueWrapper(issue)),
       { title, url },
-    );
+    ).fetch(params);
   }
 
   static async forProject(
-    params: ListIssuesForProjectParameters,
+    params: ListIssuesForProjectParameters & FetchParameters,
   ): Promise<IssueList> {
     const response = await listIssuesForProject(params);
     const { issues, title, url } = response;
     return new IssueList(
       issues.map((issue) => new IssueWrapper(issue)),
       { title, url },
-    );
+    ).fetch(params);
   }
 
   static async forProjectView(
-    params: GetProjectViewParameters,
+    params: GetProjectViewParameters & FetchParameters,
   ): Promise<IssueList> {
     let view: ProjectView;
 
@@ -213,14 +225,9 @@ export class IssueList {
       view = await getProjectView(params);
     }
 
-    const issueList = await this.forProject({
-      organization: params.organization,
-      projectNumber: params.projectNumber,
-      typeFilter: view.getFilterType(),
-    });
-    issueList.applyViewFilter(view);
-
-    return issueList;
+    return IssueList.forProject({ ...params }).then((issueList) =>
+      issueList.applyViewFilter(view),
+    );
   }
 
   // Render / Memory Functions

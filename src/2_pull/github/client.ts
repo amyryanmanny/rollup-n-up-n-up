@@ -4,11 +4,24 @@ import { IssueList } from "./issue-list";
 
 import { getOctokit } from "@util/octokit";
 
+// TODO: Positional and kwarg-based params
+// kwargs need fuzzy matching
+// e.g. issue_number -> `issueNumber`
+//       org, owner -> `organization`
+//       repo -> `repository`
+
+export type FetchParameters = {
+  subissues?: boolean;
+};
+
 export class GitHubClient {
   // The Client class is a wrapper around the GitHub API client.
   public octokit = getOctokit();
 
-  url(url: string): Promise<IssueList | IssueWrapper> {
+  url(
+    url: string,
+    params?: FetchParameters,
+  ): Promise<IssueList | IssueWrapper> {
     // Single Issue
     const issueMatch = matchIssueUrl(url);
     if (issueMatch) {
@@ -16,10 +29,10 @@ export class GitHubClient {
 
       if (issueNumber) {
         // If issueNumber is defined, return the specific issue
-        return this.issue(owner, repo, issueNumber);
+        return this.issue(owner, repo, issueNumber, params);
       } else {
         // Else return all issues for the repo
-        return this.issuesForRepo(owner, repo);
+        return this.issuesForRepo(owner, repo, params);
       }
     }
 
@@ -35,6 +48,7 @@ export class GitHubClient {
           organization,
           projectNumber,
           customQuery,
+          params,
         );
       }
 
@@ -44,11 +58,12 @@ export class GitHubClient {
           organization,
           projectNumber,
           projectViewNumber,
+          params,
         );
       }
 
       // Default to all Project Issues
-      return this.issuesForProject(organization, projectNumber);
+      return this.issuesForProject(organization, projectNumber, params);
     }
 
     throw new Error(
@@ -60,42 +75,47 @@ export class GitHubClient {
     owner: string,
     repo: string,
     issueNumber: string | number,
+    params?: FetchParameters,
   ): Promise<IssueWrapper> {
     return IssueWrapper.forIssue({
+      ...params,
       organization: owner,
       repo,
-      issueNumber: parseInt(issueNumber as string),
+      issueNumber: parseInt(issueNumber as unknown as string),
     });
   }
 
-  issuesForRepo(owner: string, repo: string): Promise<IssueList> {
-    return IssueList.forRepo({ owner, repo });
+  issuesForRepo(
+    owner: string,
+    repo: string,
+    params?: FetchParameters,
+  ): Promise<IssueList> {
+    return IssueList.forRepo({ ...params, owner, repo });
   }
 
   subissuesForIssue(
     owner: string,
     repo: string,
     issueNumber: string,
+    params?: FetchParameters,
   ): Promise<IssueList> {
     return IssueList.forSubissues({
+      ...params,
       owner,
       repo,
-      issueNumber: parseInt(issueNumber as string),
+      issueNumber: parseInt(issueNumber as unknown as string),
     });
   }
 
   issuesForProject(
     organization: string,
     projectNumber: number,
-    typeFilter?: string[] | string,
+    params?: FetchParameters,
   ): Promise<IssueList> {
-    if (typeof typeFilter === "string") {
-      typeFilter = [typeFilter];
-    }
     return IssueList.forProject({
+      ...params,
       organization,
       projectNumber,
-      typeFilter,
     });
   }
 
@@ -103,8 +123,10 @@ export class GitHubClient {
     organization: string,
     projectNumber: number,
     projectViewNumber: number,
+    params?: FetchParameters,
   ): Promise<IssueList> {
     return IssueList.forProjectView({
+      ...params,
       organization,
       projectNumber,
       projectViewNumber,
@@ -115,8 +137,10 @@ export class GitHubClient {
     organization: string,
     projectNumber: number,
     customQuery: string,
+    params?: FetchParameters,
   ): Promise<IssueList> {
     return IssueList.forProjectView({
+      ...params,
       organization,
       projectNumber,
       customQuery,

@@ -10,7 +10,6 @@ import {
 export type ListIssuesForProjectParameters = {
   organization: string;
   projectNumber: number;
-  typeFilter: string[] | undefined;
 };
 
 type ListIssuesForProjectResponse = {
@@ -279,18 +278,7 @@ export async function listIssuesForProject(
         },
       };
     })
-    .filter((item) => item !== null)
-    .filter(
-      // So we can filter by Bug, Initiative
-      (item) => {
-        return (
-          // Unoptimized, but works for now
-          params.typeFilter === undefined ||
-          params.typeFilter.length === 0 ||
-          params.typeFilter.includes(item.type)
-        );
-      },
-    );
+    .filter((item) => item !== null);
 
   return {
     issues,
