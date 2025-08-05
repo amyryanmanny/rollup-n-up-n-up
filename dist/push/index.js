@@ -30681,7 +30681,7 @@ var require_strftime = __commonJS((exports, module) => {
 });
 
 // src/5_push/github/client.ts
-var import_core4 = __toESM(require_core(), 1);
+var import_core5 = __toESM(require_core(), 1);
 import path from "path";
 
 // src/util/octokit.ts
@@ -37773,7 +37773,7 @@ function paginateGraphQL(octokit) {
 
 // src/util/config/index.ts
 var import_dotenv = __toESM(require_main2(), 1);
-var import_core2 = __toESM(require_core(), 1);
+var import_core3 = __toESM(require_core(), 1);
 
 // src/util/config/model.ts
 var import_yaml = __toESM(require_dist(), 1);
@@ -37803,6 +37803,7 @@ function getDayOfThisWeek(day) {
 }
 
 // src/util/config/push.ts
+var import_core2 = __toESM(require_core(), 1);
 function getTitleDate(titleDateOption) {
   const today = new Date;
   if (!titleDateOption) {
@@ -37824,20 +37825,35 @@ function getPushConfig() {
     const titleDateOption = getConfig("TITLE_DATE");
     const titleDate = getTitleDate(titleDateOption);
     title = import_strftime.default(title, titleDate);
+    import_core2.setOutput("title", title);
   }
   const body = getConfig("BODY");
   if (!body) {
     throw new Error('The "body" input is required. See docs.');
   }
   const pushConfig = getConfig("TARGETS");
-  if (!pushConfig) {
-    throw new Error('The "targets" input is required. See docs.');
+  const fetchTargetsConfig = getConfig("FETCH");
+  if (!pushConfig && !fetchTargetsConfig) {
+    throw new Error('Either the "targets" or "fetch" input is required.');
   }
-  const targets = parsePushTargets(pushConfig);
-  if (targets.length === 0) {
-    throw new Error('No valid push targets found in the "targets" input. See docs.');
+  let pushTargets = [];
+  if (pushConfig) {
+    pushTargets = parsePushTargets(pushConfig);
+    if (pushTargets.length === 0) {
+      throw new Error('No valid push targets found in the "targets" input. See docs.');
+    }
+    if (!body) {
+      throw new Error('The "body" input is required when using the "targets" input.');
+    }
   }
-  return { title, body, targets };
+  let fetchTargets = [];
+  if (fetchTargetsConfig) {
+    fetchTargets = parsePushTargets(fetchTargetsConfig);
+    if (fetchTargets.length === 0) {
+      throw new Error('No valid fetch targets found in the "fetch" input. See docs.');
+    }
+  }
+  return { title, body, pushTargets, fetchTargets };
 }
 function parsePushTargets(targetBlob) {
   return targetBlob.split(`
@@ -37853,7 +37869,7 @@ function parsePushTargets(targetBlob) {
 // src/util/config/index.ts
 function getConfig(key, required = false) {
   if (process.env.GITHUB_ACTIONS === "true") {
-    const input = import_core2.getInput(key, { required });
+    const input = import_core3.getInput(key, { required });
     if (input !== "") {
       return input;
     }
@@ -38292,11 +38308,11 @@ function matchDiscussionCategoryUrl(url) {
 }
 
 // src/util/log.ts
-var import_core3 = __toESM(require_core(), 1);
+var import_core4 = __toESM(require_core(), 1);
 var import_summary = __toESM(require_summary(), 1);
 function addLinkToSummary(message, url) {
   if (import_summary.SUMMARY_ENV_VAR in process.env) {
-    import_core3.summary.addLink(message, url).write();
+    import_core4.summary.addLink(message, url).write();
   } else {
     console.debug(`${message}: ${url}`);
   }
@@ -38359,7 +38375,7 @@ class GitHubPushClient {
       throw new Error(`Failed to create or update file: ${filePath} in ${owner}/${repo}`);
     }
     const repoFileUrl = data.content.html_url;
-    import_core4.setOutput("repo_file_url", repoFileUrl);
+    import_core5.setOutput("repo_file_url", repoFileUrl);
     addLinkToSummary("Repo File Created / Updated", repoFileUrl);
   }
   async pushToIssue(url, title, body) {
@@ -38385,7 +38401,7 @@ class GitHubPushClient {
         body
       });
     }
-    import_core4.setOutput("issue_url", issue.html_url);
+    import_core5.setOutput("issue_url", issue.html_url);
     addLinkToSummary("Issue Created / Updated", issue.html_url);
   }
   async pushToIssueComment(url, body) {
@@ -38403,7 +38419,7 @@ class GitHubPushClient {
       issue_number: issueNumber,
       body
     });
-    import_core4.setOutput("issue_comment_url", comment.data.html_url);
+    import_core5.setOutput("issue_comment_url", comment.data.html_url);
     addLinkToSummary("Issue Comment Created", comment.data.html_url);
   }
   async pushToDiscussion(url, title, body) {
@@ -38423,7 +38439,7 @@ class GitHubPushClient {
       const categoryId = await getDiscussionCategoryId(this, owner, repo, categoryName);
       discussion = await createDiscussion(this, owner, repo, categoryId, title, body);
     }
-    import_core4.setOutput("discussion_url", discussion.url);
+    import_core5.setOutput("discussion_url", discussion.url);
     addLinkToSummary("Discussion Post Created / Updated", discussion.url);
   }
   async appendToDiscussion(url, title, append) {
@@ -38441,7 +38457,7 @@ class GitHubPushClient {
     }
     updateDiscussion(this, discussion.id, `${discussion.body}
 ${append}`);
-    import_core4.setOutput("discussion_url", discussion.url);
+    import_core5.setOutput("discussion_url", discussion.url);
     addLinkToSummary("Discussion Post Updated", discussion.url);
   }
   async pushToDiscussionComment(url, body) {
@@ -38458,12 +38474,48 @@ ${append}`);
       throw new Error(`Discussion with number ${discussionNumber} not found in ${owner}/${repo}.`);
     }
     const comment = await createDiscussionComment(this, discussion.id, body);
-    import_core4.setOutput("discussion_comment_url", comment.url);
+    import_core5.setOutput("discussion_comment_url", comment.url);
     addLinkToSummary("Discussion Comment Created", comment.url);
+  }
+  async fetchAll(targets, title) {
+    for (const target of targets) {
+      await this.fetch(target, title);
+    }
+  }
+  async fetch(target, title) {
+    switch (target.type) {
+      case "discussion":
+        if (!title) {
+          throw new Error("Title is required for 'discussion' fetch type.");
+        }
+        return this.fetchDiscussion(target.url, title);
+      default:
+        throw new Error(`Unsupported fetch type: ${target.type}. Supported types are: repo-file, issue, discussion.`);
+    }
+  }
+  async fetchDiscussion(url, title) {
+    const match = matchDiscussionCategoryUrl(url);
+    if (!match) {
+      throw new Error(`Invalid GitHub URL: ${url}`);
+    }
+    const { owner, repo, categoryName } = match;
+    if (!categoryName) {
+      throw new Error(`Category name is required. Ex: .../discussions/categories/reporting-dogfooding`);
+    }
+    const discussion = await getDiscussionByTitle(this, owner, repo, title);
+    if (!discussion) {
+      throw new Error(`Discussion with title "${title}" not found in ${owner}/${repo}.`);
+    }
+    import_core5.setOutput("discussion_url", discussion.url);
   }
 }
 
 // src/5_push/action-push.ts
 var client = new GitHubPushClient;
-var { targets, title, body } = getPushConfig();
-client.pushAll(targets, title, body);
+var { title, body, pushTargets, fetchTargets } = getPushConfig();
+if (pushTargets) {
+  client.pushAll(pushTargets, title, body);
+}
+if (fetchTargets) {
+  client.fetchAll(fetchTargets, title);
+}
