@@ -3,5 +3,12 @@ import { getPushConfig } from "@util/config/push";
 
 const client = new GitHubPushClient();
 
-const { targets, title, body } = getPushConfig();
-client.pushAll(targets, title, body);
+const { title, body, pushTargets, fetchTargets } = getPushConfig();
+
+if (pushTargets) {
+  client.pushAll(pushTargets, title, body!);
+}
+
+if (fetchTargets) {
+  client.fetchAll(fetchTargets, title);
+}

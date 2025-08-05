@@ -289,4 +289,50 @@ export class GitHubPushClient {
 
     addLinkToSummary("Discussion Comment Created", comment.url);
   }
+
+  // Fetch
+  async fetchAll(targets: PushTarget[], title: string | undefined) {
+    // TODO: Also fetch body, other details if needed
+    for (const target of targets) {
+      await this.fetch(target, title);
+    }
+  }
+
+  async fetch(target: PushTarget, title: string | undefined) {
+    switch (target.type) {
+      case "discussion":
+        if (!title) {
+          throw new Error("Title is required for 'discussion' fetch type.");
+        }
+        return this.fetchDiscussion(target.url, title);
+      default:
+        throw new Error(
+          `Unsupported fetch type: ${target.type}. Supported types are: repo-file, issue, discussion.`,
+        );
+    }
+  }
+
+  async fetchDiscussion(url: string, title: string) {
+    // TODO: Can this be refactored to share logic with pushToDiscussion?
+    const match = matchDiscussionCategoryUrl(url);
+    if (!match) {
+      throw new Error(`Invalid GitHub URL: ${url}`);
+    }
+    const { owner, repo, categoryName } = match;
+
+    if (!categoryName) {
+      throw new Error(
+        `Category name is required. Ex: .../discussions/categories/reporting-dogfooding`,
+      );
+    }
+
+    const discussion = await getDiscussionByTitle(this, owner, repo, title);
+    if (!discussion) {
+      throw new Error(
+        `Discussion with title "${title}" not found in ${owner}/${repo}.`,
+      );
+    }
+
+    setOutput("discussion_url", discussion.url);
+  }
 }

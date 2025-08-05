@@ -3,11 +3,13 @@ import strftime from "strftime";
 import { getConfig } from "@util/config";
 import { type PushTarget, type PushType } from "@push/github/client";
 import { getDayOfThisWeek, type DayOfWeek } from "@util/date";
+import { setOutput } from "@actions/core";
 
 type PushConfig = {
-  targets: PushTarget[];
   title?: string; // Title is optional - not all types require it
-  body: string;
+  body?: string; // Body is optional - if just fetching, it is not needed
+  pushTargets?: PushTarget[];
+  fetchTargets?: PushTarget[];
 };
 
 function getTitleDate(titleDateOption: string | undefined): Date {
@@ -40,6 +42,7 @@ export function getPushConfig(): PushConfig {
     const titleDateOption = getConfig("TITLE_DATE");
     const titleDate = getTitleDate(titleDateOption);
     title = strftime(title, titleDate);
+    setOutput("title", title);
   }
 
   const body = getConfig("BODY");
@@ -48,17 +51,38 @@ export function getPushConfig(): PushConfig {
   }
 
   const pushConfig = getConfig("TARGETS");
-  if (!pushConfig) {
-    throw new Error('The "targets" input is required. See docs.');
-  }
-  const targets = parsePushTargets(pushConfig);
-  if (targets.length === 0) {
-    throw new Error(
-      'No valid push targets found in the "targets" input. See docs.',
-    );
+  const fetchTargetsConfig = getConfig("FETCH");
+
+  if (!pushConfig && !fetchTargetsConfig) {
+    throw new Error('Either the "targets" or "fetch" input is required.');
   }
 
-  return { title, body, targets };
+  let pushTargets: PushTarget[] = [];
+  if (pushConfig) {
+    pushTargets = parsePushTargets(pushConfig);
+    if (pushTargets.length === 0) {
+      throw new Error(
+        'No valid push targets found in the "targets" input. See docs.',
+      );
+    }
+    if (!body) {
+      throw new Error(
+        'The "body" input is required when using the "targets" input.',
+      );
+    }
+  }
+
+  let fetchTargets: PushTarget[] = [];
+  if (fetchTargetsConfig) {
+    fetchTargets = parsePushTargets(fetchTargetsConfig);
+    if (fetchTargets.length === 0) {
+      throw new Error(
+        'No valid fetch targets found in the "fetch" input. See docs.',
+      );
+    }
+  }
+
+  return { title, body, pushTargets, fetchTargets };
 }
 
 function parsePushTargets(targetBlob: string): PushTarget[] {
