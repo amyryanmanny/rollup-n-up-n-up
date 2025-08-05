@@ -232,6 +232,7 @@ export class GitHubPushClient {
   }
 
   async appendToDiscussion(url: string, title: string, append: string) {
+    // TODO: Support the exact URL instead of going by title
     const match = matchDiscussionCategoryUrl(url);
     if (!match) {
       throw new Error(`Invalid GitHub URL: ${url}`);

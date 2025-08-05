@@ -9,18 +9,35 @@ inputs:
     required: false
   title_date:
     description: |
-      Override the date to be used by strftime in the title.
-      Defaults to TODAY, also supports FRIDAY.
+      Override the date used by strftime when formatting the title.
+      Defaults to 'Today', also supports 'Thursday', 'Friday', etc.
     required: false
   body:
-    description: The Markdown string to push.
-    required: true
+    description: The Markdown string to push to each target.
+    required: false
   targets:
-    description: The targets to push the string to (see docs for syntax).
-    required: true
+    description: Targets to push the string to (see docs for syntax).
+    required: false
+  fetch:
+    description: Targets to fetch a URL from.
+    required: false
 
-outputs: {}
-# TODO: strftime'd title
+outputs:
+  title:
+    description: The formatted title of the pushed document.
+
+  # URLs
+  # If there are multiple targets of the same type, the last URL will be chosen.
+  repo_file_url:
+    description: The URL of the pushed file in the repository.
+  issue_url:
+    description: The URL of the pushed issue.
+  issue_comment_url:
+    description: The URL of the pushed issue comment.
+  discussion_url:
+    description: The URL of the pushed document.
+  discussion_comment_url:
+    description: The URL of the pushed discussion comment.
 
 runs:
   using: node20
