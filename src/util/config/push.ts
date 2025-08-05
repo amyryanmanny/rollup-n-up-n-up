@@ -46,9 +46,6 @@ export function getPushConfig(): PushConfig {
   }
 
   const body = getConfig("BODY");
-  if (!body) {
-    throw new Error('The "body" input is required. See docs.');
-  }
 
   const pushConfig = getConfig("TARGETS");
   const fetchTargetsConfig = getConfig("FETCH");
