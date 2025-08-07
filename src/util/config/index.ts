@@ -25,18 +25,10 @@ export function getConfig(
   );
 }
 
-export const isTrueValue = (value: string | undefined): boolean => {
-  // Check against "true" sentinels users might use in the YAML. Not the same as truthy
-  return (
-    value === "true" ||
-    value === "1" ||
-    value === "yes" ||
-    value === "on" ||
-    value === "enabled"
-  );
-};
 
 export * from "./github";
 export * from "./model";
 export * from "./push";
+export * from "./render";
+export * from "./truthy";
 export * from "./update";

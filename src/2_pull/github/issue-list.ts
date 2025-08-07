@@ -1,3 +1,8 @@
+import {
+  type FetchParameters,
+  type DirtyIssueRenderOptions,
+  validateRenderOptions,
+} from "@config";
 import { Memory } from "@transform/memory";
 import { emojiCompare } from "@util/emoji";
 import { title } from "@util/string";
@@ -22,7 +27,6 @@ import {
 } from "./graphql/subissues";
 
 import { IssueWrapper } from "./issue";
-import type { FetchParameters } from "./client";
 
 type SourceOfTruth = {
   title: string;
@@ -150,14 +154,12 @@ export class IssueList {
   // Updates
   get hasUpdates(): boolean {
     // Check if any issue has an update
-    return this.issues.some((issue) => issue.hasUpdates);
+    return this.issues.some((issue) => issue.hasUpdate);
   }
 
   get blame(): IssueList {
-    const issuesWithNoUpdates = this.issues.filter(
-      (issue) => !issue.hasUpdates,
-    );
-    return new IssueList(issuesWithNoUpdates, {
+    const issuesWithNoUpdate = this.issues.filter((issue) => !issue.hasUpdate);
+    return new IssueList(issuesWithNoUpdate, {
       title: `${this.sourceOfTruth.title} - Missing Updates`,
       url: this.sourceOfTruth.url,
     });
@@ -231,29 +233,35 @@ export class IssueList {
   }
 
   // Render / Memory Functions
-  get rendered(): string {
+  private _render(): string {
     // IssueLists are Level 2
-    return `## ${this.header}\n\n`;
+    return `## ${this.header}`;
   }
 
-  rememberUpdates() {
-    this.memory.remember({ content: this.rendered, source: this.url });
+  remember(options: DirtyIssueRenderOptions = {}) {
+    console.log("Remembering issue list", JSON.stringify(options, null, 2));
+    this.memory.remember({
+      content: this._render(),
+      source: this.url,
+    });
+
     for (const issue of this.issues) {
-      issue.rememberUpdates();
+      issue.remember(options);
     }
   }
 
-  renderUpdates(): string {
-    this.rememberUpdates();
-    let rendered = this.rendered;
-    for (const issue of this.issues) {
-      rendered += `\n\n${issue.renderUpdates()}`;
-    }
-    rendered += `\n\n---\n\n`;
+  render(options: DirtyIssueRenderOptions = {}): string {
+    this.remember(options);
+
+    const validatedOptions = validateRenderOptions(options);
+
+    let rendered = this._render();
+    rendered += this.issues
+      .map((issue) => issue._render(validatedOptions))
+      .filter((issue) => issue) // Filter out empty renders
+      .join("\n\n");
+    rendered += `\n\n---`; // End IssueLists with a horizontal rule
+
     return rendered;
-  }
-
-  render(): string {
-    return this.renderUpdates();
   }
 }

@@ -1,7 +1,11 @@
+import {
+  getConfig,
+  isTrueString,
+  validateRenderOptions,
+  type FetchParameters,
+  type DirtyIssueRenderOptions,
+} from "@config";
 import { Memory } from "@transform/memory";
-import { getConfig, isTrueValue } from "@util/config";
-
-import type { FetchParameters } from "./client";
 
 import { CommentWrapper, type Comment } from "./comment";
 import { findLatestUpdates } from "./update";
@@ -33,6 +37,14 @@ export type Issue = {
     number: number;
     fields: Map<string, IssueField>;
   };
+};
+
+export type IssueRenderOptions = {
+  fields: string[];
+  body: boolean;
+  updates: number;
+  subissues: boolean | undefined;
+  skipIfEmpty: boolean; // Skip rendering if no updates or body
 };
 
 export class IssueWrapper {
@@ -134,7 +146,7 @@ export class IssueWrapper {
       .trim()
       .toUpperCase()
       .replace(/\s+/g, "")
-      .replace("_", "");
+      .replace("_", ""); // TODO: Pull into string.ts
     switch (insensitiveFieldName) {
       case "TITLE":
         return this.title;
@@ -195,7 +207,7 @@ export class IssueWrapper {
       // If EMOJI_OVERRIDE is set, check the body of an update for an emoji
       const update = this.latestUpdate;
       let emojiSections: string[];
-      if (isTrueValue(emojiOverride)) {
+      if (isTrueString(emojiOverride)) {
         emojiSections = []; // If just set to true, search entire body
       } else {
         // If set to a comma-separated list, search those sections
@@ -230,6 +242,8 @@ export class IssueWrapper {
       owner: this.owner,
       repo: this.repo,
       issueNumber: this.number,
+      subissues: false, // Don't recursively fetch subissues
+      // TODO: There should probably be a way to explicitly do it
     });
   }
 
@@ -281,62 +295,87 @@ export class IssueWrapper {
     return [CommentWrapper.empty(this)];
   }
 
-  get hasUpdates(): boolean {
-    // Check if this issue or any subissue has an update
-    if (!this.latestUpdate.isEmpty) {
-      return true;
-    }
-    if (this.subissues) {
-      return this.subissues.hasUpdates;
-    }
-    return false;
+  get hasUpdate(): boolean {
+    return !this.latestUpdate.isEmpty;
   }
 
   // Render / Memory Functions
-  get rendered(): string {
+  _render(options: IssueRenderOptions): string | undefined {
+    if (options.subissues === undefined) {
+      // Default to rendering subissues if they exist
+      options.subissues = this.subissues !== undefined;
+    }
+
+    // Check if anything will actually be rendered
+    if (options.skipIfEmpty) {
+      if (
+        (!options.updates ||
+          this.latestUpdates(options.updates).some((u) => !u.isEmpty)) &&
+        (!options.fields ||
+          !options.fields.some((f) => this.field(f) !== "")) &&
+        (!options.body || !this._body) &&
+        (!options.subissues || !this.subissues || !this.subissues.hasUpdates)
+      ) {
+        console.log(
+          "Skipping rendering of issue",
+          this.header,
+          "because nothing will be rendered.",
+        );
+        return undefined;
+      }
+      // TODO: Option to throw an error if nothing will be rendered
+    }
+
+    // Render
+
     // Issues are Level 3
     // Subissues are Level 4
-    return !this.isSubissue
+    let rendered = !this.isSubissue
       ? `### ${this.type}: ${this.header}\n\n`
       : `#### Subissue: ${this.header}\n\n`;
-  }
 
-  rememberUpdates() {
-    if (!this.hasUpdates) {
-      return;
-    }
-
-    this.memory.remember({ content: this.rendered, source: this.url });
-    if (!this.latestUpdate.isEmpty) {
-      this.latestUpdate.remember();
-    }
-    if (this.subissues) {
-      // Remember subissues updates
-      this.subissues.rememberUpdates();
-    }
-  }
-
-  renderUpdates(): string {
-    // TODO: Work on the code reuse
-    if (!this.hasUpdates) {
-      return "";
-    }
-    this.rememberUpdates();
-
-    let rendered = this.rendered;
-    if (!this.latestUpdate.isEmpty) {
-      rendered += `\n\n${this.latestUpdate.render()}`;
-    }
-    if (this.subissues) {
-      for (const subissue of this.subissues) {
-        rendered += `\n\n${subissue.renderUpdates()}`;
+    if (options.fields.length > 0) {
+      for (const fieldName of options.fields) {
+        const fieldValue = this.field(fieldName);
+        if (fieldValue) {
+          rendered += `**${fieldName}:** ${fieldValue}\n`;
+        }
       }
+      rendered += "\n";
     }
-    rendered += "\n\n";
+
+    if (options.body) {
+      rendered += `${this.body}\n\n`;
+    }
+
+    if (options.updates) {
+      rendered += this.latestUpdates(options.updates)
+        .map((update) => update.render())
+        .join("\n\n");
+    }
+
+    if (options.subissues && this.subissues) {
+      rendered += this.subissues.render(options);
+    }
+
     return rendered;
   }
 
-  render(): string {
-    return this.renderUpdates();
+  remember(options: DirtyIssueRenderOptions = {}) {
+    const rendered = this._render(validateRenderOptions(options));
+    if (rendered) {
+      this.memory.remember({ content: rendered, source: this.url });
+    }
+  }
+
+  render(options: DirtyIssueRenderOptions = {}): string {
+    this.remember(options);
+
+    const rendered = this._render(validateRenderOptions(options));
+    if (rendered) {
+      return rendered;
+    }
+
+    return "";
   }
 }

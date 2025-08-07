@@ -183,18 +183,20 @@ export class CommentWrapper {
   }
 
   // Render / Memory Functions
-  get rendered(): string {
+  private _render(): string {
     // Issue Comments are Level 4
     // Subissue Comments are Level 5
-    return `${this._update}\n\n`;
+    return !this.issue.isSubissue
+      ? `#### [Update](${this.url})\n\n${this._update}`
+      : `##### [Update](${this.url})\n\n${this._update}`;
   }
 
   remember() {
-    this.memory.remember({ content: this.rendered, source: this.url });
+    this.memory.remember({ content: this._render(), source: this.url });
   }
 
   render(): string {
     this.remember();
-    return this.rendered;
+    return this._render();
   }
 }
