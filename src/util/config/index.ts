@@ -29,6 +29,6 @@ export * from "./fetch";
 export * from "./github";
 export * from "./model";
 export * from "./push";
-export * from "./render";
+export * from "./issue-render";
 export * from "./truthy";
 export * from "./update";

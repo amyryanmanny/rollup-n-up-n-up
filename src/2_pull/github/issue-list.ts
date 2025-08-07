@@ -239,7 +239,7 @@ export class IssueList {
   }
 
   remember(options: DirtyIssueRenderOptions = {}) {
-    console.log("Remembering issue list", JSON.stringify(options, null, 2));
+    console.log("Remembering issue list", this.header);
     this.memory.remember({
       content: this._render(),
       source: this.url,

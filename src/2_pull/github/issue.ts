@@ -302,10 +302,8 @@ export class IssueWrapper {
     // Check if anything will actually be rendered
     if (options.skipIfEmpty) {
       if (
-        (!options.updates ||
-          !this.latestUpdates(options.updates).some((u) => !u.isEmpty)) &&
-        (!options.fields ||
-          !options.fields.some((f) => this.field(f) !== "")) &&
+        (!options.updates || !this.hasUpdate) &&
+        (!options.fields || !options.fields.some((f) => this.field(f))) &&
         (!options.body || !this._body) &&
         (!options.subissues || !this.subissues || !this.subissues.hasUpdates)
       ) {
@@ -343,6 +341,7 @@ export class IssueWrapper {
 
     if (options.updates) {
       rendered += this.latestUpdates(options.updates)
+        .filter((update) => !update.isEmpty) // Filter out empty updates
         .map((update) => update.render())
         .join("\n\n");
     }
@@ -362,6 +361,7 @@ export class IssueWrapper {
   }
 
   render(options: DirtyIssueRenderOptions = {}): string {
+    console.log("Rendering issue", this.header);
     this.remember(options);
 
     const rendered = this._render(validateRenderOptions(options));
