@@ -81,7 +81,7 @@ export class GitHubClient {
       ...params,
       organization: owner,
       repo,
-      issueNumber: parseInt(issueNumber as unknown as string),
+      issueNumber: Number(issueNumber),
     });
   }
 
@@ -96,53 +96,53 @@ export class GitHubClient {
   subissuesForIssue(
     owner: string,
     repo: string,
-    issueNumber: string,
+    issueNumber: string | number,
     params?: FetchParameters,
   ): Promise<IssueList> {
     return IssueList.forSubissues({
       ...params,
       owner,
       repo,
-      issueNumber: parseInt(issueNumber as unknown as string),
+      issueNumber: Number(issueNumber),
     });
   }
 
   issuesForProject(
     organization: string,
-    projectNumber: number,
+    projectNumber: string | number,
     params?: FetchParameters,
   ): Promise<IssueList> {
     return IssueList.forProject({
       ...params,
       organization,
-      projectNumber,
+      projectNumber: Number(projectNumber),
     });
   }
 
   issuesForProjectView(
     organization: string,
-    projectNumber: number,
-    projectViewNumber: number,
+    projectNumber: number | string,
+    projectViewNumber: number | string,
     params?: FetchParameters,
   ): Promise<IssueList> {
     return IssueList.forProjectView({
       ...params,
       organization,
-      projectNumber,
-      projectViewNumber,
+      projectNumber: Number(projectNumber),
+      projectViewNumber: Number(projectViewNumber),
     });
   }
 
   issuesForProjectQuery(
     organization: string,
-    projectNumber: number,
+    projectNumber: number | string,
     customQuery: string,
     params?: FetchParameters,
   ): Promise<IssueList> {
     return IssueList.forProjectView({
       ...params,
       organization,
-      projectNumber,
+      projectNumber: Number(projectNumber),
       customQuery,
     });
   }
