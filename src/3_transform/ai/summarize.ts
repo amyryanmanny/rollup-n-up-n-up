@@ -136,12 +136,11 @@ export async function generateSummary(
     content = [{ content, source: content }] as MemoryBank;
   }
 
+  const sources = content.map((item) => item.source);
+
   // Check for a cache hit to avoid unnecessary generations
   const summaryCache = SummaryCache.getInstance();
-  const cachedResponse = await summaryCache.get(
-    prompt,
-    content.map((item) => item.source),
-  );
+  const cachedResponse = await summaryCache.get(prompt, sources);
   if (cachedResponse) {
     console.log("Using cached response for prompt:", prompt.name);
     return cachedResponse;
@@ -158,11 +157,7 @@ export async function generateSummary(
   );
 
   // Save the summary in the cache
-  summaryCache.set(
-    prompt,
-    content.map((item) => item.source),
-    summary,
-  );
+  summaryCache.set(prompt, sources, summary);
 
   return summary;
 }

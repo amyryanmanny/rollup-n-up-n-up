@@ -6,6 +6,7 @@ type MemoryItem = {
   source: string;
 };
 
+// TODO: Refactor to use a Set here
 export type MemoryBank = Array<MemoryItem>;
 
 // Singleton
@@ -33,7 +34,7 @@ export class Memory {
     const bank = this.banks.get(memoryBank);
 
     // Don't remember the same item twice
-    if (bank.includes(item)) {
+    if (bank.some((i) => i.source === item.source)) {
       return;
     }
 
