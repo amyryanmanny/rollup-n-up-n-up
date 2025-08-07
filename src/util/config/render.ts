@@ -1,5 +1,12 @@
-import type { IssueRenderOptions } from "@pull/github/issue";
 import { isTruthy } from "./truthy";
+
+export type IssueRenderOptions = {
+  fields: string[];
+  body: boolean;
+  updates: number;
+  subissues: boolean | undefined;
+  skipIfEmpty: boolean; // Skip rendering if no updates or body
+};
 
 export type DirtyIssueRenderOptions = {
   // TODO: Eventually should be unknown for all, this just includes sane types

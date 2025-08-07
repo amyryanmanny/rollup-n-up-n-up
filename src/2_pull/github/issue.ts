@@ -3,6 +3,7 @@ import {
   isTrueString,
   validateRenderOptions,
   type FetchParameters,
+  type IssueRenderOptions,
   type DirtyIssueRenderOptions,
 } from "@config";
 import { Memory } from "@transform/memory";
@@ -37,14 +38,6 @@ export type Issue = {
     number: number;
     fields: Map<string, IssueField>;
   };
-};
-
-export type IssueRenderOptions = {
-  fields: string[];
-  body: boolean;
-  updates: number;
-  subissues: boolean | undefined;
-  skipIfEmpty: boolean; // Skip rendering if no updates or body
 };
 
 export class IssueWrapper {
