@@ -303,7 +303,7 @@ export class IssueWrapper {
     if (options.skipIfEmpty) {
       if (
         (!options.updates ||
-          this.latestUpdates(options.updates).some((u) => !u.isEmpty)) &&
+          !this.latestUpdates(options.updates).some((u) => !u.isEmpty)) &&
         (!options.fields ||
           !options.fields.some((f) => this.field(f) !== "")) &&
         (!options.body || !this._body) &&
