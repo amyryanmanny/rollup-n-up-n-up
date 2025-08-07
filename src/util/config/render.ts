@@ -10,6 +10,7 @@ export type IssueRenderOptions = {
 
 export type DirtyIssueRenderOptions = {
   // TODO: Eventually should be unknown for all, this just includes sane types
+  field?: string;
   fields?: string | string[];
   body?: string | boolean;
   updates?: string | number | boolean;
@@ -23,6 +24,14 @@ export function validateRenderOptions(
 ): IssueRenderOptions {
   // Validate Options
   let fields: string[] = [];
+  if (options.field && options.fields) {
+    throw new Error(
+      'Cannot use both "field" and "fields" options. Use "fields" for multiple fields.',
+    );
+  }
+  if (options.field) {
+    fields = [options.field];
+  }
   if (options.fields) {
     fields = Array.isArray(options.fields) ? options.fields : [options.fields];
   }
