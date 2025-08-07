@@ -1,8 +1,10 @@
-import { matchIssueUrl, matchProjectViewUrl } from "@util/github-url";
 import { IssueWrapper } from "./issue";
 import { IssueList } from "./issue-list";
 
 import { getOctokit } from "@util/octokit";
+import { matchIssueUrl, matchProjectViewUrl } from "@util/github-url";
+
+import { validateFetchParameters, type DirtyFetchParameters } from "@config";
 
 // TODO: Positional and kwarg-based params
 // kwargs need fuzzy matching
@@ -10,17 +12,13 @@ import { getOctokit } from "@util/octokit";
 //       org, owner -> `organization`
 //       repo -> `repository`
 
-export type FetchParameters = {
-  subissues?: boolean;
-};
-
 export class GitHubClient {
   // The Client class is a wrapper around the GitHub API client.
   public octokit = getOctokit();
 
   url(
     url: string,
-    params?: FetchParameters,
+    params?: DirtyFetchParameters,
   ): Promise<IssueList | IssueWrapper> {
     // Single Issue
     const issueMatch = matchIssueUrl(url);
@@ -75,10 +73,10 @@ export class GitHubClient {
     owner: string,
     repo: string,
     issueNumber: string | number,
-    params?: FetchParameters,
+    params?: DirtyFetchParameters,
   ): Promise<IssueWrapper> {
     return IssueWrapper.forIssue({
-      ...params,
+      ...validateFetchParameters(params),
       organization: owner,
       repo,
       issueNumber: Number(issueNumber),
@@ -88,19 +86,23 @@ export class GitHubClient {
   issuesForRepo(
     owner: string,
     repo: string,
-    params?: FetchParameters,
+    params?: DirtyFetchParameters,
   ): Promise<IssueList> {
-    return IssueList.forRepo({ ...params, owner, repo });
+    return IssueList.forRepo({
+      ...validateFetchParameters(params),
+      owner,
+      repo,
+    });
   }
 
   subissuesForIssue(
     owner: string,
     repo: string,
     issueNumber: string | number,
-    params?: FetchParameters,
+    params?: DirtyFetchParameters,
   ): Promise<IssueList> {
     return IssueList.forSubissues({
-      ...params,
+      ...validateFetchParameters(params),
       owner,
       repo,
       issueNumber: Number(issueNumber),
@@ -110,10 +112,10 @@ export class GitHubClient {
   issuesForProject(
     organization: string,
     projectNumber: string | number,
-    params?: FetchParameters,
+    params?: DirtyFetchParameters,
   ): Promise<IssueList> {
     return IssueList.forProject({
-      ...params,
+      ...validateFetchParameters(params),
       organization,
       projectNumber: Number(projectNumber),
     });
@@ -123,10 +125,10 @@ export class GitHubClient {
     organization: string,
     projectNumber: number | string,
     projectViewNumber: number | string,
-    params?: FetchParameters,
+    params?: DirtyFetchParameters,
   ): Promise<IssueList> {
     return IssueList.forProjectView({
-      ...params,
+      ...validateFetchParameters(params),
       organization,
       projectNumber: Number(projectNumber),
       projectViewNumber: Number(projectViewNumber),
@@ -137,10 +139,10 @@ export class GitHubClient {
     organization: string,
     projectNumber: number | string,
     customQuery: string,
-    params?: FetchParameters,
+    params?: DirtyFetchParameters,
   ): Promise<IssueList> {
     return IssueList.forProjectView({
-      ...params,
+      ...validateFetchParameters(params),
       organization,
       projectNumber: Number(projectNumber),
       customQuery,

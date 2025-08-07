@@ -25,7 +25,7 @@ export function getConfig(
   );
 }
 
-
+export * from "./fetch";
 export * from "./github";
 export * from "./model";
 export * from "./push";
