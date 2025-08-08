@@ -20,7 +20,7 @@ type DiscussionMatch = {
 type DiscussionCategoryMatch = {
   owner: string;
   repo: string;
-  categoryName: string;
+  categoryName: string | undefined;
 };
 
 type ProjectViewMatch = {

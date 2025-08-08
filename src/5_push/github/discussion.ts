@@ -9,12 +9,6 @@ export type Discussion = {
   url: string;
 };
 
-type DiscussionCategory = {
-  id: string;
-  name: string;
-  slug: string;
-};
-
 async function getRepositoryId(
   client: GitHubPushClient,
   owner: string,
@@ -122,48 +116,74 @@ export async function getDiscussionCategoryId(
   repo: string,
   categoryName: string,
 ): Promise<string> {
-  const discussionCategoryQuery = `
-    query ($owner: String!, $repo: String!, $cursor: String) {
+  const query = `
+    query ($owner: String!, $repo: String!, $categoryName: String!) {
       repository(owner: $owner, name: $repo) {
-        discussionCategories(first: 100, after: $cursor) {
-          nodes {
-            id
-            name
-            slug
-          }
-          pageInfo {
-            endCursor
-            hasNextPage
-          }
+        discussionCategory(slug: $categoryName) {
+          id
         }
       }
     }
   `;
 
-  const response = await client.octokit.graphql.paginate<{
+  const response = await client.octokit.graphql<{
     repository: {
-      discussionCategories: {
-        nodes: Array<DiscussionCategory>;
-        pageInfo: {
-          endCursor: string;
-          hasNextPage: boolean;
-        };
+      discussionCategory: {
+        id: string;
       };
     };
-  }>(discussionCategoryQuery, { repo, owner });
+  }>(query, { owner, repo, categoryName });
 
-  const categoryId = response.repository.discussionCategories.nodes
-    .map((category) => ({
-      id: category.id,
-      slug: category.slug,
-    }))
-    .find((category) => category.slug === categoryName)?.id;
+  const categoryId = response.repository.discussionCategory.id;
   if (!categoryId) {
     throw new Error(
       `Discussion category "${categoryName}" not found in repository ${owner}/${repo}`,
     );
   }
   return categoryId;
+}
+
+export async function getLatestDiscussionForCategory(
+  client: GitHubPushClient,
+  owner: string,
+  repo: string,
+  categoryName: string,
+): Promise<Discussion | undefined> {
+  const categoryId = await getDiscussionCategoryId(
+    client,
+    owner,
+    repo,
+    categoryName,
+  );
+  const query = `
+    query ($owner: String!, $repo: String!, $categoryId: ID!) {
+      repository(owner: $owner, name: $repo) {
+        discussions(
+          first: 1
+          orderBy: {field: UPDATED_AT, direction: DESC}
+          categoryId: $categoryId
+        ) {
+          nodes {
+            id
+            number
+            title
+            body
+            url
+          }
+        }
+      }
+    }
+  `;
+
+  const response = await client.octokit.graphql<{
+    repository: {
+      discussions: {
+        nodes: Discussion[];
+      };
+    };
+  }>(query, { owner, repo, categoryId });
+
+  return response.repository.discussions.nodes[0];
 }
 
 export async function createDiscussion(

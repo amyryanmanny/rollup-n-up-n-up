@@ -1,5 +1,6 @@
 export const ONE_DAY = 86_400_000; // 24 hours in milliseconds
 
+// TODO: This should be an enum
 export type DayOfWeek =
   | "MONDAY"
   | "TUESDAY"
@@ -9,7 +10,10 @@ export type DayOfWeek =
   | "SATURDAY"
   | "SUNDAY";
 
-export function getDayOfThisWeek(day: DayOfWeek): Date | undefined {
+export function getDayOfThisWeek(
+  day: DayOfWeek,
+  weekOffset: number = 0,
+): Date | undefined {
   const dayMap: Map<DayOfWeek, number> = new Map([
     ["MONDAY", 1],
     ["TUESDAY", 2],
@@ -20,12 +24,23 @@ export function getDayOfThisWeek(day: DayOfWeek): Date | undefined {
     ["SUNDAY", 0],
   ]);
 
-  if (dayMap.has(day)) {
-    const today = new Date();
-    const dayIndex = dayMap.get(day)!;
-    const diff = (dayIndex - today.getDay() + 7) % 7;
-    const dayOfThisWeek = new Date(today);
-    dayOfThisWeek.setDate(today.getDate() + diff);
-    return dayOfThisWeek;
+  const dayIndex = dayMap.get(day);
+  if (!dayIndex) {
+    return undefined; // Invalid day of the week
   }
+
+  // Fast forward to the next occurrence of the specified day
+  const today = new Date();
+  const dayOfThisWeek = new Date(today);
+
+  const diff = (dayIndex - today.getDay() + 7) % 7;
+  dayOfThisWeek.setDate(today.getDate() + diff);
+  dayOfThisWeek.setHours(0, 0, 0, 0); // Set to start of the day
+
+  // Offset + or - 1 week if specified
+  if (weekOffset !== 0) {
+    dayOfThisWeek.setDate(dayOfThisWeek.getDate() + weekOffset * 7);
+  }
+
+  return dayOfThisWeek;
 }

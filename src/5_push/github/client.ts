@@ -17,6 +17,7 @@ import {
   getDiscussionByNumber,
   getDiscussionByTitle,
   getDiscussionCategoryId,
+  getLatestDiscussionForCategory,
   updateDiscussion,
   type Discussion,
 } from "./discussion";
@@ -302,9 +303,6 @@ export class GitHubPushClient {
   async fetch(target: PushTarget, title: string | undefined) {
     switch (target.type) {
       case "discussion":
-        if (!title) {
-          throw new Error("Title is required for 'discussion' fetch type.");
-        }
         return this.fetchDiscussion(target.url, title);
       default:
         throw new Error(
@@ -313,24 +311,36 @@ export class GitHubPushClient {
     }
   }
 
-  async fetchDiscussion(url: string, title: string) {
-    // TODO: Can this be refactored to share logic with pushToDiscussion?
+  async fetchDiscussion(url: string, title: string | undefined) {
     const match = matchDiscussionCategoryUrl(url);
     if (!match) {
       throw new Error(`Invalid GitHub URL: ${url}`);
     }
     const { owner, repo, categoryName } = match;
 
-    if (!categoryName) {
-      throw new Error(
-        `Category name is required. Ex: .../discussions/categories/reporting-dogfooding`,
+    let discussion: Discussion | undefined;
+    if (title) {
+      discussion = await getDiscussionByTitle(this, owner, repo, title);
+      if (!discussion) {
+        throw new Error(
+          `Discussion with title "${title}" not found in ${owner}/${repo}.`,
+        );
+      }
+    } else if (categoryName) {
+      discussion = await getLatestDiscussionForCategory(
+        this,
+        owner,
+        repo,
+        categoryName,
       );
-    }
-
-    const discussion = await getDiscussionByTitle(this, owner, repo, title);
-    if (!discussion) {
+      if (!discussion) {
+        throw new Error(
+          `No discussions found in category "${categoryName}" for ${owner}/${repo}.`,
+        );
+      }
+    } else {
       throw new Error(
-        `Discussion with title "${title}" not found in ${owner}/${repo}.`,
+        `Either "title", or a "categoryName" in the URL, must be provided to fetch a discussion.`,
       );
     }
 

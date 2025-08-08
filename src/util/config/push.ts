@@ -1,9 +1,12 @@
 import strftime from "strftime";
 
-import { getConfig } from "@util/config";
-import { type PushTarget, type PushType } from "@push/github/client";
-import { getDayOfThisWeek, type DayOfWeek } from "@util/date";
 import { setOutput } from "@actions/core";
+
+import { type PushTarget, type PushType } from "@push/github/client";
+
+import { getConfig } from "@config";
+import { getDayOfThisWeek, type DayOfWeek } from "@util/date";
+import { toSnakeCase } from "@util/string";
 
 type PushConfig = {
   title?: string; // Title is optional - not all types require it
@@ -19,15 +22,24 @@ function getTitleDate(titleDateOption: string | undefined): Date {
     return today;
   }
 
-  titleDateOption = titleDateOption.toUpperCase();
+  titleDateOption = toSnakeCase(titleDateOption).toUpperCase();
 
   // Explicit TODAY
   if (titleDateOption === "TODAY") {
     return today;
   }
 
+  let weekOffset = 0;
+  if (titleDateOption.startsWith("LAST_")) {
+    weekOffset = -1;
+    titleDateOption.replace("LAST_", "");
+  } else if (titleDateOption.startsWith("NEXT_")) {
+    weekOffset = 1;
+    titleDateOption.replace("NEXT_", "");
+  }
+
   // Check if it's a day of the week (e.g., MONDAY, TUESDAY, etc.)
-  const dayOfWeek = getDayOfThisWeek(titleDateOption as DayOfWeek);
+  const dayOfWeek = getDayOfThisWeek(titleDateOption as DayOfWeek, weekOffset);
   if (dayOfWeek) {
     return dayOfWeek;
   }
