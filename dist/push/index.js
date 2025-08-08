@@ -38159,7 +38159,7 @@ async function getLatestDiscussionForCategory(client, owner, repo, categoryName)
       repository(owner: $owner, name: $repo) {
         discussions(
           first: 1
-          orderBy: {field: UPDATED_AT, direction: DESC}
+          orderBy: {field: CREATED_AT, direction: DESC}
           categoryId: $categoryId
         ) {
           nodes {
