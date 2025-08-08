@@ -37780,9 +37780,10 @@ var import_yaml = __toESM(require_dist(), 1);
 var import_github = __toESM(require_github(), 1);
 // src/util/config/push.ts
 var import_strftime = __toESM(require_strftime(), 1);
+var import_core2 = __toESM(require_core(), 1);
 
 // src/util/date.ts
-function getDayOfThisWeek(day) {
+function getDayOfThisWeek(day, weekOffset = 0) {
   const dayMap = new Map([
     ["MONDAY", 1],
     ["TUESDAY", 2],
@@ -37792,28 +37793,45 @@ function getDayOfThisWeek(day) {
     ["SATURDAY", 6],
     ["SUNDAY", 0]
   ]);
-  if (dayMap.has(day)) {
-    const today = new Date;
-    const dayIndex = dayMap.get(day);
-    const diff = (dayIndex - today.getDay() + 7) % 7;
-    const dayOfThisWeek = new Date(today);
-    dayOfThisWeek.setDate(today.getDate() + diff);
-    return dayOfThisWeek;
+  const dayIndex = dayMap.get(day);
+  if (!dayIndex) {
+    return;
   }
+  const today = new Date;
+  const dayOfThisWeek = new Date(today);
+  const diff = (dayIndex - today.getDay() + 7) % 7;
+  dayOfThisWeek.setDate(today.getDate() + diff);
+  dayOfThisWeek.setHours(0, 0, 0, 0);
+  if (weekOffset !== 0) {
+    dayOfThisWeek.setDate(dayOfThisWeek.getDate() + weekOffset * 7);
+  }
+  return dayOfThisWeek;
+}
+
+// src/util/string.ts
+function toSnakeCase(s) {
+  return s.replace(/[^a-zA-Z0-9_\s]/g, "").trim().replace(/([a-z])([A-Z])/g, "$1_$2").replace(/\s+/g, "_").toLowerCase();
 }
 
 // src/util/config/push.ts
-var import_core2 = __toESM(require_core(), 1);
 function getTitleDate(titleDateOption) {
   const today = new Date;
   if (!titleDateOption) {
     return today;
   }
-  titleDateOption = titleDateOption.toUpperCase();
+  titleDateOption = toSnakeCase(titleDateOption).toUpperCase();
   if (titleDateOption === "TODAY") {
     return today;
   }
-  const dayOfWeek = getDayOfThisWeek(titleDateOption);
+  let weekOffset = 0;
+  if (titleDateOption.startsWith("LAST_")) {
+    weekOffset = -1;
+    titleDateOption.replace("LAST_", "");
+  } else if (titleDateOption.startsWith("NEXT_")) {
+    weekOffset = 1;
+    titleDateOption.replace("NEXT_", "");
+  }
+  const dayOfWeek = getDayOfThisWeek(titleDateOption, weekOffset);
   if (dayOfWeek) {
     return dayOfWeek;
   }
@@ -38118,32 +38136,45 @@ async function getDiscussionByTitle(client, owner, repo, title) {
   return response.repository.discussions.nodes.find((discussion) => discussion.title === title);
 }
 async function getDiscussionCategoryId(client, owner, repo, categoryName) {
-  const discussionCategoryQuery = `
-    query ($owner: String!, $repo: String!, $cursor: String) {
+  const query = `
+    query ($owner: String!, $repo: String!, $categoryName: String!) {
       repository(owner: $owner, name: $repo) {
-        discussionCategories(first: 100, after: $cursor) {
+        discussionCategory(slug: $categoryName) {
+          id
+        }
+      }
+    }
+  `;
+  const response = await client.octokit.graphql(query, { owner, repo, categoryName });
+  const categoryId = response.repository.discussionCategory.id;
+  if (!categoryId) {
+    throw new Error(`Discussion category "${categoryName}" not found in repository ${owner}/${repo}`);
+  }
+  return categoryId;
+}
+async function getLatestDiscussionForCategory(client, owner, repo, categoryName) {
+  const categoryId = await getDiscussionCategoryId(client, owner, repo, categoryName);
+  const query = `
+    query ($owner: String!, $repo: String!, $categoryId: ID!) {
+      repository(owner: $owner, name: $repo) {
+        discussions(
+          first: 1
+          orderBy: {field: UPDATED_AT, direction: DESC}
+          categoryId: $categoryId
+        ) {
           nodes {
             id
-            name
-            slug
-          }
-          pageInfo {
-            endCursor
-            hasNextPage
+            number
+            title
+            body
+            url
           }
         }
       }
     }
   `;
-  const response = await client.octokit.graphql.paginate(discussionCategoryQuery, { repo, owner });
-  const categoryId = response.repository.discussionCategories.nodes.map((category) => ({
-    id: category.id,
-    slug: category.slug
-  })).find((category) => category.slug === categoryName)?.id;
-  if (!categoryId) {
-    throw new Error(`Discussion category "${categoryName}" not found in repository ${owner}/${repo}`);
-  }
-  return categoryId;
+  const response = await client.octokit.graphql(query, { owner, repo, categoryId });
+  return response.repository.discussions.nodes[0];
 }
 async function createDiscussion(client, owner, repo, categoryId, title, body) {
   const mutation = `
@@ -38482,9 +38513,6 @@ ${append}`);
   async fetch(target, title) {
     switch (target.type) {
       case "discussion":
-        if (!title) {
-          throw new Error("Title is required for 'discussion' fetch type.");
-        }
         return this.fetchDiscussion(target.url, title);
       default:
         throw new Error(`Unsupported fetch type: ${target.type}. Supported types are: repo-file, issue, discussion.`);
@@ -38496,12 +38524,19 @@ ${append}`);
       throw new Error(`Invalid GitHub URL: ${url}`);
     }
     const { owner, repo, categoryName } = match;
-    if (!categoryName) {
-      throw new Error(`Category name is required. Ex: .../discussions/categories/reporting-dogfooding`);
-    }
-    const discussion = await getDiscussionByTitle(this, owner, repo, title);
-    if (!discussion) {
-      throw new Error(`Discussion with title "${title}" not found in ${owner}/${repo}.`);
+    let discussion;
+    if (title) {
+      discussion = await getDiscussionByTitle(this, owner, repo, title);
+      if (!discussion) {
+        throw new Error(`Discussion with title "${title}" not found in ${owner}/${repo}.`);
+      }
+    } else if (categoryName) {
+      discussion = await getLatestDiscussionForCategory(this, owner, repo, categoryName);
+      if (!discussion) {
+        throw new Error(`No discussions found in category "${categoryName}" for ${owner}/${repo}.`);
+      }
+    } else {
+      throw new Error(`Either "title", or a "categoryName" in the URL, must be provided to fetch a discussion.`);
     }
     import_core5.setOutput("discussion_url", discussion.url);
   }
