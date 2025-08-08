@@ -37826,10 +37826,10 @@ function getTitleDate(titleDateOption) {
   let weekOffset = 0;
   if (titleDateOption.startsWith("LAST_")) {
     weekOffset = -1;
-    titleDateOption.replace("LAST_", "");
+    titleDateOption = titleDateOption.replace("LAST_", "");
   } else if (titleDateOption.startsWith("NEXT_")) {
     weekOffset = 1;
-    titleDateOption.replace("NEXT_", "");
+    titleDateOption = titleDateOption.replace("NEXT_", "");
   }
   const dayOfWeek = getDayOfThisWeek(titleDateOption, weekOffset);
   if (dayOfWeek) {

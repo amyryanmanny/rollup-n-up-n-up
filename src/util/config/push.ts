@@ -32,10 +32,10 @@ function getTitleDate(titleDateOption: string | undefined): Date {
   let weekOffset = 0;
   if (titleDateOption.startsWith("LAST_")) {
     weekOffset = -1;
-    titleDateOption.replace("LAST_", "");
+    titleDateOption = titleDateOption.replace("LAST_", "");
   } else if (titleDateOption.startsWith("NEXT_")) {
     weekOffset = 1;
-    titleDateOption.replace("NEXT_", "");
+    titleDateOption = titleDateOption.replace("NEXT_", "");
   }
 
   // Check if it's a day of the week (e.g., MONDAY, TUESDAY, etc.)
