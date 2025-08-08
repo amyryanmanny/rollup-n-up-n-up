@@ -345,5 +345,6 @@ export class GitHubPushClient {
     }
 
     setOutput("discussion_url", discussion.url);
+    setOutput("title", discussion.title);
   }
 }

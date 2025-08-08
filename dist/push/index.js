@@ -38539,6 +38539,7 @@ ${append}`);
       throw new Error(`Either "title", or a "categoryName" in the URL, must be provided to fetch a discussion.`);
     }
     import_core5.setOutput("discussion_url", discussion.url);
+    import_core5.setOutput("title", discussion.title);
   }
 }
 
