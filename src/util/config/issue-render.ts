@@ -12,11 +12,9 @@ export type DirtyIssueRenderOptions = {
   skipIfEmpty?: string | boolean; // Skip rendering if no updates or body
 };
 
-// TODO: Memoize
 export function validateRenderOptions(
   options: DirtyIssueRenderOptions,
 ): IssueRenderOptions {
-  // Validate Options
   let fields: string[] = [];
   if (options.field && options.fields) {
     throw new Error(

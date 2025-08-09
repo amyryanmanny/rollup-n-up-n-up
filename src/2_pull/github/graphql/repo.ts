@@ -182,7 +182,7 @@ export async function listIssuesForRepo(
 
   return {
     issues,
-    // TODO: Move this out to IssueList
+    // TODO: Move this logic out to IssueList
     title: `Issues for ${params.owner}/${params.repo}`,
     url: `https://github.com/${params.owner}/${params.repo}`,
   };

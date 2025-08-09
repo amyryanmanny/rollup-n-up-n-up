@@ -6,7 +6,6 @@ type MemoryItem = {
   sources: string[];
 };
 
-// TODO: Refactor to use a Set here
 export type MemoryBank = Array<MemoryItem>;
 
 // Singleton

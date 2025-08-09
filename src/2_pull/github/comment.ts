@@ -38,7 +38,7 @@ export class CommentWrapper {
 
   constructor(issue: IssueWrapper, comment: Comment) {
     // TODO: Move this.issue onto CommentList class instead
-    // Call it parent, also support Dicussion since there's big overlap
+    // Call it parent, also support Discussion since there's big overlap
     this.issue = issue;
     this.comment = comment;
 

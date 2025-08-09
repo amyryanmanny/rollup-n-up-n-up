@@ -33,8 +33,6 @@ export function accessible(markdown: string): string {
     (emoji) => `${emoji} (${colorMap[emoji]})`,
   );
 
-  // TODO: Add more accessibility features here as needed
-
   return markdown;
 }
 

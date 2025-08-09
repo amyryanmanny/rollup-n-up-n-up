@@ -242,7 +242,6 @@ export class IssueWrapper {
       repo: this.repo,
       issueNumber: this.number,
       subissues: false, // Don't recursively fetch subissues
-      // TODO: There should probably be a way to explicitly do it
     });
   }
 
