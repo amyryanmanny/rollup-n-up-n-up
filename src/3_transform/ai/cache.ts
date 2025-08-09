@@ -33,9 +33,8 @@ export class SummaryCache {
   ): string {
     // Generate a deterministic cache key from PromptParameters and sources
     const json = JSON.stringify({
-      name: prompt.name,
       modelParameters: prompt.modelParameters,
-      prompt: prompt.messages, // Message order is important
+      prompt: prompt.messages, // Message order is significant
       sources: sources.sort(),
     });
     return crypto.createHash("sha256").update(json).digest("hex").slice(0, 8);

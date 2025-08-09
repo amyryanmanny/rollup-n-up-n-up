@@ -1,9 +1,15 @@
 import {
+  validateRenderOptions,
   type FetchParameters,
   type DirtyIssueRenderOptions,
-  validateRenderOptions,
 } from "@config";
+
 import { Memory } from "@transform/memory";
+import {
+  renderIssueList,
+  type RenderedIssueList,
+} from "@transform/render-objects/issue-list";
+
 import { emojiCompare } from "@util/emoji";
 import { title } from "@util/string";
 
@@ -233,35 +239,28 @@ export class IssueList {
   }
 
   // Render / Memory Functions
-  private _render(): string {
-    // IssueLists are Level 2
-    return `## ${this.header}`;
+  private _render(
+    options: DirtyIssueRenderOptions,
+  ): RenderedIssueList | undefined {
+    return renderIssueList(this, validateRenderOptions(options));
   }
 
   remember(options: DirtyIssueRenderOptions = {}) {
-    console.log("Remembering issue list", this.header);
-    this.memory.remember({
-      content: this._render(),
-      source: this.url,
-    });
-
-    for (const issue of this.issues) {
-      issue.remember(options);
+    const rendered = this._render(options);
+    if (rendered) {
+      this.memory.remember({
+        content: rendered.markdown,
+        sources: rendered.sources,
+      });
     }
   }
 
   render(options: DirtyIssueRenderOptions = {}): string {
     this.remember(options);
-
-    const validatedOptions = validateRenderOptions(options);
-
-    let rendered = this._render();
-    rendered += this.issues
-      .map((issue) => issue._render(validatedOptions))
-      .filter((issue) => issue) // Filter out empty renders
-      .join("\n\n");
-    rendered += `\n\n---`; // End IssueLists with a horizontal rule
-
-    return rendered;
+    const rendered = this._render(options);
+    if (rendered) {
+      return rendered.markdown;
+    }
+    return "";
   }
 }

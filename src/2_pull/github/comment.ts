@@ -1,4 +1,8 @@
+import { validateRenderOptions, type DirtyIssueRenderOptions } from "@config";
+
 import { Memory } from "@transform/memory";
+import { renderComment, type RenderedComment } from "@transform/render-objects";
+
 import { ONE_DAY } from "@util/date";
 import { extractEmoji } from "@util/emoji";
 import {
@@ -189,20 +193,29 @@ export class CommentWrapper {
   }
 
   // Render / Memory Functions
-  private _render(): string {
-    // Issue Comments are Level 4
-    // Subissue Comments are Level 5
-    return !this.issue.isSubissue
-      ? `#### [Update](${this.url})\n\n${this._update}`
-      : `##### [Update](${this.url})\n\n${this._update}`;
+  private _render(
+    options: DirtyIssueRenderOptions,
+  ): RenderedComment | undefined {
+    return renderComment(this, validateRenderOptions(options));
   }
 
-  remember() {
-    this.memory.remember({ content: this._render(), source: this.url });
+  remember(options: DirtyIssueRenderOptions = {}) {
+    const rendered = this._render(options);
+    if (rendered) {
+      this.memory.remember({
+        content: rendered.markdown,
+        sources: rendered.sources,
+      });
+    }
   }
 
-  render(): string {
-    this.remember();
-    return this._render();
+  render(options: DirtyIssueRenderOptions = {}): string {
+    this.remember(options);
+    const rendered = this._render(options);
+    if (rendered === undefined) {
+      return "";
+    }
+    // Return the rendered markdown string
+    return rendered.markdown;
   }
 }

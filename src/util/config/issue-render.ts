@@ -1,12 +1,6 @@
-import { isTruthy } from "./truthy";
+import type { IssueRenderOptions } from "@transform/render-objects/issue";
 
-export type IssueRenderOptions = {
-  fields: string[];
-  body: boolean;
-  updates: number;
-  subissues: boolean | undefined;
-  skipIfEmpty: boolean; // Skip rendering if no updates or body
-};
+import { isTruthy } from "./truthy";
 
 export type DirtyIssueRenderOptions = {
   // TODO: Eventually should be unknown for all, this just includes sane types

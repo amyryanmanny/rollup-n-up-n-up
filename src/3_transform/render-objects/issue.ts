@@ -1,0 +1,91 @@
+import { IssueWrapper } from "@pull/github/issue";
+import { renderComment } from "./comment";
+
+export type IssueRenderOptions = {
+  fields: string[];
+  body: boolean;
+  updates: number;
+  subissues: boolean | undefined;
+  skipIfEmpty: boolean; // Skip rendering if no updates or body
+};
+
+export type RenderedIssue = {
+  markdown: string;
+  sources: string[];
+};
+
+export function renderIssue(
+  issue: IssueWrapper,
+  options: IssueRenderOptions,
+  headerLevel: number = 3, // Default to Level 3 for Issues
+): RenderedIssue | undefined {
+  if (options.subissues === undefined) {
+    // Render subissues by default if they exist
+    options.subissues = issue.subissues !== undefined;
+  }
+
+  // Render an IssueWrapper as a Markdown string
+  let markdown = `${"#".repeat(headerLevel)} ${issue.header}\n\n`;
+  const sources = [issue.url];
+
+  if (
+    (!options.updates || !issue.hasUpdate) &&
+    (!options.fields || !options.fields.some((f) => issue.field(f))) &&
+    (!options.body || !issue._body) &&
+    (!options.subissues || !issue.subissues || !issue.subissues.hasUpdates)
+  ) {
+    if (options.skipIfEmpty) {
+      return undefined;
+    } else {
+      markdown +=
+        "`\n\nThis issue has no updates, fields, or body content to render.\n\n`";
+      return {
+        markdown,
+        sources,
+      };
+    }
+  }
+
+  if (options.fields.length > 0) {
+    for (const fieldName of options.fields) {
+      const fieldValue = issue.field(fieldName);
+      if (fieldValue) {
+        markdown += `**${fieldName}:** ${fieldValue}\n`;
+      }
+    }
+    markdown += "\n";
+  }
+
+  if (options.body) {
+    markdown += `${issue._body}\n\n`;
+  }
+
+  if (options.updates) {
+    const latestUpdates = issue.latestUpdates(options.updates);
+
+    for (const update of latestUpdates) {
+      const renderedUpdate = renderComment(update, options, headerLevel + 1);
+      if (renderedUpdate) {
+        markdown += `${renderedUpdate.markdown}\n\n`;
+        sources.push(...renderedUpdate.sources);
+      }
+    }
+  }
+
+  if (options.subissues && issue.subissues) {
+    for (const subissue of issue.subissues) {
+      const renderedSubissue = renderIssue(subissue, options, headerLevel + 1);
+      if (renderedSubissue) {
+        markdown += `${renderedSubissue.markdown}\n\n`;
+        sources.push(...renderedSubissue.sources);
+      }
+    }
+
+    markdown += `---\n\n`; // End Subissues with a horizontal rule
+  }
+
+  return {
+    markdown,
+    sources,
+  };
+}

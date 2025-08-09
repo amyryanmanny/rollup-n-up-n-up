@@ -133,10 +133,11 @@ export async function generateSummary(
 
   if (typeof content === "string") {
     // Convert string literal to MemoryBank format
-    content = [{ content, source: content }] as MemoryBank;
+    content = [{ content, sources: [content] }] as MemoryBank;
   }
 
-  const sources = content.map((item) => item.source);
+  // Don't deduplicate sources here, as they are important for caching
+  const sources = content.map((item) => item.sources).flat();
 
   // Check for a cache hit to avoid unnecessary generations
   const summaryCache = SummaryCache.getInstance();
