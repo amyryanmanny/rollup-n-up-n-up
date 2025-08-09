@@ -16,6 +16,7 @@ export type Comment = {
   author: string;
   body: string;
   createdAt: Date;
+  updatedAt: Date;
   url: string;
 };
 
@@ -47,6 +48,7 @@ export class CommentWrapper {
       author: "",
       body: CommentWrapper.NULL_UPDATE,
       createdAt: new Date(0),
+      updatedAt: new Date(0),
       url: issue.url,
     });
   }
@@ -97,6 +99,10 @@ export class CommentWrapper {
 
   get createdAt(): Date {
     return this.comment.createdAt;
+  }
+
+  get updatedAt(): Date {
+    return this.comment.updatedAt;
   }
 
   // Date Properties

@@ -94,6 +94,7 @@ export async function listIssuesForProject(
                         }
                         body
                         createdAt
+                        updatedAt
                         url
                       }
                     }
@@ -181,6 +182,7 @@ export async function listIssuesForProject(
                     } | null;
                     body: string;
                     createdAt: string; // ISO 8601 date string
+                    updatedAt: string; // ISO 8601 date string
                     url: string;
                   }>;
                 };
@@ -238,6 +240,7 @@ export async function listIssuesForProject(
           author: comment.author?.login || "Unknown",
           body: comment.body,
           createdAt: new Date(comment.createdAt),
+          updatedAt: new Date(comment.updatedAt),
           url: comment.url,
         })),
         isSubissue: false,
