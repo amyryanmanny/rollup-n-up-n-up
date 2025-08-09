@@ -1,7 +1,7 @@
 import path from "path";
 import vento from "ventojs";
 
-import * as filters from "./filters";
+import * as filters from "@transform/filters";
 import * as plugins from "./plugins";
 
 import { GitHubClient } from "@pull/github/client";
