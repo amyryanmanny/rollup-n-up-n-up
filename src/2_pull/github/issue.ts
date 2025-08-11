@@ -5,6 +5,7 @@ import {
   type DirtyIssueRenderOptions,
   type FetchParameters,
 } from "@config";
+import { fuzzy } from "@util/string";
 
 import { Memory } from "@transform/memory";
 import {
@@ -149,34 +150,33 @@ export class IssueWrapper {
 
   // Fields
   field(fieldName: string): string {
-    // Return the value of the field by name
-    const insensitiveFieldName = fieldName
-      .trim()
-      .toUpperCase()
-      .replace(/\s+/g, "")
-      .replace("_", ""); // TODO: Pull into string.ts
-    switch (insensitiveFieldName) {
-      case "TITLE":
+    // Return the value of a field by name
+    switch (fuzzy(fieldName)) {
+      case fuzzy("title"):
         return this.title;
-      case "URL":
+      case fuzzy("url"):
         return this.url;
-      case "NUMBER":
+      case fuzzy("number"):
         return String(this.number);
-      case "BODY":
+      case fuzzy("body"):
         return this.body;
-      case "TYPE":
+      case fuzzy("type"):
         return this.type;
-      case "REPO":
-      case "REPOSITORY":
+      case fuzzy("repo"):
+      case fuzzy("repository"):
         return this.repo;
-      case "ORG":
-      case "ORGANIZATION":
-      case "OWNER":
+      case fuzzy("org"):
+      case fuzzy("organization"):
+      case fuzzy("owner"):
         return this.owner;
-      case "FULLNAME":
-      case "NAMEWITHOWNER":
-      case "REPONAMEWITHOWNER":
-        return this.repoNameWithOwner ?? "";
+      case fuzzy("full_name"):
+      case fuzzy("name_with_owner"):
+      case fuzzy("repo_name_with_owner"):
+        return this.repoNameWithOwner;
+      case fuzzy("parent"):
+      case fuzzy("parent_issue"):
+      case fuzzy("parent_title"):
+        return this.parentTitle || "";
     }
 
     // Fallback to projectFields

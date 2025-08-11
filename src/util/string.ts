@@ -25,6 +25,13 @@ export function toSnakeCase(s: string): string {
     .toLowerCase(); // Convert to lowercase
 }
 
+export function fuzzy(s: string): string {
+  // Remove all whitespace and underscores, then convert to uppercase
+  return s.replace(/[\s_]+/g, "").toUpperCase();
+  // TODO: Implement something like
+  //   https://github.com/git/git/blob/e813a0200a7121b97fec535f0d0b460b0a33356c/help.c#L631
+}
+
 // Regexes for parsing Sections
 function splitMarkdownByRegex(
   markdown: string,
