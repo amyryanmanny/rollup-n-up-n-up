@@ -8,10 +8,7 @@ import {
 import { fuzzy } from "@util/string";
 
 import { Memory } from "@transform/memory";
-import {
-  renderIssue,
-  type RenderedIssue,
-} from "@transform/render-objects/issue";
+import { renderIssue, type RenderedIssue } from "@transform/render-objects";
 
 import { CommentWrapper, type Comment } from "./comment";
 import { findLatestUpdates } from "./update";

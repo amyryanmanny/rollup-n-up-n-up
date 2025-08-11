@@ -8,7 +8,7 @@ import { Memory } from "@transform/memory";
 import {
   renderIssueList,
   type RenderedIssueList,
-} from "@transform/render-objects/issue-list";
+} from "@transform/render-objects";
 
 import { emojiCompare } from "@util/emoji";
 import { title } from "@util/string";

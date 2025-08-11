@@ -1,4 +1,4 @@
-import type { IssueRenderOptions } from "@transform/render-objects/issue";
+import type { IssueRenderOptions } from "@transform/render-objects";
 
 import { isTruthy } from "./truthy";
 
