@@ -37,11 +37,16 @@ export type Issue = {
   assignees: string[];
   labels: string[];
   comments: Array<Comment>;
-  isSubissue: boolean; // If this is a subissue of another issue
+  parent?: {
+    title: string;
+    url: string;
+    number: number;
+  };
   project?: {
     number: number;
     fields: Map<string, IssueField>;
   };
+  isSubissue: boolean; // If this is a subissue of another issue
 };
 
 export class IssueWrapper {
@@ -136,6 +141,10 @@ export class IssueWrapper {
 
   get labels(): string[] {
     return this.issue.labels.map((label) => label.trim());
+  }
+
+  get parentTitle(): string | undefined {
+    return this.issue.parent?.title;
   }
 
   // Fields

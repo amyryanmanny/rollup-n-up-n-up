@@ -98,6 +98,11 @@ export async function listIssuesForProject(
                         url
                       }
                     }
+                    parent {
+                      title
+                      url
+                      number
+                    }
                   }
                 }
                 fieldValues(first: 100) {
@@ -186,6 +191,11 @@ export async function listIssuesForProject(
                     url: string;
                   }>;
                 };
+                parent: {
+                  title: string;
+                  url: string;
+                  number: number;
+                } | null;
               } | null;
               fieldValues: {
                 edges: Array<{
@@ -243,7 +253,6 @@ export async function listIssuesForProject(
           updatedAt: new Date(comment.updatedAt),
           url: comment.url,
         })),
-        isSubissue: false,
         project: {
           number: params.projectNumber,
           fields: edge.node.fieldValues.edges.reduce((acc, fieldEdge) => {
@@ -279,6 +288,14 @@ export async function listIssuesForProject(
             return acc;
           }, new Map<string, IssueField>()),
         },
+        parent: content.parent
+          ? {
+              title: content.parent.title,
+              url: content.parent.url,
+              number: content.parent.number,
+            }
+          : undefined,
+        isSubissue: false, // This is not a subissue in the context of a project
       };
     })
     .filter((item) => item !== null);

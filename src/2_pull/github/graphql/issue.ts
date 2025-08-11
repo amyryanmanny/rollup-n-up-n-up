@@ -54,6 +54,11 @@ export async function getIssue(params: GetIssueParameters): Promise<Issue> {
                 url
               }
             }
+            parent {
+              title
+              url
+              number
+            }
           }
         }
       }
@@ -98,6 +103,11 @@ export async function getIssue(params: GetIssueParameters): Promise<Issue> {
               url: string;
             }>;
           };
+          parent: {
+            title: string;
+            url: string;
+            number: number;
+          } | null;
         };
       };
     };
@@ -128,6 +138,13 @@ export async function getIssue(params: GetIssueParameters): Promise<Issue> {
       updatedAt: new Date(comment.updatedAt),
       url: comment.url,
     })),
+    parent: issue.parent
+      ? {
+          title: issue.parent.title,
+          url: issue.parent.url,
+          number: issue.parent.number,
+        }
+      : undefined,
     isSubissue: false,
   };
 }

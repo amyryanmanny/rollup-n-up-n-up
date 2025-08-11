@@ -71,6 +71,11 @@ export async function listSubissuesForIssue(
                     url
                   }
                 }
+                parent {
+                  title
+                  url
+                  number
+                }
               }
               pageInfo {
                 hasNextPage
@@ -129,6 +134,11 @@ export async function listSubissuesForIssue(
                   url: string;
                 }>;
               };
+              parent: {
+                title: string;
+                url: string;
+                number: number;
+              } | null;
             }>;
           };
         };
@@ -162,6 +172,13 @@ export async function listSubissuesForIssue(
           updatedAt: new Date(comment.updatedAt),
           url: comment.url,
         })),
+        parent: subIssue.parent
+          ? {
+              title: subIssue.parent.title,
+              url: subIssue.parent.url,
+              number: subIssue.parent.number,
+            }
+          : undefined,
         isSubissue: true, // Mark as subissue
       }),
     );

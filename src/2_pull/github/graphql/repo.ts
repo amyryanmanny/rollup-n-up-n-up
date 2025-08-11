@@ -88,6 +88,11 @@ export async function listIssuesForRepo(
                   url
                 }
               }
+              parent {
+                title
+                url
+                number
+              }
             }
             pageInfo {
               endCursor
@@ -138,6 +143,11 @@ export async function listIssuesForRepo(
                 url: string;
               }>;
             };
+            parent: {
+              title: string;
+              url: string;
+              number: number;
+            } | null;
           }>;
           pageInfo: {
             endCursor: string;
@@ -176,6 +186,13 @@ export async function listIssuesForRepo(
         updatedAt: new Date(comment.updatedAt),
         url: comment.url,
       })),
+      parent: issue.parent
+        ? {
+            title: issue.parent.title,
+            url: issue.parent.url,
+            number: issue.parent.number,
+          }
+        : undefined,
       isSubissue: false,
     }),
   );
