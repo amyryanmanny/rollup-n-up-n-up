@@ -1,11 +1,16 @@
 import { getOctokit } from "@util/octokit";
+import type { PageInfoForward } from "@octokit/plugin-paginate-graphql";
+
 import type { Issue } from "../issue";
+
 import {
   ISSUE_PAGE_SIZE,
   NUM_ISSUE_ASSIGNESS,
   NUM_ISSUE_COMMENTS,
   NUM_ISSUE_LABELS,
 } from ".";
+
+import { mapIssueNode, type IssueNode } from "./issue";
 
 type IssueStateParam = "OPEN" | "CLOSED" | "ALL";
 type IssueState = Omit<IssueStateParam, "ALL">; // Doesn't work due to GraphQL weirdness
@@ -50,6 +55,7 @@ export async function listIssuesForRepo(
         repository(name: $repo) {
           issues(first: ${ISSUE_PAGE_SIZE}, states: $states, after: $cursor) {
             nodes {
+              __typename
               title
               body
               url
@@ -108,93 +114,24 @@ export async function listIssuesForRepo(
     repositoryOwner: {
       repository: {
         issues: {
-          nodes: Array<{
-            title: string;
-            body: string;
-            url: string;
-            number: number;
-            state: "OPEN" | "CLOSED";
-            createdAt: string; // ISO 8601 date string
-            updatedAt: string; // ISO 8601 date string
-            issueType: {
-              name: string;
-            } | null;
-            repository: {
-              name: string;
-              owner: {
-                login: string;
-              };
-              nameWithOwner: string;
-            };
-            assignees: {
-              nodes: Array<{ login: string }>;
-            };
-            labels: {
-              nodes: Array<{ name: string }>;
-            };
-            comments: {
-              nodes: Array<{
-                author: {
-                  login: string;
-                } | null;
-                body: string;
-                createdAt: string; // ISO 8601 date string
-                updatedAt: string; // ISO 8601 date string
-                url: string;
-              }>;
-            };
-            parent: {
-              title: string;
-              url: string;
-              number: number;
-            } | null;
-          }>;
-          pageInfo: {
-            endCursor: string;
-            hasNextPage: boolean;
-          };
+          nodes: Array<IssueNode>;
+          pageInfo: PageInfoForward;
         };
       };
     };
   }>(query, {
     owner: params.owner,
     repo: params.repo,
-    states: states,
+    states,
   });
 
   const issues = response.repositoryOwner.repository.issues.nodes.map(
-    (issue): Issue => ({
-      title: issue.title,
-      body: issue.body,
-      url: issue.url,
-      number: issue.number,
-      state: issue.state,
-      createdAt: new Date(issue.createdAt),
-      updatedAt: new Date(issue.updatedAt),
-      type: issue.issueType?.name || "Issue",
-      repository: {
-        name: issue.repository.name,
-        owner: issue.repository.owner.login,
-        nameWithOwner: issue.repository.nameWithOwner,
-      },
-      assignees: issue.assignees.nodes.map((assignee) => assignee.login),
-      labels: issue.labels.nodes.map((label) => label.name),
-      comments: issue.comments.nodes.map((comment) => ({
-        author: comment.author?.login || "Unknown",
-        body: comment.body,
-        createdAt: new Date(comment.createdAt),
-        updatedAt: new Date(comment.updatedAt),
-        url: comment.url,
-      })),
-      parent: issue.parent
-        ? {
-            title: issue.parent.title,
-            url: issue.parent.url,
-            number: issue.parent.number,
-          }
-        : undefined,
-      isSubissue: false,
-    }),
+    (issue) => {
+      return {
+        ...mapIssueNode(issue),
+        isSubissue: false,
+      };
+    },
   );
 
   return {

@@ -15,7 +15,10 @@ import { findLatestUpdates } from "./update";
 import { IssueList } from "./issue-list";
 
 import { getIssue, type GetIssueParameters } from "./graphql/issue";
-import { slugifyProjectFieldName, type IssueField } from "./graphql/project";
+import {
+  slugifyProjectFieldName,
+  type IssueField,
+} from "./graphql/project-fields";
 
 // Interface
 export type Issue = {
@@ -44,7 +47,7 @@ export type Issue = {
     number: number;
     fields: Map<string, IssueField>;
   };
-  isSubissue: boolean; // If this is a subissue of another issue
+  isSubissue?: boolean;
 };
 
 export class IssueWrapper {
@@ -103,7 +106,7 @@ export class IssueWrapper {
   }
 
   get isSubissue(): boolean {
-    return this.issue.isSubissue;
+    return this.issue.isSubissue || false;
   }
 
   get createdAt(): Date {
@@ -248,6 +251,7 @@ export class IssueWrapper {
       repo: this.repo,
       issueNumber: this.number,
       subissues: false, // Don't recursively fetch subissues
+      projectNumber: this.projectNumber, // Fetch ProjectFields for subissues of a project issue
     });
   }
 

@@ -1,5 +1,8 @@
 import { getOctokit } from "@util/octokit";
+import type { PageInfoForward } from "@octokit/plugin-paginate-graphql";
+
 import type { Issue } from "../issue";
+
 import {
   ISSUE_PAGE_SIZE,
   NUM_ISSUE_ASSIGNESS,
@@ -7,10 +10,16 @@ import {
   NUM_ISSUE_LABELS,
 } from ".";
 
+import { mapIssueNode, type IssueNode } from "./issue";
+
+import type { ProjectItems } from "./project";
+import { mapProjectFieldValues } from "./project-fields";
+
 export type ListSubissuesForIssueParameters = {
   owner: string;
   repo: string;
   issueNumber: number;
+  projectNumber?: number; // Fetch ProjectFields
 };
 
 type ListSubissuesForIssueResponse = {
@@ -33,6 +42,7 @@ export async function listSubissuesForIssue(
             url
             subIssues(first: ${ISSUE_PAGE_SIZE}, after: $cursor) {
               nodes {
+                __typename
                 title
                 body
                 url
@@ -76,6 +86,39 @@ export async function listSubissuesForIssue(
                   url
                   number
                 }
+                projectItems(first: 10) {
+                  nodes {
+                    project {
+                      number
+                    }
+                    fieldValues(first: 100) {
+                      edges {
+                        node {
+                          __typename
+                          ... on ProjectV2ItemFieldSingleSelectValue {
+                            name
+                            field {
+                              ... on ProjectV2SingleSelectField {
+                                name
+                                options {
+                                  name
+                                }
+                              }
+                            }
+                          }
+                          ... on ProjectV2ItemFieldDateValue {
+                            date
+                            field {
+                              ... on ProjectV2Field {
+                                name
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
               }
               pageInfo {
                 hasNextPage
@@ -95,98 +138,38 @@ export async function listSubissuesForIssue(
           title: string;
           url: string;
           subIssues: {
-            nodes: Array<{
-              title: string;
-              body: string;
-              url: string;
-              number: number;
-              state: "OPEN" | "CLOSED";
-              createdAt: string; // ISO 8601 date string
-              updatedAt: string; // ISO 8601 date string
-              issueType: {
-                name: string;
-              } | null;
-              repository: {
-                name: string;
-                owner: {
-                  login: string;
-                };
-                nameWithOwner: string;
-              };
-              assignees: {
-                nodes: Array<{
-                  login: string;
-                }>;
-              };
-              labels: {
-                nodes: Array<{
-                  name: string;
-                }>;
-              };
-              comments: {
-                nodes: Array<{
-                  author: {
-                    login: string;
-                  } | null;
-                  body: string;
-                  createdAt: string; // ISO 8601 date string
-                  updatedAt: string; // ISO 8601 date string
-                  url: string;
-                }>;
-              };
-              parent: {
-                title: string;
-                url: string;
-                number: number;
-              } | null;
-            }>;
+            nodes: Array<IssueNode & ProjectItems>;
           };
+          pageInfo: PageInfoForward;
         };
       };
     };
   }>(query, params);
 
-  const subissues =
-    response.repositoryOwner.repository.issue.subIssues.nodes.map(
-      // TODO: Refactor shared GraphQL logic. mapIssueNodes helper or something
-      (subIssue): Issue => ({
-        title: subIssue.title,
-        body: subIssue.body,
-        url: subIssue.url,
-        number: subIssue.number,
-        state: subIssue.state,
-        createdAt: new Date(subIssue.createdAt),
-        updatedAt: new Date(subIssue.updatedAt),
-        type: subIssue.issueType?.name || "Issue",
-        repository: {
-          name: subIssue.repository.name,
-          owner: subIssue.repository.owner.login,
-          nameWithOwner: subIssue.repository.nameWithOwner,
-        },
-        assignees: subIssue.assignees.nodes.map((assignee) => assignee.login),
-        labels: subIssue.labels.nodes.map((label) => label.name),
-        comments: subIssue.comments.nodes.map((comment) => ({
-          author: comment.author?.login || "Unknown",
-          body: comment.body,
-          createdAt: new Date(comment.createdAt),
-          updatedAt: new Date(comment.updatedAt),
-          url: comment.url,
-        })),
-        parent: subIssue.parent
-          ? {
-              title: subIssue.parent.title,
-              url: subIssue.parent.url,
-              number: subIssue.parent.number,
-            }
-          : undefined,
-        isSubissue: true, // Mark as subissue
-      }),
-    );
+  const issue = response.repositoryOwner.repository.issue;
+  const subissues = issue.subIssues.nodes.map((subIssue) => {
+    let project = undefined;
+    if (params.projectNumber) {
+      const projectItem = subIssue.projectItems.nodes.find(
+        (item) => item.project.number === params.projectNumber,
+      );
+      if (projectItem) {
+        project = {
+          number: projectItem.project.number,
+          fields: mapProjectFieldValues(projectItem.fieldValues.edges),
+        };
+      }
+    }
+    return {
+      ...mapIssueNode(subIssue),
+      project,
+      isSubissue: true,
+    };
+  });
 
-  const issueTitle = response.repositoryOwner.repository.issue.title;
   return {
     subissues,
-    title: `Subissues for ${issueTitle} (#${params.issueNumber})`,
-    url: response.repositoryOwner.repository.issue.url,
+    title: `Subissues for ${issue.title} (#${params.issueNumber})`,
+    url: issue.url,
   };
 }

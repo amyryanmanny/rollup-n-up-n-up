@@ -1,11 +1,20 @@
 import { getOctokit } from "@util/octokit";
+import type { PageInfoForward } from "@octokit/plugin-paginate-graphql";
+
 import type { Issue } from "../issue";
+
 import {
   ISSUE_PAGE_SIZE,
   NUM_ISSUE_ASSIGNESS,
   NUM_ISSUE_COMMENTS,
   NUM_ISSUE_LABELS,
 } from ".";
+
+import { mapIssueNode, type IssueNode } from "./issue";
+import {
+  mapProjectFieldValues,
+  type ProjectFieldValueEdge,
+} from "./project-fields";
 
 export type ListIssuesForProjectParameters = {
   organization: string;
@@ -18,29 +27,17 @@ type ListIssuesForProjectResponse = {
   url: string;
 };
 
-export type IssueField = FieldSingleSelect | FieldMultiSelect | FieldDate;
-
-export type FieldSingleSelect = {
-  kind: "SingleSelect";
-  value: string | null;
-  options?: string[]; // Value options for the field
-};
-
-type FieldMultiSelect = {
-  kind: "MultiSelect";
-  values: string[] | null;
-};
-
-type FieldDate = {
-  kind: "Date";
-  value: string | null; // ISO 8601 date string
-  date: Date | null;
-};
-
-export const slugifyProjectFieldName = (field: string): string => {
-  // RoB Area FY25Q4 -> rob-area-fy25q4
-  // Slugs are not accessible with GraphQL :(
-  return field.toLowerCase().replace(/\s+/g, "-");
+export type ProjectItems = {
+  projectItems: {
+    nodes: Array<{
+      project: {
+        number: number;
+      };
+      fieldValues: {
+        edges: Array<ProjectFieldValueEdge>;
+      };
+    }>;
+  };
 };
 
 export async function listIssuesForProject(
@@ -151,154 +148,33 @@ export async function listIssuesForProject(
           edges: Array<{
             node: {
               id: string;
-              content: {
-                __typename: string;
-                title: string;
-                body: string;
-                url: string;
-                number: number;
-                state: "OPEN" | "CLOSED";
-                createdAt: string; // ISO 8601 date string
-                updatedAt: string; // ISO 8601 date string
-                issueType: {
-                  name: string;
-                } | null;
-                repository: {
-                  name: string;
-                  owner: {
-                    login: string;
-                  };
-                  nameWithOwner: string;
-                };
-                assignees: {
-                  nodes: Array<{
-                    login: string;
-                  }>;
-                };
-                labels: {
-                  nodes: Array<{
-                    name: string;
-                  }>;
-                };
-                comments: {
-                  nodes: Array<{
-                    author: {
-                      login: string;
-                    } | null;
-                    body: string;
-                    createdAt: string; // ISO 8601 date string
-                    updatedAt: string; // ISO 8601 date string
-                    url: string;
-                  }>;
-                };
-                parent: {
-                  title: string;
-                  url: string;
-                  number: number;
-                } | null;
-              } | null;
+              content: IssueNode | null;
               fieldValues: {
-                edges: Array<{
-                  node: {
-                    __typename: string;
-                    name: string | null; // SingleSelect value name
-                    date: string | null; // Date value
-                    field: {
-                      name: string; // Field name
-                      options?: Array<{ name: string }>; // For SingleSelect field options
-                    } | null; // Null if no union type match
-                  } | null;
-                }>;
+                edges: Array<ProjectFieldValueEdge>;
               };
             };
           }>;
-          pageInfo: {
-            endCursor: string;
-            hasNextPage: boolean;
-          };
+          pageInfo: PageInfoForward;
         };
       };
     };
-  }>(query, {
-    organization: params.organization,
-    projectNumber: params.projectNumber,
-  });
+  }>(query, params);
 
   const issues = response.organization.projectV2.items.edges
-    .map((edge): Issue | null => {
-      const content = edge.node.content;
-      if (!content || content.__typename !== "Issue") {
-        return null;
-      }
+    .filter((projectItemEdge) => {
+      const content = projectItemEdge.node.content;
+      return content && content.__typename === "Issue";
+    })
+    .map((projectItemEdge) => {
       return {
-        title: content.title,
-        body: content.body || "",
-        url: content.url,
-        number: content.number,
-        state: content.state,
-        createdAt: new Date(content.createdAt),
-        updatedAt: new Date(content.updatedAt),
-        type: content.issueType?.name || "Issue",
-        repository: {
-          name: content.repository.name,
-          owner: content.repository.owner.login,
-          nameWithOwner: content.repository.nameWithOwner,
-        },
-        assignees: content.assignees.nodes.map((assignee) => assignee.login),
-        labels: content.labels.nodes.map((label) => label.name),
-        comments: content.comments.nodes.map((comment) => ({
-          author: comment.author?.login || "Unknown",
-          body: comment.body,
-          createdAt: new Date(comment.createdAt),
-          updatedAt: new Date(comment.updatedAt),
-          url: comment.url,
-        })),
+        ...mapIssueNode(projectItemEdge.node.content!),
         project: {
           number: params.projectNumber,
-          fields: edge.node.fieldValues.edges.reduce((acc, fieldEdge) => {
-            const fieldNode = fieldEdge.node;
-            if (fieldNode && fieldNode.field) {
-              let field: IssueField;
-              switch (fieldNode.__typename) {
-                case "ProjectV2ItemFieldSingleSelectValue":
-                  field = {
-                    kind: "SingleSelect",
-                    value: fieldNode.name,
-                    options: fieldNode.field.options!.map(
-                      (option) => option.name,
-                    ),
-                  };
-                  break;
-                case "ProjectV2ItemFieldDateValue": {
-                  const date = fieldNode.date;
-                  field = {
-                    kind: "Date",
-                    value: date,
-                    date: date ? new Date(date) : null,
-                  };
-                  break;
-                }
-                default:
-                  // Ignore other field types for now
-                  return acc;
-              }
-              const fieldName = slugifyProjectFieldName(fieldNode.field.name);
-              acc.set(fieldName, field);
-            }
-            return acc;
-          }, new Map<string, IssueField>()),
+          fields: mapProjectFieldValues(projectItemEdge.node.fieldValues.edges),
         },
-        parent: content.parent
-          ? {
-              title: content.parent.title,
-              url: content.parent.url,
-              number: content.parent.number,
-            }
-          : undefined,
-        isSubissue: false, // This is not a subissue in the context of a project
+        isSubissue: false,
       };
-    })
-    .filter((item) => item !== null);
+    });
 
   return {
     issues,
