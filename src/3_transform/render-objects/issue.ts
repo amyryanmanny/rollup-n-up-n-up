@@ -2,6 +2,7 @@ import { IssueWrapper } from "@pull/github/issue";
 import { renderComment } from "./comment";
 
 export type IssueRenderOptions = {
+  header: boolean;
   body: boolean;
   updates: number;
   fields: string[];
@@ -25,15 +26,19 @@ export function renderIssue(
   }
 
   // Render an IssueWrapper as a Markdown string
-  let markdown = `${"#".repeat(headerLevel)} ${issue.header}\n\n`;
+  let markdown = "";
   const sources = [issue.url];
+
+  if (options.header) {
+    markdown += `${"#".repeat(headerLevel)} ${issue.header}\n\n`;
+  }
 
   if (
     (!options.updates || !issue.hasUpdate) &&
     (!options.body || !issue._body) &&
     (!options.subissues || !issue.subissues || !issue.subissues.hasUpdates)
   ) {
-    if (options.skipIfEmpty) {
+    if (options.skipIfEmpty || !options.header) {
       return undefined;
     } else {
       markdown += "This issue has no updates, or body content to render.\n\n";

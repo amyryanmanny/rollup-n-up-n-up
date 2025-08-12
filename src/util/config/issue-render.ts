@@ -4,10 +4,12 @@ import { isTruthy } from "./truthy";
 
 export type DirtyIssueRenderOptions = {
   // TODO: Eventually should be unknown for all, this just includes sane types
-  field?: string;
-  fields?: string | string[];
+  header?: string | boolean;
   body?: string | boolean;
   updates?: string | number | boolean;
+  field?: string;
+  fields?: string | string[];
+  // TODO: Labels
   subissues?: string | boolean;
   skipIfEmpty?: string | boolean; // Skip rendering if no updates or body
 };
@@ -21,16 +23,15 @@ export function validateRenderOptions(
       'Cannot use both "field" and "fields" options. Use "fields" for multiple fields.',
     );
   }
-  if (options.field) {
-    fields = [options.field];
-  }
-  if (options.fields) {
-    fields = Array.isArray(options.fields) ? options.fields : [options.fields];
+
+  let header = true; // Default to rendering header
+  if (options.header !== undefined) {
+    header = isTruthy(options.header);
   }
 
   let body = false; // Default to skipping body
-  if (isTruthy(options.body)) {
-    body = true;
+  if (options.body !== undefined) {
+    body = isTruthy(options.body);
   }
 
   let updates = 1; // Default to just the latest update
@@ -41,6 +42,13 @@ export function validateRenderOptions(
     } else if (updates < 0) {
       throw new Error(`Invalid updates option: ${updates}`);
     }
+  }
+
+  if (options.field) {
+    fields = [options.field];
+  }
+  if (options.fields) {
+    fields = Array.isArray(options.fields) ? options.fields : [options.fields];
   }
 
   let subissues = undefined;
@@ -54,9 +62,10 @@ export function validateRenderOptions(
   }
 
   return {
-    fields,
+    header,
     body,
     updates,
+    fields,
     subissues,
     skipIfEmpty,
   };

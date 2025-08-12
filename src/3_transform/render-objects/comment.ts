@@ -12,17 +12,20 @@ export function renderComment(
   headerLevel: number = 4, // Default to Level 4 for Comments
 ): RenderedComment | undefined {
   // Render a CommentWrapper as a Markdown string
-  if (comment.isEmpty) {
-    if (options.skipIfEmpty) {
-      return undefined;
-    }
-    if (options) {
-      return { markdown: CommentWrapper.NULL_UPDATE, sources: [] };
-    }
+  let markdown = "";
+  const sources = [`${comment.url} - ${comment.updatedAt}`];
+
+  if (options.header) {
+    markdown += `${"#".repeat(headerLevel)} [Update](${comment.url})\n\n`;
   }
 
-  let markdown = `${"#".repeat(headerLevel)} [Update](${comment.url})\n\n`;
-  const sources = [`${comment.url} - ${comment.updatedAt}`];
+  if (comment.isEmpty) {
+    if (options.skipIfEmpty || !options.header) {
+      return undefined;
+    }
+    markdown += CommentWrapper.NULL_UPDATE;
+    return { markdown, sources: [] };
+  }
 
   if (comment.isUpdate) {
     markdown += `${comment._update}`;

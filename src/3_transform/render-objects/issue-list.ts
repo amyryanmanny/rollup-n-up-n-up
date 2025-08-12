@@ -12,11 +12,15 @@ export function renderIssueList(
   headerLevel: number = 2, // Default to Level 2 for IssueLists
 ): RenderedIssueList | undefined {
   // Render an IssueList as a Markdown string
-  let markdown = `${"#".repeat(headerLevel)} ${issueList.header}\n\n`;
+  let markdown = "";
   const sources = [issueList.url];
 
+  if (options.header) {
+    markdown += `${"#".repeat(headerLevel)} ${issueList.header}\n\n`;
+  }
+
   if (issueList.isEmpty) {
-    if (options.skipIfEmpty) {
+    if (options.skipIfEmpty || !options.header) {
       return undefined;
     }
     markdown += "No issues found.\n\n";
