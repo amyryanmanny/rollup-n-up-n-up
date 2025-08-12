@@ -31,7 +31,7 @@ export function renderIssueList(
     }
   }
 
-  markdown += `---`; // End IssueLists with a horizontal rule
+  markdown += `---\n\n`; // End IssueLists with a horizontal rule
 
   return {
     markdown,

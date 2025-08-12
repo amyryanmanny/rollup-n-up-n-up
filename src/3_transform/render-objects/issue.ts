@@ -2,9 +2,9 @@ import { IssueWrapper } from "@pull/github/issue";
 import { renderComment } from "./comment";
 
 export type IssueRenderOptions = {
-  fields: string[];
   body: boolean;
   updates: number;
+  fields: string[];
   subissues: boolean | undefined;
   skipIfEmpty: boolean; // Skip rendering if no updates or body
 };
@@ -30,15 +30,13 @@ export function renderIssue(
 
   if (
     (!options.updates || !issue.hasUpdate) &&
-    (!options.fields || !options.fields.some((f) => issue.field(f))) &&
     (!options.body || !issue._body) &&
     (!options.subissues || !issue.subissues || !issue.subissues.hasUpdates)
   ) {
     if (options.skipIfEmpty) {
       return undefined;
     } else {
-      markdown +=
-        "`\n\nThis issue has no updates, fields, or body content to render.\n\n`";
+      markdown += "This issue has no updates, or body content to render.\n\n";
       return {
         markdown,
         sources,

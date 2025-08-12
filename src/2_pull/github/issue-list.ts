@@ -9,6 +9,7 @@ import {
   renderIssueList,
   type RenderedIssueList,
 } from "@transform/render-objects";
+import { barChart } from "@transform/charts";
 
 import { emojiCompare } from "@util/emoji";
 import { title } from "@util/string";
@@ -144,9 +145,27 @@ export class IssueList {
       groups.get(key)!.issues.push(issue);
     }
 
+    // TODO: Pull out default sort function
     return Array.from(groups.entries())
       .sort(([a], [b]) => emojiCompare(a, b) ?? a.localeCompare(b))
       .map(([, group]) => group);
+  }
+
+  chart(fieldName: string, title?: string): string {
+    // Groups by the given field name and a Markdown-embedded QuickChart
+    const groups = this.groupBy(fieldName);
+    if (groups.length === 0) {
+      return "ERROR: No issues found. Cannot create chart.";
+    }
+
+    title = title || `Number of Issues by ${fieldName}`;
+
+    // TODO: Support other chart types
+    return barChart(
+      new Map(groups.map((group) => [group.groupKey, group.length])),
+      fieldName,
+      title,
+    );
   }
 
   overallStatus(fieldName: string): string {
