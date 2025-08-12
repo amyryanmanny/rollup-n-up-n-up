@@ -4,13 +4,11 @@ import type { PageInfoForward } from "@octokit/plugin-paginate-graphql";
 import type { Issue } from "../issue";
 
 import {
-  ISSUE_PAGE_SIZE,
-  NUM_ISSUE_ASSIGNESS,
-  NUM_ISSUE_COMMENTS,
-  NUM_ISSUE_LABELS,
-} from ".";
-
-import { mapIssueNode, type IssueNode } from "./issue";
+  issueNodeFragment,
+  mapIssueNode,
+  type IssueNode,
+} from "./fragments/issue";
+import { pageInfoFragment } from "./fragments/page-info";
 
 type IssueStateParam = "OPEN" | "CLOSED" | "ALL";
 type IssueState = Omit<IssueStateParam, "ALL">; // Doesn't work due to GraphQL weirdness
@@ -53,57 +51,11 @@ export async function listIssuesForRepo(
     query paginate($owner: String!, $repo: String!, $states: [IssueState!], $cursor: String) {
       repositoryOwner(login: $owner) {
         repository(name: $repo) {
-          issues(first: ${ISSUE_PAGE_SIZE}, states: $states, after: $cursor) {
+          issues(first: 50, states: $states, after: $cursor) {
             nodes {
-              __typename
-              title
-              body
-              url
-              number
-              state
-              createdAt
-              updatedAt
-              issueType {
-                name
-              }
-              repository {
-                name
-                owner {
-                  login
-                }
-                nameWithOwner
-              }
-              assignees(first: ${NUM_ISSUE_ASSIGNESS}) {
-                nodes {
-                  login
-                }
-              }
-              labels(first: ${NUM_ISSUE_LABELS}) {
-                nodes {
-                  name
-                }
-              }
-              comments(last: ${NUM_ISSUE_COMMENTS}) {
-                nodes {
-                  author {
-                    login
-                  }
-                  body
-                  createdAt
-                  updatedAt
-                  url
-                }
-              }
-              parent {
-                title
-                url
-                number
-              }
+              ${issueNodeFragment}
             }
-            pageInfo {
-              endCursor
-              hasNextPage
-            }
+            ${pageInfoFragment}
           }
         }
       }

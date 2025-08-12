@@ -4,16 +4,13 @@ import type { PageInfoForward } from "@octokit/plugin-paginate-graphql";
 import type { Issue } from "../issue";
 
 import {
-  ISSUE_PAGE_SIZE,
-  NUM_ISSUE_ASSIGNESS,
-  NUM_ISSUE_COMMENTS,
-  NUM_ISSUE_LABELS,
-} from ".";
-
-import { mapIssueNode, type IssueNode } from "./issue";
-
-import type { ProjectItems } from "./project";
-import { mapProjectFieldValues } from "./project-fields";
+  issueNodeFragment,
+  mapIssueNode,
+  type IssueNode,
+} from "./fragments/issue";
+import { projectItemsFragment, type ProjectItems } from "./fragments/project";
+import { mapProjectFieldValues } from "./fragments/project-fields";
+import { pageInfoFragment } from "./fragments/page-info";
 
 export type ListSubissuesForIssueParameters = {
   owner: string;
@@ -40,90 +37,12 @@ export async function listSubissuesForIssue(
           issue(number: $issueNumber) {
             title
             url
-            subIssues(first: ${ISSUE_PAGE_SIZE}, after: $cursor) {
+            subIssues(first: 50, after: $cursor) {
               nodes {
-                __typename
-                title
-                body
-                url
-                number
-                state
-                createdAt
-                updatedAt
-                issueType {
-                  name
-                }
-                repository {
-                  name
-                  owner {
-                    login
-                  }
-                  nameWithOwner
-                }
-                assignees(first: ${NUM_ISSUE_ASSIGNESS}) {
-                  nodes {
-                    login
-                  }
-                }
-                labels(first: ${NUM_ISSUE_LABELS}) {
-                  nodes {
-                    name
-                  }
-                }
-                comments(last: ${NUM_ISSUE_COMMENTS}) {
-                  nodes {
-                    author {
-                      login
-                    }
-                    body
-                    createdAt
-                    updatedAt
-                    url
-                  }
-                }
-                parent {
-                  title
-                  url
-                  number
-                }
-                projectItems(first: 10) {
-                  nodes {
-                    project {
-                      number
-                    }
-                    fieldValues(first: 100) {
-                      edges {
-                        node {
-                          __typename
-                          ... on ProjectV2ItemFieldSingleSelectValue {
-                            name
-                            field {
-                              ... on ProjectV2SingleSelectField {
-                                name
-                                options {
-                                  name
-                                }
-                              }
-                            }
-                          }
-                          ... on ProjectV2ItemFieldDateValue {
-                            date
-                            field {
-                              ... on ProjectV2Field {
-                                name
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
+                ${issueNodeFragment}
+                ${projectItemsFragment}
               }
-              pageInfo {
-                hasNextPage
-                endCursor
-              }
+              ${pageInfoFragment}
             }
           }
         }

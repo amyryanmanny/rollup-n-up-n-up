@@ -18,7 +18,7 @@ import { getIssue, type GetIssueParameters } from "./graphql/issue";
 import {
   slugifyProjectFieldName,
   type IssueField,
-} from "./graphql/project-fields";
+} from "./graphql/fragments/project-fields";
 
 // Interface
 export type Issue = {

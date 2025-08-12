@@ -23,6 +23,33 @@ export const slugifyProjectFieldName = (field: string): string => {
   return field.toLowerCase().replace(/\s+/g, "-");
 };
 
+export const projectFieldValueEdgesFragment = `
+  edges {
+    node {
+      __typename
+      ... on ProjectV2ItemFieldSingleSelectValue {
+        name
+        field {
+          ... on ProjectV2SingleSelectField {
+            name
+            options {
+              name
+            }
+          }
+        }
+      }
+      ... on ProjectV2ItemFieldDateValue {
+        date
+        field {
+          ... on ProjectV2Field {
+            name
+          }
+        }
+      }
+    }
+  }
+`;
+
 export type ProjectFieldValueEdge = {
   node: {
     __typename: string;
