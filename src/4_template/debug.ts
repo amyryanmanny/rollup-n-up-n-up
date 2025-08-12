@@ -23,7 +23,10 @@ export function debugMemory(memoryBank: number): string {
 
 export function debugSources(): string {
   const bank = Memory.getInstance().getBank();
-  const sourcesList = bank.map((item) => `${item.source}`).join("\n");
+  const sourcesList = bank
+    .map((item) => item.sources)
+    .flat()
+    .join("\n");
   return formatDetails("Report Sources", sourcesList);
 }
 
