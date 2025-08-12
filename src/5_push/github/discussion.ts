@@ -1,6 +1,8 @@
 // TODO: Refactor GET requests to be in the @pull module
 import type { GitHubPushClient } from "./client";
 
+import type { PageInfoForward } from "@octokit/plugin-paginate-graphql";
+
 export type Discussion = {
   id: string;
   number: number;
@@ -95,10 +97,7 @@ export async function getDiscussionByTitle(
       discussions: {
         nodes: Discussion[];
       };
-      pageInfo: {
-        endCursor: string;
-        hasNextPage: boolean;
-      };
+      pageInfo: PageInfoForward;
     };
   }>(query, {
     owner,
