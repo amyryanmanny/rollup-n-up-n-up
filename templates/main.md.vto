@@ -1,12 +1,12 @@
-{{- set repoIssues = await github.issuesForRepo("amyryanmanny", "rollup-n-up-n-up") -}}
-# [Issues Updates {{ today }}]({{ repoIssues.url }})
+{{- set issues = await github.issuesForRepo("amyryanmanny", "rollup-n-up-n-up", { subissues: true }) -}}
+# [Issues Updates {{ today }}]({{ issues.url }})
 
-{{ for issue of repoIssues }}
-### {{ issue.header }}
-{{ set updateComment = issue.latestUpdate }}
-{{ updateComment.update }}
-{{ /for }}
+{{ issues.remember() }}
+
+{{ await memory.summarize("tldr") }}
 
 {{ debugTemplate() |> safe }}
 
 {{ debugMemory() |> safe }}
+
+{{ debugSources() |> safe }}
