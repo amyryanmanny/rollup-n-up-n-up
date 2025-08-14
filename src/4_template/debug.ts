@@ -11,7 +11,7 @@ export function debugTemplate(template: Template): string {
   return formatDetails("Rollup-n-up-n-up Template", template.source);
 }
 
-export function debugMemory(memoryBank: number): string {
+export function debugMemory(memoryBank: number = 0): string {
   return formatDetails(
     "Inference Model Context",
     Memory.getInstance()

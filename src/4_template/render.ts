@@ -8,13 +8,7 @@ import { GitHubClient } from "@pull/github/client";
 
 import { getConfig } from "@util/config";
 import { Memory } from "@transform/memory";
-import {
-  debugMemory,
-  debugSources,
-  debugTemplate,
-  debugUpdateDetection,
-  overrideUpdateDetection,
-} from "./debug";
+import * as debug from "./debug";
 
 // TODO: Configurable templatesDir
 const templatesDir = path.join(process.cwd(), "templates");
@@ -52,12 +46,8 @@ export async function renderTemplate(templatePath: string): Promise<string> {
     ...globals,
     getConfig: (config: string) => getConfig(config),
     // Debugging Functions
-    debugTemplate: () => debugTemplate(template),
-    debugSources: () => debugSources(),
-    debugMemory: (memoryBank: number = 0) => debugMemory(memoryBank),
-    debugUpdateDetection: () => debugUpdateDetection(),
-    overrideUpdateDetection: (configBlob: string) =>
-      overrideUpdateDetection(configBlob),
+    ...debug,
+    debugTemplate: () => debug.debugTemplate(template),
   });
 
   memory.headbonk(); // Reset memory after rendering
