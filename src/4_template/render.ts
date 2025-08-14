@@ -13,6 +13,7 @@ import {
   debugSources,
   debugTemplate,
   debugUpdateDetection,
+  overrideUpdateDetection,
 } from "./debug";
 
 // TODO: Configurable templatesDir
@@ -38,13 +39,14 @@ for (const plugin of Object.values(plugins)) {
 // Setup Globals
 const github = new GitHubClient();
 const memory = Memory.getInstance();
-const today = new Date().toISOString().split("T")[0];
+const today = new Date().toISOString().split("T")[0]; // TODO: Support the same date logic as push
 
 const globals = { github, memory, today };
 
 export async function renderTemplate(templatePath: string): Promise<string> {
   // Load the template
   const template = await env.load(templatePath);
+
   // Render the template with the provided data
   const result = await template({
     ...globals,
@@ -54,6 +56,8 @@ export async function renderTemplate(templatePath: string): Promise<string> {
     debugSources: () => debugSources(),
     debugMemory: (memoryBank: number = 0) => debugMemory(memoryBank),
     debugUpdateDetection: () => debugUpdateDetection(),
+    overrideUpdateDetection: (configBlob: string) =>
+      overrideUpdateDetection(configBlob),
   });
 
   memory.headbonk(); // Reset memory after rendering

@@ -34,3 +34,9 @@ export function debugUpdateDetection(): string {
   const updateDetection = UpdateDetection.getInstance();
   return formatDetails("Update Detection Strategies", updateDetection.debug());
 }
+
+export function overrideUpdateDetection(configBlob: string): void {
+  // Allow overriding UpdateDetection from the template for testing
+  const updateDetection = UpdateDetection.getInstance();
+  updateDetection.setStrategies(configBlob);
+}

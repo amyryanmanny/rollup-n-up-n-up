@@ -24,7 +24,7 @@ export class UpdateDetection {
     return UpdateDetection.instance;
   }
 
-  public strategies: UpdateDetectionStrategy[];
+  public strategies: UpdateDetectionStrategy[] = [];
 
   debug(): string {
     let output = "";
@@ -54,9 +54,13 @@ export class UpdateDetection {
   }
 
   private constructor() {
+    const config = getConfig("UPDATE_DETECTION");
+    this.setStrategies(config);
+  }
+
+  setStrategies(config?: string) {
     let strategies: UpdateDetectionStrategy[];
 
-    const config = getConfig("UPDATE_DETECTION");
     if (config) {
       strategies = UpdateDetection.parseStrategies(config);
       if (strategies.length === 0) {
