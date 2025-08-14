@@ -7,6 +7,7 @@ export type DirtyIssueRenderOptions = {
   header?: string | boolean;
   body?: string | boolean;
   updates?: string | number | boolean;
+  author?: string | boolean;
   field?: string;
   fields?: string | string[];
   // TODO: Labels
@@ -44,6 +45,11 @@ export function validateRenderOptions(
     }
   }
 
+  let author = true;
+  if (options.author) {
+    author = isTruthy(options.author);
+  }
+
   if (options.field) {
     fields = [options.field];
   }
@@ -65,6 +71,7 @@ export function validateRenderOptions(
     header,
     body,
     updates,
+    author,
     fields,
     subissues,
     skipIfEmpty,

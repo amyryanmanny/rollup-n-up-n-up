@@ -5,6 +5,7 @@ export type IssueRenderOptions = {
   header: boolean;
   body: boolean;
   updates: number;
+  author: boolean; // Author of the update, not the issue
   fields: string[];
   subissues: boolean | undefined;
   skipIfEmpty: boolean; // Skip rendering if no updates or body

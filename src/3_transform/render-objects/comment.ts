@@ -27,6 +27,10 @@ export function renderComment(
     return { markdown, sources: [] };
   }
 
+  if (options.author) {
+    markdown += `**Update Author:** ${comment.author}\n\n`;
+  }
+
   if (comment.isUpdate) {
     markdown += `${comment._update}`;
   } else {
