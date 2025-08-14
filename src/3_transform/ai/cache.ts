@@ -42,31 +42,49 @@ export class SummaryCache {
   }
 
   static getCacheFile(cacheKey: string): string {
-    return path.join(ACTIONS_CACHE_DIR, `summary-cache-${cacheKey}.json`);
+    return path.join(ACTIONS_CACHE_DIR, `summary-${cacheKey}.json`);
   }
 
   async get(
     prompt: PromptParameters,
     sources: string[],
   ): Promise<string | undefined> {
-    const cacheKey = SummaryCache.getPromptCacheKey(prompt, sources);
-    return this.load(cacheKey);
+    const key = SummaryCache.getPromptCacheKey(prompt, sources);
+    return this.load(key);
   }
 
   async set(prompt: PromptParameters, sources: string[], summary: string) {
-    const cacheKey = SummaryCache.getPromptCacheKey(prompt, sources);
-    await this.save(cacheKey, summary);
+    const key = SummaryCache.getPromptCacheKey(prompt, sources);
+    await this.save(key, summary);
+  }
+
+  private async exists(key: string): Promise<boolean> {
+    const file = SummaryCache.getCacheFile(key);
+
+    if (process.env.GITHUB_ACTIONS === "true") {
+      const exists = await restoreCache([file], key, undefined, {
+        lookupOnly: true,
+      });
+      return !!exists;
+    }
+
+    return fs.existsSync(file);
   }
 
   private async save(key: string, summary: string) {
     const file = SummaryCache.getCacheFile(key);
 
+    const exists = await this.exists(key);
+    if (exists) {
+      console.log(`Cache for ${file} already exists, skipping save`);
+      return;
+    }
+
     // Write the cache to a file
     console.log(`Saving summary cache to ${file}`);
     await fs.promises.writeFile(file, summary, "utf-8");
 
-    // Use @actions/cache to cache file to the runner
-    // TODO: Don't try to save twice
+    // Use @actions/cache to cache the file to the runner
     if (process.env.GITHUB_ACTIONS === "true") {
       await saveCache([file], key);
     }
@@ -75,18 +93,17 @@ export class SummaryCache {
   private async load(key: string): Promise<string | undefined> {
     const file = SummaryCache.getCacheFile(key);
 
-    // Use @actions/cache to restore  file from the runner
+    // Use @actions/cache to restore the file from the runner
     if (process.env.GITHUB_ACTIONS === "true") {
       const restored = await restoreCache([file], key);
       if (!restored) {
         return;
       }
-    }
-
-    // Check if the file exists
-    const exists = fs.existsSync(file);
-    if (!exists) {
-      return;
+    } else {
+      const exists = await this.exists(key);
+      if (!exists) {
+        return;
+      }
     }
 
     // Load the cache from the file
