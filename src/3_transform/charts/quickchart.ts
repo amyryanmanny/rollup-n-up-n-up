@@ -21,7 +21,7 @@ export function barChart(
         labels: Array.from(data.keys()),
         datasets: [
           {
-            label: encodeURIComponent(fieldName),
+            label: fieldName,
             data: Array.from(data.values()),
           },
         ],
@@ -29,7 +29,7 @@ export function barChart(
       options: {
         title: {
           display: true,
-          text: encodeURIComponent(title),
+          text: title,
         },
       },
     })
