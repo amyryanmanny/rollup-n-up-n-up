@@ -22,22 +22,28 @@ Rollup 'nUp 'nUp reduces repetitive work without obstructing essential human jud
 ### The Standard Workflow
 
 1. **Trigger**
-   Use GitHub Actions to trigger reports manually, or configure automated runs on your preferred cron schedule.
+
+Use GitHub Actions to trigger reports manually, or configure automated runs on your preferred cron schedule.
 
 2. **Pull**
-   Pull GitHub Issues by URL, Repository, Project View and more!
+
+Pull GitHub Issues by URL, Repository, Project View and more!
 
 3. **Transform**
-   Automate common data transformations, such as rendering common GitHub Objects (like Issues and Comments), and generating AI summaries.
+
+Automate common data transformations, such as rendering common GitHub Objects (like Issues and Comments), and generating AI summaries.
 
 4. **Template**
-   Use all the power of VentoJS to template your data into a professional report.
+
+Use all the power of VentoJS to template your data into a professional report.
 
 5. **Push**
-   Push a draft Markdown report to a list of common locations, such as File, Issue, Discussion, or Comment.
 
-6. **Finalize**  
-   Review the generated draft and add your own human analysis, context, and strategic insight to create the final report.
+Push a draft Markdown report to a list of common locations, such as File, Issue, Discussion, or Comment.
+
+6. **Finalize**
+
+Review the generated draft and add your own human analysis, context, and strategic insight to create the final report.
 
 ### Why Human Judgment Still Matters
 
