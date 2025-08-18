@@ -2,11 +2,13 @@ import { context } from "@actions/github";
 
 import { Octokit } from "@octokit/rest";
 import { createAppAuth } from "@octokit/auth-app";
+
 import { paginateGraphQL } from "@octokit/plugin-paginate-graphql";
+import { throttling, type ThrottlingOptions } from "@octokit/plugin-throttling";
 
 import { getGitHubSecrets, type GitHubSecretKind } from "./config/github";
 
-const OctokitWithPlugins = Octokit.plugin(paginateGraphQL);
+const OctokitWithPlugins = Octokit.plugin(paginateGraphQL, throttling);
 type OctokitType = InstanceType<typeof OctokitWithPlugins>;
 
 type Token = {
@@ -17,32 +19,50 @@ type Token = {
 // Singleton
 let octokitInstance: OctokitType;
 
+// ThrottlingOptions
+// TODO: Clustering: https://github.com/octokit/plugin-throttling.js/?tab=readme-ov-file#clustering
+const throttle: ThrottlingOptions = {
+  onRateLimit: (retryAfter, options, octokit, retryCount) => {
+    octokit.log.warn(
+      `Request quota exhausted for request ${options.method} ${options.url}`,
+    );
+    if (retryCount < 3) {
+      octokit.log.info(`Retrying after ${retryAfter} seconds!`);
+      return true;
+    }
+  },
+  onSecondaryRateLimit: (retryAfter, options, octokit) => {
+    octokit.log.warn(
+      `SecondaryRateLimit detected for request ${options.method} ${options.url}`,
+    );
+  },
+};
+
 function initOctokit(): OctokitType {
-  let instance: OctokitType;
   const secrets = getGitHubSecrets();
 
   if (secrets.kind === "pat" || secrets.kind === "default") {
     const { token } = secrets;
 
-    instance = new OctokitWithPlugins({
+    return new OctokitWithPlugins({
       auth: token,
+      throttle,
     });
   } else if (secrets.kind === "app") {
     const { appId, installationId, privateKey } = secrets;
 
-    instance = new OctokitWithPlugins({
+    return new OctokitWithPlugins({
       authStrategy: createAppAuth,
       auth: {
         appId,
         installationId,
         privateKey,
       },
+      throttle,
     });
   } else {
     throw new Error("Unknown authentication method");
   }
-
-  return instance;
 }
 
 export async function getToken(): Promise<Token> {
