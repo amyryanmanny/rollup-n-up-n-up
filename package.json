@@ -4,9 +4,7 @@
   "type": "module",
   "scripts": {
     "prepare": "husky",
-    "build-actions": "bun build-render && bun build-push",
-    "build-render": "bun build ./src/1_trigger/action-render.ts --target node --outfile ./dist/render/index.js",
-    "build-push": "bun build ./src/5_push/action-push.ts --target node --outfile ./dist/push/index.js",
+    "build-actions": "bun build.ts",
     "clear-cache": "bun run ./src/scripts/clear-cache.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
