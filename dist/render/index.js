@@ -78160,6 +78160,51 @@ var require_tiktoken_bg = __commonJS((exports, module) => {
   };
 });
 
+// node_modules/tiktoken/init.cjs
+var require_init = __commonJS((exports) => {
+  var __createBinding2 = exports && exports.__createBinding || (Object.create ? function(o2, m2, k2, k22) {
+    if (k22 === undefined)
+      k22 = k2;
+    var desc = Object.getOwnPropertyDescriptor(m2, k2);
+    if (!desc || ("get" in desc ? !m2.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() {
+        return m2[k2];
+      } };
+    }
+    Object.defineProperty(o2, k22, desc);
+  } : function(o2, m2, k2, k22) {
+    if (k22 === undefined)
+      k22 = k2;
+    o2[k22] = m2[k2];
+  });
+  var __exportStar2 = exports && exports.__exportStar || function(m2, exports2) {
+    for (var p2 in m2)
+      if (p2 !== "default" && !Object.prototype.hasOwnProperty.call(exports2, p2))
+        __createBinding2(exports2, m2, p2);
+  };
+  Object.defineProperty(exports, "__esModule", { value: true });
+  exports.init = undefined;
+  var imports = require_tiktoken_bg();
+  var isInitialized = false;
+  async function init(callback) {
+    if (isInitialized)
+      return imports;
+    const result = await callback({ "./tiktoken_bg.js": imports });
+    const instance = "instance" in result && result.instance instanceof WebAssembly.Instance ? result.instance : result instanceof WebAssembly.Instance ? result : null;
+    if (instance == null)
+      throw new Error("Missing instance");
+    imports.__wbg_set_wasm(instance.exports);
+    isInitialized = true;
+    return imports;
+  }
+  exports.init = init;
+  exports["get_encoding"] = imports["get_encoding"];
+  exports["encoding_for_model"] = imports["encoding_for_model"];
+  exports["get_encoding_name_for_model"] = imports["get_encoding_name_for_model"];
+  exports["Tiktoken"] = imports["Tiktoken"];
+  __exportStar2(require_tiktoken_bg(), exports);
+});
+
 // node_modules/webidl-conversions/lib/index.js
 var require_lib2 = __commonJS((exports, module) => {
   var conversions = {};
@@ -80348,10 +80393,10 @@ var require_lib3 = __commonJS((exports, module) => {
 
   class Headers {
     constructor() {
-      let init = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : undefined;
+      let init2 = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : undefined;
       this[MAP] = Object.create(null);
-      if (init instanceof Headers) {
-        const rawHeaders = init.raw();
+      if (init2 instanceof Headers) {
+        const rawHeaders = init2.raw();
         const headerNames = Object.keys(rawHeaders);
         for (const headerName of headerNames) {
           for (const value of rawHeaders[headerName]) {
@@ -80360,16 +80405,16 @@ var require_lib3 = __commonJS((exports, module) => {
         }
         return;
       }
-      if (init == null)
+      if (init2 == null)
         ;
-      else if (typeof init === "object") {
-        const method = init[Symbol.iterator];
+      else if (typeof init2 === "object") {
+        const method = init2[Symbol.iterator];
         if (method != null) {
           if (typeof method !== "function") {
             throw new TypeError("Header pairs must be iterable");
           }
           const pairs = [];
-          for (const pair of init) {
+          for (const pair of init2) {
             if (typeof pair !== "object" || typeof pair[Symbol.iterator] !== "function") {
               throw new TypeError("Each header pair must be iterable");
             }
@@ -80382,8 +80427,8 @@ var require_lib3 = __commonJS((exports, module) => {
             this.append(pair[0], pair[1]);
           }
         } else {
-          for (const key of Object.keys(init)) {
-            const value = init[key];
+          for (const key of Object.keys(init2)) {
+            const value = init2[key];
             this.append(key, value);
           }
         }
@@ -80646,7 +80691,7 @@ var require_lib3 = __commonJS((exports, module) => {
 
   class Request {
     constructor(input) {
-      let init = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+      let init2 = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
       let parsedURL;
       if (!isRequest(input)) {
         if (input && input.href) {
@@ -80658,17 +80703,17 @@ var require_lib3 = __commonJS((exports, module) => {
       } else {
         parsedURL = parseURL(input.url);
       }
-      let method = init.method || input.method || "GET";
+      let method = init2.method || input.method || "GET";
       method = method.toUpperCase();
-      if ((init.body != null || isRequest(input) && input.body !== null) && (method === "GET" || method === "HEAD")) {
+      if ((init2.body != null || isRequest(input) && input.body !== null) && (method === "GET" || method === "HEAD")) {
         throw new TypeError("Request with GET/HEAD method cannot have body");
       }
-      let inputBody = init.body != null ? init.body : isRequest(input) && input.body !== null ? clone(input) : null;
+      let inputBody = init2.body != null ? init2.body : isRequest(input) && input.body !== null ? clone(input) : null;
       Body.call(this, inputBody, {
-        timeout: init.timeout || input.timeout || 0,
-        size: init.size || input.size || 0
+        timeout: init2.timeout || input.timeout || 0,
+        size: init2.size || input.size || 0
       });
-      const headers = new Headers(init.headers || input.headers || {});
+      const headers = new Headers(init2.headers || input.headers || {});
       if (inputBody != null && !headers.has("Content-Type")) {
         const contentType = extractContentType(inputBody);
         if (contentType) {
@@ -80676,22 +80721,22 @@ var require_lib3 = __commonJS((exports, module) => {
         }
       }
       let signal = isRequest(input) ? input.signal : null;
-      if ("signal" in init)
-        signal = init.signal;
+      if ("signal" in init2)
+        signal = init2.signal;
       if (signal != null && !isAbortSignal(signal)) {
         throw new TypeError("Expected signal to be an instanceof AbortSignal");
       }
       this[INTERNALS$2] = {
         method,
-        redirect: init.redirect || input.redirect || "follow",
+        redirect: init2.redirect || input.redirect || "follow",
         headers,
         parsedURL,
         signal
       };
-      this.follow = init.follow !== undefined ? init.follow : input.follow !== undefined ? input.follow : 20;
-      this.compress = init.compress !== undefined ? init.compress : input.compress !== undefined ? input.compress : true;
-      this.counter = init.counter || input.counter || 0;
-      this.agent = init.agent || input.agent;
+      this.follow = init2.follow !== undefined ? init2.follow : input.follow !== undefined ? input.follow : 20;
+      this.compress = init2.compress !== undefined ? init2.compress : input.compress !== undefined ? input.compress : true;
+      this.counter = init2.counter || input.counter || 0;
+      this.agent = init2.agent || input.agent;
     }
     get method() {
       return this[INTERNALS$2].method;
@@ -98183,46 +98228,27 @@ function insertPlaceholders(params, placeholders) {
   return params;
 }
 
-// node_modules/tiktoken/tiktoken.cjs
-var __dirname = "/Users/amymanny/Code/rollup-n-up-n-up/node_modules/tiktoken";
-var wasm = require_tiktoken_bg();
-var imports = {};
-imports["./tiktoken_bg.js"] = wasm;
-var path4 = __require("path");
-var fs4 = __require("fs");
-var candidates = __dirname.split(path4.sep).reduce((memo, _2, index, array) => {
-  const prefix = array.slice(0, index + 1).join(path4.sep) + path4.sep;
-  if (!prefix.includes("node_modules" + path4.sep)) {
-    memo.unshift(path4.join(prefix, "node_modules", "tiktoken", "", "./tiktoken_bg.wasm"));
-  }
-  return memo;
-}, []);
-candidates.unshift(path4.join(__dirname, "./tiktoken_bg.wasm"));
-var bytes = null;
-for (const candidate of candidates) {
-  try {
-    bytes = fs4.readFileSync(candidate);
-    break;
-  } catch {}
-}
-if (bytes == null)
-  throw new Error("Missing tiktoken_bg.wasm");
-var wasmModule = new WebAssembly.Module(bytes);
-var wasmInstance = new WebAssembly.Instance(wasmModule, imports);
-wasm.__wbg_set_wasm(wasmInstance.exports);
-var $get_encoding = wasm["get_encoding"];
-var $encoding_for_model = wasm["encoding_for_model"];
-var $get_encoding_name_for_model = wasm["get_encoding_name_for_model"];
-var $Tiktoken = wasm["Tiktoken"];
-
 // src/3_transform/ai/tokens.ts
+var import_init = __toESM(require_init(), 1);
+import fs4 from "fs";
+import path4 from "path";
+async function initWasm() {
+  for (const candidate of [import.meta.dirname, "node_modules/tiktoken"]) {
+    const wasmPath = path4.join(candidate, "tiktoken_bg.wasm");
+    if (fs4.existsSync(wasmPath)) {
+      const wasm = await fs4.promises.readFile(wasmPath);
+      await import_init.init((imports) => WebAssembly.instantiate(wasm, imports));
+      return;
+    }
+  }
+}
 function getEncoding(githubModelName) {
   const modelName = githubModelName.split("/").pop();
   if (!modelName) {
     return;
   }
   try {
-    return $encoding_for_model(modelName);
+    return import_init.encoding_for_model(modelName);
   } catch (error) {
     console.error(`Failed to count tokens for model ${githubModelName}`, error);
   }
@@ -98252,6 +98278,7 @@ function truncate(githubModelName, messages, maxTokens) {
     messages[userMessageIndex].content = new TextDecoder().decode(encoding.decode(userMessageTokens.slice(0, remainingTokens)));
   }
 }
+await initWasm();
 
 // src/3_transform/ai/summarize.ts
 var limiter = new RateLimiter({

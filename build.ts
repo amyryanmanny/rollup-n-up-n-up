@@ -1,5 +1,7 @@
 import Bun from "bun";
 
+export const PUBLIC_PATH = "./assets";
+
 // Render
 await Bun.build({
   entrypoints: ["./src/1_trigger/action-render.ts"],
@@ -7,8 +9,9 @@ await Bun.build({
   target: "node",
   naming: {
     entry: "index.js",
-    asset: "[name].[ext]",
+    asset: `${PUBLIC_PATH}/[name].[ext]`,
   },
+  publicPath: PUBLIC_PATH,
   // sourcemap: "inline",
 });
 
