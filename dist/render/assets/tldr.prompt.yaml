@@ -11,7 +11,7 @@ messages:
   - role: user
     content: |
       Summarize the given updates into a rollup for an engineering team.
-      Each Initiative is followed by the updates to its Subissues.
+      Each Initiative is followed by the updates to its Subissues (if they exist).
 
       Use the following sections for the output:
       - ## TL;DR
