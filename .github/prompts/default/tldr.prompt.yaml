@@ -11,19 +11,15 @@ messages:
   - role: user
     content: |
       Summarize the given updates into a rollup for an engineering team.
-      Each Initiative is followed immediately by its Subissue or Epic updates, which are grouped together.
+      Each Initiative is followed by the updates to its Subissues (if they exist).
 
       Use the following sections for the output:
       - ## TL;DR
-      - ## 🎉 Wins/Accomplishments 
-        - ### What We Shipped
-        - ### What We're Learning
       - ## 📣 FYI
-      - ## 🆘 SOS/Need Support
 
       Make sure:
-      - For the TL;DR, pay extra attention to examples, big ships, demos, and dogfooding time saved.
-      - Group updates for each Initiative (but not Epics or Issues)
+      - For the TL;DR, pay extra attention to examples, big ships, and demos.
+      - Group the updates by Initiatives (but not Subissues)
         - Include the title heading, and link to the comment the update was taken from.
       - Include links from the original update that are appropriate.
         - Always use the format [text](link) for links. No comma-separated links.
@@ -33,5 +29,5 @@ messages:
       - Never include line breaks (like ---), or meta text like "here you go".
 
       <text>
-      {{content}}
+      {{input}}
       </text>

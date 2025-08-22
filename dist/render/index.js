@@ -31251,13 +31251,13 @@ var require_tslib = __commonJS((exports, module) => {
       }
       return next();
     };
-    __rewriteRelativeImportExtension = function(path4, preserveJsx) {
-      if (typeof path4 === "string" && /^\.\.?\//.test(path4)) {
-        return path4.replace(/\.(tsx)$|((?:\.d)?)((?:\.[^./]+?)?)\.([cm]?)ts$/i, function(m2, tsx, d2, ext, cm) {
+    __rewriteRelativeImportExtension = function(path5, preserveJsx) {
+      if (typeof path5 === "string" && /^\.\.?\//.test(path5)) {
+        return path5.replace(/\.(tsx)$|((?:\.d)?)((?:\.[^./]+?)?)\.([cm]?)ts$/i, function(m2, tsx, d2, ext, cm) {
           return tsx ? preserveJsx ? ".jsx" : ".js" : d2 && (!ext || !cm) ? m2 : d2 + ext + "." + cm.toLowerCase() + "js";
         });
       }
-      return path4;
+      return path5;
     };
     exporter("__extends", __extends);
     exporter("__assign", __assign);
@@ -34051,7 +34051,7 @@ var require_internal_path_helper = __commonJS((exports) => {
   };
   Object.defineProperty(exports, "__esModule", { value: true });
   exports.safeTrimTrailingSeparator = exports.normalizeSeparators = exports.hasRoot = exports.hasAbsoluteRoot = exports.ensureAbsoluteRoot = exports.dirname = undefined;
-  var path4 = __importStar2(__require("path"));
+  var path5 = __importStar2(__require("path"));
   var assert_1 = __importDefault2(__require("assert"));
   var IS_WINDOWS = process.platform === "win32";
   function dirname(p2) {
@@ -34059,7 +34059,7 @@ var require_internal_path_helper = __commonJS((exports) => {
     if (IS_WINDOWS && /^\\\\[^\\]+(\\[^\\]+)?$/.test(p2)) {
       return p2;
     }
-    let result = path4.dirname(p2);
+    let result = path5.dirname(p2);
     if (IS_WINDOWS && /^\\\\[^\\]+\\[^\\]+\\$/.test(result)) {
       result = safeTrimTrailingSeparator(result);
     }
@@ -34096,7 +34096,7 @@ var require_internal_path_helper = __commonJS((exports) => {
     }
     assert_1.default(hasAbsoluteRoot(root), `ensureAbsoluteRoot parameter 'root' must have an absolute root`);
     if (root.endsWith("/") || IS_WINDOWS && root.endsWith("\\")) {} else {
-      root += path4.sep;
+      root += path5.sep;
     }
     return root + itemPath;
   }
@@ -34134,10 +34134,10 @@ var require_internal_path_helper = __commonJS((exports) => {
       return "";
     }
     p2 = normalizeSeparators(p2);
-    if (!p2.endsWith(path4.sep)) {
+    if (!p2.endsWith(path5.sep)) {
       return p2;
     }
-    if (p2 === path4.sep) {
+    if (p2 === path5.sep) {
       return p2;
     }
     if (IS_WINDOWS && /^[A-Z]:\\$/i.test(p2)) {
@@ -34468,14 +34468,14 @@ var require_brace_expansion = __commonJS((exports, module) => {
 var require_minimatch = __commonJS((exports, module) => {
   module.exports = minimatch;
   minimatch.Minimatch = Minimatch;
-  var path4 = function() {
+  var path5 = function() {
     try {
       return __require("path");
     } catch (e2) {}
   }() || {
     sep: "/"
   };
-  minimatch.sep = path4.sep;
+  minimatch.sep = path5.sep;
   var GLOBSTAR = minimatch.GLOBSTAR = Minimatch.GLOBSTAR = {};
   var expand7 = require_brace_expansion();
   var plTypes = {
@@ -34566,8 +34566,8 @@ var require_minimatch = __commonJS((exports, module) => {
     if (!options)
       options = {};
     pattern = pattern.trim();
-    if (!options.allowWindowsEscape && path4.sep !== "/") {
-      pattern = pattern.split(path4.sep).join("/");
+    if (!options.allowWindowsEscape && path5.sep !== "/") {
+      pattern = pattern.split(path5.sep).join("/");
     }
     this.options = options;
     this.set = [];
@@ -34944,8 +34944,8 @@ var require_minimatch = __commonJS((exports, module) => {
     if (f2 === "/" && partial)
       return true;
     var options = this.options;
-    if (path4.sep !== "/") {
-      f2 = f2.split(path4.sep).join("/");
+    if (path5.sep !== "/") {
+      f2 = f2.split(path5.sep).join("/");
     }
     f2 = f2.split(slashSplit);
     this.debug(this.pattern, "split", f2);
@@ -35085,7 +35085,7 @@ var require_internal_path = __commonJS((exports) => {
   };
   Object.defineProperty(exports, "__esModule", { value: true });
   exports.Path = undefined;
-  var path4 = __importStar2(__require("path"));
+  var path5 = __importStar2(__require("path"));
   var pathHelper = __importStar2(require_internal_path_helper());
   var assert_1 = __importDefault2(__require("assert"));
   var IS_WINDOWS = process.platform === "win32";
@@ -35097,12 +35097,12 @@ var require_internal_path = __commonJS((exports) => {
         assert_1.default(itemPath, `Parameter 'itemPath' must not be empty`);
         itemPath = pathHelper.safeTrimTrailingSeparator(itemPath);
         if (!pathHelper.hasRoot(itemPath)) {
-          this.segments = itemPath.split(path4.sep);
+          this.segments = itemPath.split(path5.sep);
         } else {
           let remaining = itemPath;
           let dir = pathHelper.dirname(remaining);
           while (dir !== remaining) {
-            const basename = path4.basename(remaining);
+            const basename = path5.basename(remaining);
             this.segments.unshift(basename);
             remaining = dir;
             dir = pathHelper.dirname(remaining);
@@ -35120,7 +35120,7 @@ var require_internal_path = __commonJS((exports) => {
             assert_1.default(segment === pathHelper.dirname(segment), `Parameter 'itemPath' root segment contains information for multiple segments`);
             this.segments.push(segment);
           } else {
-            assert_1.default(!segment.includes(path4.sep), `Parameter 'itemPath' contains unexpected path separators`);
+            assert_1.default(!segment.includes(path5.sep), `Parameter 'itemPath' contains unexpected path separators`);
             this.segments.push(segment);
           }
         }
@@ -35128,12 +35128,12 @@ var require_internal_path = __commonJS((exports) => {
     }
     toString() {
       let result = this.segments[0];
-      let skipSlash = result.endsWith(path4.sep) || IS_WINDOWS && /^[A-Z]:$/i.test(result);
+      let skipSlash = result.endsWith(path5.sep) || IS_WINDOWS && /^[A-Z]:$/i.test(result);
       for (let i2 = 1;i2 < this.segments.length; i2++) {
         if (skipSlash) {
           skipSlash = false;
         } else {
-          result += path4.sep;
+          result += path5.sep;
         }
         result += this.segments[i2];
       }
@@ -35179,7 +35179,7 @@ var require_internal_pattern = __commonJS((exports) => {
   Object.defineProperty(exports, "__esModule", { value: true });
   exports.Pattern = undefined;
   var os3 = __importStar2(__require("os"));
-  var path4 = __importStar2(__require("path"));
+  var path5 = __importStar2(__require("path"));
   var pathHelper = __importStar2(require_internal_path_helper());
   var assert_1 = __importDefault2(__require("assert"));
   var minimatch_1 = require_minimatch();
@@ -35209,7 +35209,7 @@ var require_internal_pattern = __commonJS((exports) => {
       }
       pattern = Pattern.fixupPattern(pattern, homedir);
       this.segments = new internal_path_1.Path(pattern).segments;
-      this.trailingSeparator = pathHelper.normalizeSeparators(pattern).endsWith(path4.sep);
+      this.trailingSeparator = pathHelper.normalizeSeparators(pattern).endsWith(path5.sep);
       pattern = pathHelper.safeTrimTrailingSeparator(pattern);
       let foundGlob = false;
       const searchSegments = this.segments.map((x2) => Pattern.getLiteral(x2)).filter((x2) => !foundGlob && !(foundGlob = x2 === ""));
@@ -35230,8 +35230,8 @@ var require_internal_pattern = __commonJS((exports) => {
     match(itemPath) {
       if (this.segments[this.segments.length - 1] === "**") {
         itemPath = pathHelper.normalizeSeparators(itemPath);
-        if (!itemPath.endsWith(path4.sep) && this.isImplicitPattern === false) {
-          itemPath = `${itemPath}${path4.sep}`;
+        if (!itemPath.endsWith(path5.sep) && this.isImplicitPattern === false) {
+          itemPath = `${itemPath}${path5.sep}`;
         }
       } else {
         itemPath = pathHelper.safeTrimTrailingSeparator(itemPath);
@@ -35257,9 +35257,9 @@ var require_internal_pattern = __commonJS((exports) => {
       assert_1.default(literalSegments.every((x2, i2) => (x2 !== "." || i2 === 0) && x2 !== ".."), `Invalid pattern '${pattern}'. Relative pathing '.' and '..' is not allowed.`);
       assert_1.default(!pathHelper.hasRoot(pattern) || literalSegments[0], `Invalid pattern '${pattern}'. Root segment must not contain globs.`);
       pattern = pathHelper.normalizeSeparators(pattern);
-      if (pattern === "." || pattern.startsWith(`.${path4.sep}`)) {
+      if (pattern === "." || pattern.startsWith(`.${path5.sep}`)) {
         pattern = Pattern.globEscape(process.cwd()) + pattern.substr(1);
-      } else if (pattern === "~" || pattern.startsWith(`~${path4.sep}`)) {
+      } else if (pattern === "~" || pattern.startsWith(`~${path5.sep}`)) {
         homedir = homedir || os3.homedir();
         assert_1.default(homedir, "Unable to determine HOME directory");
         assert_1.default(pathHelper.hasAbsoluteRoot(homedir), `Expected HOME directory to be a rooted path. Actual '${homedir}'`);
@@ -35333,8 +35333,8 @@ var require_internal_search_state = __commonJS((exports) => {
   exports.SearchState = undefined;
 
   class SearchState {
-    constructor(path4, level) {
-      this.path = path4;
+    constructor(path5, level) {
+      this.path = path5;
       this.level = level;
     }
   }
@@ -35460,9 +35460,9 @@ var require_internal_globber = __commonJS((exports) => {
   Object.defineProperty(exports, "__esModule", { value: true });
   exports.DefaultGlobber = undefined;
   var core = __importStar2(require_core());
-  var fs3 = __importStar2(__require("fs"));
+  var fs4 = __importStar2(__require("fs"));
   var globOptionsHelper = __importStar2(require_internal_glob_options_helper());
-  var path4 = __importStar2(__require("path"));
+  var path5 = __importStar2(__require("path"));
   var patternHelper = __importStar2(require_internal_pattern_helper());
   var internal_match_kind_1 = require_internal_match_kind();
   var internal_pattern_1 = require_internal_pattern();
@@ -35515,7 +35515,7 @@ var require_internal_globber = __commonJS((exports) => {
         for (const searchPath of patternHelper.getSearchPaths(patterns)) {
           core.debug(`Search path '${searchPath}'`);
           try {
-            yield __await2(fs3.promises.lstat(searchPath));
+            yield __await2(fs4.promises.lstat(searchPath));
           } catch (err) {
             if (err.code === "ENOENT") {
               continue;
@@ -35543,7 +35543,7 @@ var require_internal_globber = __commonJS((exports) => {
               continue;
             }
             const childLevel = item.level + 1;
-            const childItems = (yield __await2(fs3.promises.readdir(item.path))).map((x2) => new internal_search_state_1.SearchState(path4.join(item.path, x2), childLevel));
+            const childItems = (yield __await2(fs4.promises.readdir(item.path))).map((x2) => new internal_search_state_1.SearchState(path5.join(item.path, x2), childLevel));
             stack.push(...childItems.reverse());
           } else if (match & internal_match_kind_1.MatchKind.File) {
             yield yield __await2(item.path);
@@ -35578,7 +35578,7 @@ var require_internal_globber = __commonJS((exports) => {
         let stats;
         if (options.followSymbolicLinks) {
           try {
-            stats = yield fs3.promises.stat(item.path);
+            stats = yield fs4.promises.stat(item.path);
           } catch (err) {
             if (err.code === "ENOENT") {
               if (options.omitBrokenSymbolicLinks) {
@@ -35590,10 +35590,10 @@ var require_internal_globber = __commonJS((exports) => {
             throw err;
           }
         } else {
-          stats = yield fs3.promises.lstat(item.path);
+          stats = yield fs4.promises.lstat(item.path);
         }
         if (stats.isDirectory() && options.followSymbolicLinks) {
-          const realPath = yield fs3.promises.realpath(item.path);
+          const realPath = yield fs4.promises.realpath(item.path);
           while (traversalChain.length >= item.level) {
             traversalChain.pop();
           }
@@ -36914,8 +36914,8 @@ var require_cacheUtils = __commonJS((exports) => {
   var glob = __importStar2(require_glob());
   var io = __importStar2(require_io());
   var crypto = __importStar2(__require("crypto"));
-  var fs3 = __importStar2(__require("fs"));
-  var path4 = __importStar2(__require("path"));
+  var fs4 = __importStar2(__require("fs"));
+  var path5 = __importStar2(__require("path"));
   var semver = __importStar2(require_semver());
   var util2 = __importStar2(__require("util"));
   var constants_1 = require_constants6();
@@ -36935,16 +36935,16 @@ var require_cacheUtils = __commonJS((exports) => {
             baseLocation = "/home";
           }
         }
-        tempDirectory = path4.join(baseLocation, "actions", "temp");
+        tempDirectory = path5.join(baseLocation, "actions", "temp");
       }
-      const dest = path4.join(tempDirectory, crypto.randomUUID());
+      const dest = path5.join(tempDirectory, crypto.randomUUID());
       yield io.mkdirP(dest);
       return dest;
     });
   }
   exports.createTempDirectory = createTempDirectory;
   function getArchiveFileSizeInBytes(filePath) {
-    return fs3.statSync(filePath).size;
+    return fs4.statSync(filePath).size;
   }
   exports.getArchiveFileSizeInBytes = getArchiveFileSizeInBytes;
   function resolvePaths(patterns) {
@@ -36962,7 +36962,7 @@ var require_cacheUtils = __commonJS((exports) => {
           _c2 = _g.value;
           _e2 = false;
           const file = _c2;
-          const relativeFile = path4.relative(workspace, file).replace(new RegExp(`\\${path4.sep}`, "g"), "/");
+          const relativeFile = path5.relative(workspace, file).replace(new RegExp(`\\${path5.sep}`, "g"), "/");
           core.debug(`Matched: ${relativeFile}`);
           if (relativeFile === "") {
             paths.push(".");
@@ -36987,7 +36987,7 @@ var require_cacheUtils = __commonJS((exports) => {
   exports.resolvePaths = resolvePaths;
   function unlinkFile(filePath) {
     return __awaiter2(this, undefined, undefined, function* () {
-      return util2.promisify(fs3.unlink)(filePath);
+      return util2.promisify(fs4.unlink)(filePath);
     });
   }
   exports.unlinkFile = unlinkFile;
@@ -37032,7 +37032,7 @@ var require_cacheUtils = __commonJS((exports) => {
   exports.getCacheFileName = getCacheFileName;
   function getGnuTarPathOnWindows() {
     return __awaiter2(this, undefined, undefined, function* () {
-      if (fs3.existsSync(constants_1.GnuTarPathOnWindows)) {
+      if (fs4.existsSync(constants_1.GnuTarPathOnWindows)) {
         return constants_1.GnuTarPathOnWindows;
       }
       const versionOutput = yield getVersion("tar");
@@ -39740,8 +39740,8 @@ var require_getClient = __commonJS((exports) => {
     }
     const { allowInsecureConnection: allowInsecureConnection2, httpClient } = clientOptions;
     const endpointUrl = (_c2 = clientOptions.endpoint) !== null && _c2 !== undefined ? _c2 : endpoint7;
-    const client = (path4, ...args) => {
-      const getUrl = (requestOptions) => (0, urlHelpers_js_1.buildRequestUrl)(endpointUrl, path4, args, Object.assign({ allowInsecureConnection: allowInsecureConnection2 }, requestOptions));
+    const client = (path5, ...args) => {
+      const getUrl = (requestOptions) => (0, urlHelpers_js_1.buildRequestUrl)(endpointUrl, path5, args, Object.assign({ allowInsecureConnection: allowInsecureConnection2 }, requestOptions));
       return {
         get: (requestOptions = {}) => {
           return buildOperation2("GET", getUrl(requestOptions), pipeline, requestOptions, allowInsecureConnection2, httpClient);
@@ -43223,15 +43223,15 @@ var require_urlHelpers2 = __commonJS((exports) => {
     let isAbsolutePath = false;
     let requestUrl = replaceAll2(baseUri, urlReplacements);
     if (operationSpec.path) {
-      let path4 = replaceAll2(operationSpec.path, urlReplacements);
-      if (operationSpec.path === "/{nextLink}" && path4.startsWith("/")) {
-        path4 = path4.substring(1);
+      let path5 = replaceAll2(operationSpec.path, urlReplacements);
+      if (operationSpec.path === "/{nextLink}" && path5.startsWith("/")) {
+        path5 = path5.substring(1);
       }
-      if (isAbsoluteUrl(path4)) {
-        requestUrl = path4;
+      if (isAbsoluteUrl(path5)) {
+        requestUrl = path5;
         isAbsolutePath = true;
       } else {
-        requestUrl = appendPath(requestUrl, path4);
+        requestUrl = appendPath(requestUrl, path5);
       }
     }
     const { queryParams, sequenceParams } = calculateQueryParameters(operationSpec, operationArguments, fallbackObject);
@@ -43278,9 +43278,9 @@ var require_urlHelpers2 = __commonJS((exports) => {
     }
     const searchStart = pathToAppend.indexOf("?");
     if (searchStart !== -1) {
-      const path4 = pathToAppend.substring(0, searchStart);
+      const path5 = pathToAppend.substring(0, searchStart);
       const search = pathToAppend.substring(searchStart + 1);
-      newPath = newPath + path4;
+      newPath = newPath + path5;
       if (search) {
         parsedUrl.search = parsedUrl.search ? `${parsedUrl.search}&${search}` : search;
       }
@@ -46099,7 +46099,7 @@ var require_dist5 = __commonJS((exports) => {
   var stream = __require("stream");
   var coreLro = require_commonjs12();
   var events = __require("events");
-  var fs3 = __require("fs");
+  var fs4 = __require("fs");
   var util2 = __require("util");
   var buffer = __require("buffer");
   function _interopNamespaceDefault(e2) {
@@ -46122,7 +46122,7 @@ var require_dist5 = __commonJS((exports) => {
   }
   var coreHttpCompat__namespace = /* @__PURE__ */ _interopNamespaceDefault(coreHttpCompat);
   var coreClient__namespace = /* @__PURE__ */ _interopNamespaceDefault(coreClient);
-  var fs__namespace = /* @__PURE__ */ _interopNamespaceDefault(fs3);
+  var fs__namespace = /* @__PURE__ */ _interopNamespaceDefault(fs4);
   var util__namespace = /* @__PURE__ */ _interopNamespaceDefault(util2);
   var logger4 = logger$1.createClientLogger("storage-blob");
 
@@ -46349,10 +46349,10 @@ var require_dist5 = __commonJS((exports) => {
   ];
   function escapeURLPath(url2) {
     const urlParsed = new URL(url2);
-    let path4 = urlParsed.pathname;
-    path4 = path4 || "/";
-    path4 = escape(path4);
-    urlParsed.pathname = path4;
+    let path5 = urlParsed.pathname;
+    path5 = path5 || "/";
+    path5 = escape(path5);
+    urlParsed.pathname = path5;
     return urlParsed.toString();
   }
   function getProxyUriFromDevConnString(connectionString) {
@@ -46437,9 +46437,9 @@ var require_dist5 = __commonJS((exports) => {
   }
   function appendToURLPath(url2, name) {
     const urlParsed = new URL(url2);
-    let path4 = urlParsed.pathname;
-    path4 = path4 ? path4.endsWith("/") ? `${path4}${name}` : `${path4}/${name}` : name;
-    urlParsed.pathname = path4;
+    let path5 = urlParsed.pathname;
+    path5 = path5 ? path5.endsWith("/") ? `${path5}${name}` : `${path5}/${name}` : name;
+    urlParsed.pathname = path5;
     return urlParsed.toString();
   }
   function setURLParameter(url2, name, value) {
@@ -47430,9 +47430,9 @@ var require_dist5 = __commonJS((exports) => {
       return canonicalizedHeadersStringToSign;
     }
     getCanonicalizedResourceString(request9) {
-      const path4 = getURLPath(request9.url) || "/";
+      const path5 = getURLPath(request9.url) || "/";
       let canonicalizedResourceString = "";
-      canonicalizedResourceString += `/${this.factory.accountName}${path4}`;
+      canonicalizedResourceString += `/${this.factory.accountName}${path5}`;
       const queries = getURLQueries(request9.url);
       const lowercaseQueries = {};
       if (queries) {
@@ -47695,9 +47695,9 @@ ${key}:${decodeURIComponent(lowercaseQueries[key])}`;
       return canonicalizedHeadersStringToSign;
     }
     function getCanonicalizedResourceString(request9) {
-      const path4 = getURLPath(request9.url) || "/";
+      const path5 = getURLPath(request9.url) || "/";
       let canonicalizedResourceString = "";
-      canonicalizedResourceString += `/${options.accountName}${path4}`;
+      canonicalizedResourceString += `/${options.accountName}${path5}`;
       const queries = getURLQueries(request9.url);
       const lowercaseQueries = {};
       if (queries) {
@@ -64676,8 +64676,8 @@ ${key}:${decodeURIComponent(lowercaseQueries[key])}`;
       if (this.operationCount >= BATCH_MAX_REQUEST) {
         throw new RangeError(`Cannot exceed ${BATCH_MAX_REQUEST} sub requests in a single batch`);
       }
-      const path4 = getURLPath(subRequest.url);
-      if (!path4 || path4 === "") {
+      const path5 = getURLPath(subRequest.url);
+      if (!path5 || path5 === "") {
         throw new RangeError(`Invalid url for sub request: '${subRequest.url}'`);
       }
     }
@@ -64737,8 +64737,8 @@ ${key}:${decodeURIComponent(lowercaseQueries[key])}`;
         pipeline = newPipeline(credentialOrPipeline, options);
       }
       const storageClientContext = new StorageContextClient(url2, getCoreClientOptions(pipeline));
-      const path4 = getURLPath(url2);
-      if (path4 && path4 !== "/") {
+      const path5 = getURLPath(url2);
+      if (path5 && path5 !== "/") {
         this.serviceOrContainerContext = storageClientContext.container;
       } else {
         this.serviceOrContainerContext = storageClientContext.service;
@@ -66577,7 +66577,7 @@ var require_downloadUtils = __commonJS((exports) => {
   var http_client_1 = require_lib();
   var storage_blob_1 = require_dist5();
   var buffer = __importStar2(__require("buffer"));
-  var fs3 = __importStar2(__require("fs"));
+  var fs4 = __importStar2(__require("fs"));
   var stream = __importStar2(__require("stream"));
   var util2 = __importStar2(__require("util"));
   var utils = __importStar2(require_cacheUtils());
@@ -66655,7 +66655,7 @@ var require_downloadUtils = __commonJS((exports) => {
   exports.DownloadProgress = DownloadProgress;
   function downloadCacheHttpClient(archiveLocation, archivePath) {
     return __awaiter2(this, undefined, undefined, function* () {
-      const writeStream = fs3.createWriteStream(archivePath);
+      const writeStream = fs4.createWriteStream(archivePath);
       const httpClient = new http_client_1.HttpClient("actions/cache");
       const downloadResponse = yield (0, requestUtils_1.retryHttpClientResponse)("downloadCache", () => __awaiter2(this, undefined, undefined, function* () {
         return httpClient.get(archiveLocation);
@@ -66681,7 +66681,7 @@ var require_downloadUtils = __commonJS((exports) => {
   function downloadCacheHttpClientConcurrent(archiveLocation, archivePath, options) {
     var _a3;
     return __awaiter2(this, undefined, undefined, function* () {
-      const archiveDescriptor = yield fs3.promises.open(archivePath, "w");
+      const archiveDescriptor = yield fs4.promises.open(archivePath, "w");
       const httpClient = new http_client_1.HttpClient("actions/cache", undefined, {
         socketTimeout: options.timeoutInMs,
         keepAlive: true
@@ -66796,7 +66796,7 @@ var require_downloadUtils = __commonJS((exports) => {
       } else {
         const maxSegmentSize = Math.min(134217728, buffer.constants.MAX_LENGTH);
         const downloadProgress = new DownloadProgress(contentLength);
-        const fd = fs3.openSync(archivePath, "w");
+        const fd = fs4.openSync(archivePath, "w");
         try {
           downloadProgress.startDisplayTimer();
           const controller = new abort_controller_1.AbortController;
@@ -66814,12 +66814,12 @@ var require_downloadUtils = __commonJS((exports) => {
               controller.abort();
               throw new Error("Aborting cache download as the download time exceeded the timeout.");
             } else if (Buffer.isBuffer(result)) {
-              fs3.writeFileSync(fd, result);
+              fs4.writeFileSync(fd, result);
             }
           }
         } finally {
           downloadProgress.stopDisplayTimer();
-          fs3.closeSync(fd);
+          fs4.closeSync(fd);
         }
       }
     });
@@ -67113,7 +67113,7 @@ var require_cacheHttpClient = __commonJS((exports) => {
   var core = __importStar2(require_core());
   var http_client_1 = require_lib();
   var auth_1 = require_auth();
-  var fs3 = __importStar2(__require("fs"));
+  var fs4 = __importStar2(__require("fs"));
   var url_1 = __require("url");
   var utils = __importStar2(require_cacheUtils());
   var uploadUtils_1 = require_uploadUtils();
@@ -67251,7 +67251,7 @@ Other caches with similar key:`);
     return __awaiter2(this, undefined, undefined, function* () {
       const fileSize = utils.getArchiveFileSizeInBytes(archivePath);
       const resourceUrl = getCacheApiUrl(`caches/${cacheId.toString()}`);
-      const fd = fs3.openSync(archivePath, "r");
+      const fd = fs4.openSync(archivePath, "r");
       const uploadOptions = (0, options_1.getUploadOptions)(options);
       const concurrency = utils.assertDefined("uploadConcurrency", uploadOptions.uploadConcurrency);
       const maxChunkSize = utils.assertDefined("uploadChunkSize", uploadOptions.uploadChunkSize);
@@ -67265,7 +67265,7 @@ Other caches with similar key:`);
             const start = offset;
             const end = offset + chunkSize - 1;
             offset += maxChunkSize;
-            yield uploadChunk(httpClient, resourceUrl, () => fs3.createReadStream(archivePath, {
+            yield uploadChunk(httpClient, resourceUrl, () => fs4.createReadStream(archivePath, {
               fd,
               start,
               end,
@@ -67276,7 +67276,7 @@ Other caches with similar key:`);
           }
         })));
       } finally {
-        fs3.closeSync(fd);
+        fs4.closeSync(fd);
       }
       return;
     });
@@ -71779,7 +71779,7 @@ var require_tar = __commonJS((exports) => {
   var exec_1 = require_exec();
   var io = __importStar2(require_io());
   var fs_1 = __require("fs");
-  var path4 = __importStar2(__require("path"));
+  var path5 = __importStar2(__require("path"));
   var utils = __importStar2(require_cacheUtils());
   var constants_1 = require_constants6();
   var IS_WINDOWS = process.platform === "win32";
@@ -71825,13 +71825,13 @@ var require_tar = __commonJS((exports) => {
       const BSD_TAR_ZSTD = tarPath.type === constants_1.ArchiveToolType.BSD && compressionMethod !== constants_1.CompressionMethod.Gzip && IS_WINDOWS;
       switch (type3) {
         case "create":
-          args.push("--posix", "-cf", BSD_TAR_ZSTD ? tarFile : cacheFileName.replace(new RegExp(`\\${path4.sep}`, "g"), "/"), "--exclude", BSD_TAR_ZSTD ? tarFile : cacheFileName.replace(new RegExp(`\\${path4.sep}`, "g"), "/"), "-P", "-C", workingDirectory.replace(new RegExp(`\\${path4.sep}`, "g"), "/"), "--files-from", constants_1.ManifestFilename);
+          args.push("--posix", "-cf", BSD_TAR_ZSTD ? tarFile : cacheFileName.replace(new RegExp(`\\${path5.sep}`, "g"), "/"), "--exclude", BSD_TAR_ZSTD ? tarFile : cacheFileName.replace(new RegExp(`\\${path5.sep}`, "g"), "/"), "-P", "-C", workingDirectory.replace(new RegExp(`\\${path5.sep}`, "g"), "/"), "--files-from", constants_1.ManifestFilename);
           break;
         case "extract":
-          args.push("-xf", BSD_TAR_ZSTD ? tarFile : archivePath.replace(new RegExp(`\\${path4.sep}`, "g"), "/"), "-P", "-C", workingDirectory.replace(new RegExp(`\\${path4.sep}`, "g"), "/"));
+          args.push("-xf", BSD_TAR_ZSTD ? tarFile : archivePath.replace(new RegExp(`\\${path5.sep}`, "g"), "/"), "-P", "-C", workingDirectory.replace(new RegExp(`\\${path5.sep}`, "g"), "/"));
           break;
         case "list":
-          args.push("-tf", BSD_TAR_ZSTD ? tarFile : archivePath.replace(new RegExp(`\\${path4.sep}`, "g"), "/"), "-P");
+          args.push("-tf", BSD_TAR_ZSTD ? tarFile : archivePath.replace(new RegExp(`\\${path5.sep}`, "g"), "/"), "-P");
           break;
       }
       if (tarPath.type === constants_1.ArchiveToolType.GNU) {
@@ -71877,7 +71877,7 @@ var require_tar = __commonJS((exports) => {
           return BSD_TAR_ZSTD ? [
             "zstd -d --long=30 --force -o",
             constants_1.TarFilename,
-            archivePath.replace(new RegExp(`\\${path4.sep}`, "g"), "/")
+            archivePath.replace(new RegExp(`\\${path5.sep}`, "g"), "/")
           ] : [
             "--use-compress-program",
             IS_WINDOWS ? '"zstd -d --long=30"' : "unzstd --long=30"
@@ -71886,7 +71886,7 @@ var require_tar = __commonJS((exports) => {
           return BSD_TAR_ZSTD ? [
             "zstd -d --force -o",
             constants_1.TarFilename,
-            archivePath.replace(new RegExp(`\\${path4.sep}`, "g"), "/")
+            archivePath.replace(new RegExp(`\\${path5.sep}`, "g"), "/")
           ] : ["--use-compress-program", IS_WINDOWS ? '"zstd -d"' : "unzstd"];
         default:
           return ["-z"];
@@ -71901,7 +71901,7 @@ var require_tar = __commonJS((exports) => {
         case constants_1.CompressionMethod.Zstd:
           return BSD_TAR_ZSTD ? [
             "zstd -T0 --long=30 --force -o",
-            cacheFileName.replace(new RegExp(`\\${path4.sep}`, "g"), "/"),
+            cacheFileName.replace(new RegExp(`\\${path5.sep}`, "g"), "/"),
             constants_1.TarFilename
           ] : [
             "--use-compress-program",
@@ -71910,7 +71910,7 @@ var require_tar = __commonJS((exports) => {
         case constants_1.CompressionMethod.ZstdWithoutLong:
           return BSD_TAR_ZSTD ? [
             "zstd -T0 --force -o",
-            cacheFileName.replace(new RegExp(`\\${path4.sep}`, "g"), "/"),
+            cacheFileName.replace(new RegExp(`\\${path5.sep}`, "g"), "/"),
             constants_1.TarFilename
           ] : ["--use-compress-program", IS_WINDOWS ? '"zstd -T0"' : "zstdmt"];
         default:
@@ -71950,7 +71950,7 @@ var require_tar = __commonJS((exports) => {
   exports.extractTar = extractTar;
   function createTar(archiveFolder, sourceDirectories, compressionMethod) {
     return __awaiter2(this, undefined, undefined, function* () {
-      (0, fs_1.writeFileSync)(path4.join(archiveFolder, constants_1.ManifestFilename), sourceDirectories.join(`
+      (0, fs_1.writeFileSync)(path5.join(archiveFolder, constants_1.ManifestFilename), sourceDirectories.join(`
 `));
       const commands = yield getCommands(compressionMethod, "create");
       yield execCommands(commands, archiveFolder);
@@ -72023,7 +72023,7 @@ var require_cache3 = __commonJS((exports) => {
   Object.defineProperty(exports, "__esModule", { value: true });
   exports.saveCache = exports.restoreCache = exports.isFeatureAvailable = exports.ReserveCacheError = exports.ValidationError = undefined;
   var core = __importStar2(require_core());
-  var path4 = __importStar2(__require("path"));
+  var path5 = __importStar2(__require("path"));
   var utils = __importStar2(require_cacheUtils());
   var cacheHttpClient = __importStar2(require_cacheHttpClient());
   var cacheTwirpClient = __importStar2(require_cacheTwirpClient());
@@ -72107,7 +72107,7 @@ var require_cache3 = __commonJS((exports) => {
           core.info("Lookup only - skipping download");
           return cacheEntry.cacheKey;
         }
-        archivePath = path4.join(yield utils.createTempDirectory(), utils.getCacheFileName(compressionMethod));
+        archivePath = path5.join(yield utils.createTempDirectory(), utils.getCacheFileName(compressionMethod));
         core.debug(`Archive Path: ${archivePath}`);
         yield cacheHttpClient.downloadCache(cacheEntry.archiveLocation, archivePath, options);
         if (core.isDebug()) {
@@ -72167,7 +72167,7 @@ var require_cache3 = __commonJS((exports) => {
           core.info("Lookup only - skipping download");
           return response.matchedKey;
         }
-        archivePath = path4.join(yield utils.createTempDirectory(), utils.getCacheFileName(compressionMethod));
+        archivePath = path5.join(yield utils.createTempDirectory(), utils.getCacheFileName(compressionMethod));
         core.debug(`Archive path: ${archivePath}`);
         core.debug(`Starting download of archive to: ${archivePath}`);
         yield cacheHttpClient.downloadCache(response.signedDownloadUrl, archivePath, options);
@@ -72226,7 +72226,7 @@ var require_cache3 = __commonJS((exports) => {
         throw new Error(`Path Validation Error: Path(s) specified in the action for caching do(es) not exist, hence no cache is being saved.`);
       }
       const archiveFolder = yield utils.createTempDirectory();
-      const archivePath = path4.join(archiveFolder, utils.getCacheFileName(compressionMethod));
+      const archivePath = path5.join(archiveFolder, utils.getCacheFileName(compressionMethod));
       core.debug(`Archive Path: ${archivePath}`);
       try {
         yield (0, tar_1.createTar)(archiveFolder, cachePaths, compressionMethod);
@@ -72286,7 +72286,7 @@ var require_cache3 = __commonJS((exports) => {
         throw new Error(`Path Validation Error: Path(s) specified in the action for caching do(es) not exist, hence no cache is being saved.`);
       }
       const archiveFolder = yield utils.createTempDirectory();
-      const archivePath = path4.join(archiveFolder, utils.getCacheFileName(compressionMethod));
+      const archivePath = path5.join(archiveFolder, utils.getCacheFileName(compressionMethod));
       core.debug(`Archive Path: ${archivePath}`);
       try {
         yield (0, tar_1.createTar)(archiveFolder, cachePaths, compressionMethod);
@@ -73628,11 +73628,11 @@ var require_lodash = __commonJS((exports, module) => {
           return isFunction(object[key]);
         });
       }
-      function baseGet(object, path5) {
-        path5 = castPath(path5, object);
-        var index = 0, length = path5.length;
+      function baseGet(object, path6) {
+        path6 = castPath(path6, object);
+        var index = 0, length = path6.length;
         while (object != null && index < length) {
-          object = object[toKey(path5[index++])];
+          object = object[toKey(path6[index++])];
         }
         return index && index == length ? object : undefined2;
       }
@@ -73696,10 +73696,10 @@ var require_lodash = __commonJS((exports, module) => {
         });
         return accumulator;
       }
-      function baseInvoke(object, path5, args) {
-        path5 = castPath(path5, object);
-        object = parent(object, path5);
-        var func = object == null ? object : object[toKey(last(path5))];
+      function baseInvoke(object, path6, args) {
+        path6 = castPath(path6, object);
+        object = parent(object, path6);
+        var func = object == null ? object : object[toKey(last(path6))];
         return func == null ? undefined2 : apply(func, object, args);
       }
       function baseIsArguments(value) {
@@ -73855,13 +73855,13 @@ var require_lodash = __commonJS((exports, module) => {
           return object === source || baseIsMatch(object, source, matchData);
         };
       }
-      function baseMatchesProperty(path5, srcValue) {
-        if (isKey(path5) && isStrictComparable(srcValue)) {
-          return matchesStrictComparable(toKey(path5), srcValue);
+      function baseMatchesProperty(path6, srcValue) {
+        if (isKey(path6) && isStrictComparable(srcValue)) {
+          return matchesStrictComparable(toKey(path6), srcValue);
         }
         return function(object) {
-          var objValue = get3(object, path5);
-          return objValue === undefined2 && objValue === srcValue ? hasIn(object, path5) : baseIsEqual(srcValue, objValue, COMPARE_PARTIAL_FLAG | COMPARE_UNORDERED_FLAG);
+          var objValue = get3(object, path6);
+          return objValue === undefined2 && objValue === srcValue ? hasIn(object, path6) : baseIsEqual(srcValue, objValue, COMPARE_PARTIAL_FLAG | COMPARE_UNORDERED_FLAG);
         };
       }
       function baseMerge(object, source, srcIndex, customizer, stack) {
@@ -73958,23 +73958,23 @@ var require_lodash = __commonJS((exports, module) => {
         });
       }
       function basePick(object, paths) {
-        return basePickBy(object, paths, function(value, path5) {
-          return hasIn(object, path5);
+        return basePickBy(object, paths, function(value, path6) {
+          return hasIn(object, path6);
         });
       }
       function basePickBy(object, paths, predicate) {
         var index = -1, length = paths.length, result2 = {};
         while (++index < length) {
-          var path5 = paths[index], value = baseGet(object, path5);
-          if (predicate(value, path5)) {
-            baseSet(result2, castPath(path5, object), value);
+          var path6 = paths[index], value = baseGet(object, path6);
+          if (predicate(value, path6)) {
+            baseSet(result2, castPath(path6, object), value);
           }
         }
         return result2;
       }
-      function basePropertyDeep(path5) {
+      function basePropertyDeep(path6) {
         return function(object) {
-          return baseGet(object, path5);
+          return baseGet(object, path6);
         };
       }
       function basePullAll(array, values2, iteratee2, comparator) {
@@ -74048,14 +74048,14 @@ var require_lodash = __commonJS((exports, module) => {
         var array = values(collection);
         return shuffleSelf(array, baseClamp(n2, 0, array.length));
       }
-      function baseSet(object, path5, value, customizer) {
+      function baseSet(object, path6, value, customizer) {
         if (!isObject3(object)) {
           return object;
         }
-        path5 = castPath(path5, object);
-        var index = -1, length = path5.length, lastIndex = length - 1, nested = object;
+        path6 = castPath(path6, object);
+        var index = -1, length = path6.length, lastIndex = length - 1, nested = object;
         while (nested != null && ++index < length) {
-          var key = toKey(path5[index]), newValue = value;
+          var key = toKey(path6[index]), newValue = value;
           if (key === "__proto__" || key === "constructor" || key === "prototype") {
             return object;
           }
@@ -74063,7 +74063,7 @@ var require_lodash = __commonJS((exports, module) => {
             var objValue = nested[key];
             newValue = customizer ? customizer(objValue, key, nested) : undefined2;
             if (newValue === undefined2) {
-              newValue = isObject3(objValue) ? objValue : isIndex(path5[index + 1]) ? [] : {};
+              newValue = isObject3(objValue) ? objValue : isIndex(path6[index + 1]) ? [] : {};
             }
           }
           assignValue(nested, key, newValue);
@@ -74229,13 +74229,13 @@ var require_lodash = __commonJS((exports, module) => {
           }
         return result2;
       }
-      function baseUnset(object, path5) {
-        path5 = castPath(path5, object);
-        object = parent(object, path5);
-        return object == null || delete object[toKey(last(path5))];
+      function baseUnset(object, path6) {
+        path6 = castPath(path6, object);
+        object = parent(object, path6);
+        return object == null || delete object[toKey(last(path6))];
       }
-      function baseUpdate(object, path5, updater, customizer) {
-        return baseSet(object, path5, updater(baseGet(object, path5)), customizer);
+      function baseUpdate(object, path6, updater, customizer) {
+        return baseSet(object, path6, updater(baseGet(object, path6)), customizer);
       }
       function baseWhile(array, predicate, isDrop, fromRight) {
         var length = array.length, index = fromRight ? length : -1;
@@ -75094,11 +75094,11 @@ var require_lodash = __commonJS((exports, module) => {
         var match = source.match(reWrapDetails);
         return match ? match[1].split(reSplitDetails) : [];
       }
-      function hasPath(object, path5, hasFunc) {
-        path5 = castPath(path5, object);
-        var index = -1, length = path5.length, result2 = false;
+      function hasPath(object, path6, hasFunc) {
+        path6 = castPath(path6, object);
+        var index = -1, length = path6.length, result2 = false;
         while (++index < length) {
-          var key = toKey(path5[index]);
+          var key = toKey(path6[index]);
           if (!(result2 = object != null && hasFunc(object, key))) {
             break;
           }
@@ -75302,8 +75302,8 @@ var require_lodash = __commonJS((exports, module) => {
           return apply(func, this, otherArgs);
         };
       }
-      function parent(object, path5) {
-        return path5.length < 2 ? object : baseGet(object, baseSlice(path5, 0, -1));
+      function parent(object, path6) {
+        return path6.length < 2 ? object : baseGet(object, baseSlice(path6, 0, -1));
       }
       function reorder(array, indexes) {
         var arrLength = array.length, length = nativeMin(indexes.length, arrLength), oldArray = copyArray(array);
@@ -75936,10 +75936,10 @@ var require_lodash = __commonJS((exports, module) => {
         }
         return isString(collection) ? fromIndex <= length && collection.indexOf(value, fromIndex) > -1 : !!length && baseIndexOf(collection, value, fromIndex) > -1;
       }
-      var invokeMap = baseRest(function(collection, path5, args) {
-        var index = -1, isFunc = typeof path5 == "function", result2 = isArrayLike(collection) ? Array2(collection.length) : [];
+      var invokeMap = baseRest(function(collection, path6, args) {
+        var index = -1, isFunc = typeof path6 == "function", result2 = isArrayLike(collection) ? Array2(collection.length) : [];
         baseEach(collection, function(value) {
-          result2[++index] = isFunc ? apply(path5, value, args) : baseInvoke(value, path5, args);
+          result2[++index] = isFunc ? apply(path6, value, args) : baseInvoke(value, path6, args);
         });
         return result2;
       });
@@ -76591,15 +76591,15 @@ var require_lodash = __commonJS((exports, module) => {
       function functionsIn(object) {
         return object == null ? [] : baseFunctions(object, keysIn(object));
       }
-      function get3(object, path5, defaultValue) {
-        var result2 = object == null ? undefined2 : baseGet(object, path5);
+      function get3(object, path6, defaultValue) {
+        var result2 = object == null ? undefined2 : baseGet(object, path6);
         return result2 === undefined2 ? defaultValue : result2;
       }
-      function has(object, path5) {
-        return object != null && hasPath(object, path5, baseHas);
+      function has(object, path6) {
+        return object != null && hasPath(object, path6, baseHas);
       }
-      function hasIn(object, path5) {
-        return object != null && hasPath(object, path5, baseHasIn);
+      function hasIn(object, path6) {
+        return object != null && hasPath(object, path6, baseHasIn);
       }
       var invert = createInverter(function(result2, value, key) {
         if (value != null && typeof value.toString != "function") {
@@ -76652,10 +76652,10 @@ var require_lodash = __commonJS((exports, module) => {
           return result2;
         }
         var isDeep = false;
-        paths = arrayMap(paths, function(path5) {
-          path5 = castPath(path5, object);
-          isDeep || (isDeep = path5.length > 1);
-          return path5;
+        paths = arrayMap(paths, function(path6) {
+          path6 = castPath(path6, object);
+          isDeep || (isDeep = path6.length > 1);
+          return path6;
         });
         copyObject(object, getAllKeysIn(object), result2);
         if (isDeep) {
@@ -76681,19 +76681,19 @@ var require_lodash = __commonJS((exports, module) => {
           return [prop];
         });
         predicate = getIteratee(predicate);
-        return basePickBy(object, props, function(value, path5) {
-          return predicate(value, path5[0]);
+        return basePickBy(object, props, function(value, path6) {
+          return predicate(value, path6[0]);
         });
       }
-      function result(object, path5, defaultValue) {
-        path5 = castPath(path5, object);
-        var index = -1, length = path5.length;
+      function result(object, path6, defaultValue) {
+        path6 = castPath(path6, object);
+        var index = -1, length = path6.length;
         if (!length) {
           length = 1;
           object = undefined2;
         }
         while (++index < length) {
-          var value = object == null ? undefined2 : object[toKey(path5[index])];
+          var value = object == null ? undefined2 : object[toKey(path6[index])];
           if (value === undefined2) {
             index = length;
             value = defaultValue;
@@ -76702,12 +76702,12 @@ var require_lodash = __commonJS((exports, module) => {
         }
         return object;
       }
-      function set3(object, path5, value) {
-        return object == null ? object : baseSet(object, path5, value);
+      function set3(object, path6, value) {
+        return object == null ? object : baseSet(object, path6, value);
       }
-      function setWith(object, path5, value, customizer) {
+      function setWith(object, path6, value, customizer) {
         customizer = typeof customizer == "function" ? customizer : undefined2;
-        return object == null ? object : baseSet(object, path5, value, customizer);
+        return object == null ? object : baseSet(object, path6, value, customizer);
       }
       var toPairs = createToPairs(keys);
       var toPairsIn = createToPairs(keysIn);
@@ -76729,15 +76729,15 @@ var require_lodash = __commonJS((exports, module) => {
         });
         return accumulator;
       }
-      function unset(object, path5) {
-        return object == null ? true : baseUnset(object, path5);
+      function unset(object, path6) {
+        return object == null ? true : baseUnset(object, path6);
       }
-      function update2(object, path5, updater) {
-        return object == null ? object : baseUpdate(object, path5, castFunction(updater));
+      function update2(object, path6, updater) {
+        return object == null ? object : baseUpdate(object, path6, castFunction(updater));
       }
-      function updateWith(object, path5, updater, customizer) {
+      function updateWith(object, path6, updater, customizer) {
         customizer = typeof customizer == "function" ? customizer : undefined2;
-        return object == null ? object : baseUpdate(object, path5, castFunction(updater), customizer);
+        return object == null ? object : baseUpdate(object, path6, castFunction(updater), customizer);
       }
       function values(object) {
         return object == null ? [] : baseValues(object, keys(object));
@@ -77132,17 +77132,17 @@ __p += '`;
       function matches(source) {
         return baseMatches(baseClone(source, CLONE_DEEP_FLAG));
       }
-      function matchesProperty(path5, srcValue) {
-        return baseMatchesProperty(path5, baseClone(srcValue, CLONE_DEEP_FLAG));
+      function matchesProperty(path6, srcValue) {
+        return baseMatchesProperty(path6, baseClone(srcValue, CLONE_DEEP_FLAG));
       }
-      var method = baseRest(function(path5, args) {
+      var method = baseRest(function(path6, args) {
         return function(object) {
-          return baseInvoke(object, path5, args);
+          return baseInvoke(object, path6, args);
         };
       });
       var methodOf = baseRest(function(object, args) {
-        return function(path5) {
-          return baseInvoke(object, path5, args);
+        return function(path6) {
+          return baseInvoke(object, path6, args);
         };
       });
       function mixin(object, source, options) {
@@ -77188,12 +77188,12 @@ __p += '`;
       var over = createOver(arrayMap);
       var overEvery = createOver(arrayEvery);
       var overSome = createOver(arraySome);
-      function property(path5) {
-        return isKey(path5) ? baseProperty(toKey(path5)) : basePropertyDeep(path5);
+      function property(path6) {
+        return isKey(path6) ? baseProperty(toKey(path6)) : basePropertyDeep(path6);
       }
       function propertyOf(object) {
-        return function(path5) {
-          return object == null ? undefined2 : baseGet(object, path5);
+        return function(path6) {
+          return object == null ? undefined2 : baseGet(object, path6);
         };
       }
       var range = createRange();
@@ -77646,12 +77646,12 @@ __p += '`;
       LazyWrapper.prototype.findLast = function(predicate) {
         return this.reverse().find(predicate);
       };
-      LazyWrapper.prototype.invokeMap = baseRest(function(path5, args) {
-        if (typeof path5 == "function") {
+      LazyWrapper.prototype.invokeMap = baseRest(function(path6, args) {
+        if (typeof path6 == "function") {
           return new LazyWrapper(this);
         }
         return this.map(function(value) {
-          return baseInvoke(value, path5, args);
+          return baseInvoke(value, path6, args);
         });
       });
       LazyWrapper.prototype.reject = function(predicate) {
@@ -78929,14 +78929,14 @@ var require_url_state_machine = __commonJS((exports, module) => {
     return url.replace(/\u0009|\u000A|\u000D/g, "");
   }
   function shortenPath(url) {
-    const path5 = url.path;
-    if (path5.length === 0) {
+    const path6 = url.path;
+    if (path6.length === 0) {
       return;
     }
-    if (url.scheme === "file" && path5.length === 1 && isNormalizedWindowsDriveLetter(path5[0])) {
+    if (url.scheme === "file" && path6.length === 1 && isNormalizedWindowsDriveLetter(path6[0])) {
       return;
     }
-    path5.pop();
+    path6.pop();
   }
   function includesCredentials(url) {
     return url.username !== "" || url.password !== "";
@@ -81136,9 +81136,9 @@ var require_quote = __commonJS((exports) => {
     return isValidVariableName(key) ? key : next(key);
   }
   exports.quoteKey = quoteKey;
-  function stringifyPath(path5, next) {
+  function stringifyPath(path6, next) {
     let result = "";
-    for (const key of path5) {
+    for (const key of path6) {
       if (isValidVariableName(key)) {
         result += `.${key}`;
       } else {
@@ -81518,7 +81518,7 @@ var require_dist7 = __commonJS((exports) => {
   var ROOT_SENTINEL = Symbol("root");
   function stringify2(value, replacer, indent, options = {}) {
     const space = typeof indent === "string" ? indent : " ".repeat(indent || 0);
-    const path5 = [];
+    const path6 = [];
     const stack = new Set;
     const tracking = new Map;
     const unpack = new Map;
@@ -81530,22 +81530,22 @@ var require_dist7 = __commonJS((exports) => {
         return;
       if (skipUndefinedProperties && value2 === undefined)
         return;
-      if (path5.length > maxDepth)
+      if (path6.length > maxDepth)
         return;
       if (key === undefined)
         return valueToString(value2, space, onNext, key);
-      path5.push(key);
+      path6.push(key);
       const result2 = builder(value2, key === ROOT_SENTINEL ? undefined : key);
-      path5.pop();
+      path6.pop();
       return result2;
     };
     const builder = references ? (value2, key) => {
       if (value2 !== null && (typeof value2 === "object" || typeof value2 === "function" || typeof value2 === "symbol")) {
         if (tracking.has(value2)) {
-          unpack.set(path5.slice(1), tracking.get(value2));
+          unpack.set(path6.slice(1), tracking.get(value2));
           return valueToString(undefined, space, onNext, key);
         }
-        tracking.set(value2, path5.slice(1));
+        tracking.set(value2, path6.slice(1));
       }
       return valueToString(value2, space, onNext, key);
     } : (value2, key) => {
@@ -81769,10 +81769,14 @@ function loadPromptFile(promptFilePath) {
   const directories = [
     "",
     ".github/prompts",
+    ".github/prompts/default",
     ".github/Prompts",
     "prompts",
     "Prompts"
   ];
+  if (isGitHubAction()) {
+    directories.unshift(getAssetPath());
+  }
   let yamlBlob;
   for (const directory of directories) {
     const fullPath = path2.join(directory, promptFilePath);
@@ -81842,6 +81846,29 @@ function extractDataBlocks(markdown) {
   }
   return blocks;
 }
+// src/util/config/templates.ts
+import fs2 from "fs";
+import path3 from "path";
+var templatesDir = path3.join(process.cwd(), "templates");
+var defaultTemplate = "summary";
+function checkDefaultTemplates(template) {
+  if (!template || template === "default") {
+    template = defaultTemplate;
+  }
+  if (!template.includes(".")) {
+    template += ".md.vto";
+  }
+  let defaultDir;
+  if (isGitHubAction()) {
+    defaultDir = getAssetPath();
+  } else {
+    defaultDir = path3.join(templatesDir, "default");
+  }
+  const templatePath = path3.join(defaultDir, template);
+  if (fs2.existsSync(templatePath) && fs2.lstatSync(templatePath).isFile()) {
+    return templatePath;
+  }
+}
 // src/util/config/update.ts
 var DEFAULT_MARKER = /<!--\s*UPDATE\s*-->/i;
 
@@ -81902,18 +81929,13 @@ class UpdateDetection {
   }
   static defaultStrategies = [
     {
-      kind: "section",
-      section: "Update",
-      timeframe: "last-week"
-    },
-    {
       kind: "marker",
       marker: DEFAULT_MARKER,
-      timeframe: "last-week"
+      timeframe: "all-time"
     },
     {
       kind: "timebox",
-      timeframe: "last-week"
+      timeframe: "last-month"
     },
     { kind: "skip" }
   ];
@@ -82006,9 +82028,6 @@ function getEnv(key) {
   import_dotenv.default.config();
   return process.env[key] ?? process.env[key.toUpperCase()] ?? process.env[key.toLowerCase()];
 }
-
-// src/4_template/render.ts
-import path5 from "path";
 
 // node_modules/ventojs/esm/_dnt.polyfills.js
 if (!Object.hasOwn) {
@@ -85945,14 +85964,14 @@ class TemplateError extends VentoBaseError {
   path;
   source;
   position;
-  constructor(path3 = "<unknown>", source = "<empty file>", position = 0, cause) {
+  constructor(path4 = "<unknown>", source = "<empty file>", position = 0, cause) {
     const { line, column, code } = errorLine(source, position);
-    super(`Error in template ${path3}:${line}:${column}
+    super(`Error in template ${path4}:${line}:${column}
 
 ${code.trim()}
 
 `, { cause });
-    this.path = path3;
+    this.path = path4;
     this.source = source;
     this.position = position;
   }
@@ -86204,11 +86223,11 @@ class Environment {
     const template = this.compile(source, "", {}, true);
     return template(data);
   }
-  compile(source, path3, defaults, sync = false) {
+  compile(source, path4, defaults, sync = false) {
     if (typeof source !== "string") {
-      throw new Error(`The source code of "${path3}" must be a string. Got ${typeof source}`);
+      throw new Error(`The source code of "${path4}" must be a string. Got ${typeof source}`);
     }
-    const tokens = this.tokenize(source, path3);
+    const tokens = this.tokenize(source, path4);
     let code = this.compileTokens(tokens).join(`
 `);
     const { dataVarname, autoDataVarname } = this.options;
@@ -86217,9 +86236,9 @@ class Environment {
         code = transformTemplateCode(code, dataVarname);
       } catch (cause) {
         if (cause instanceof TransformError) {
-          throw new TemplateError(path3, source, cause.position, cause);
+          throw new TemplateError(path4, source, cause.position, cause);
         }
-        throw new Error(`Unknown error while transforming ${path3}`, { cause });
+        throw new Error(`Unknown error while transforming ${path4}`, { cause });
       }
     }
     const constructor = new Function("__file", "__env", "__defaults", "__err", `return${sync ? "" : " async"} function (${dataVarname}) {
@@ -86235,16 +86254,16 @@ class Environment {
         }
       }
       `);
-    const template = constructor(path3, this, defaults, TemplateError);
-    template.file = path3;
+    const template = constructor(path4, this, defaults, TemplateError);
+    template.file = path4;
     template.code = code;
     template.source = source;
     return template;
   }
-  tokenize(source, path3) {
+  tokenize(source, path4) {
     let tokens = tokenize(source);
     for (const tokenPreprocessor of this.tokenPreprocessors) {
-      const result = tokenPreprocessor(this, tokens, path3);
+      const result = tokenPreprocessor(this, tokens, path4);
       if (result !== undefined) {
         tokens = result;
       }
@@ -86252,14 +86271,14 @@ class Environment {
     return tokens;
   }
   async load(file, from) {
-    const path3 = this.options.loader.resolve(from || "", file);
-    let cached = this.cache.get(path3);
+    const path4 = this.options.loader.resolve(from || "", file);
+    let cached = this.cache.get(path4);
     if (cached) {
       return cached;
     }
-    const cleanPath = path3.split("?")[0].split("#")[0];
-    cached = this.options.loader.load(cleanPath).then(({ source, data }) => this.compile(source, path3, data));
-    this.cache.set(path3, cached);
+    const cleanPath = path4.split("?")[0].split("#")[0];
+    cached = this.options.loader.load(cleanPath).then(({ source, data }) => this.compile(source, path4, data));
+    this.cache.set(path4, cached);
     return await cached;
   }
   compileTokens(tokens, outputVar = "__exports.content", stopAt) {
@@ -86347,8 +86366,8 @@ function checkAsync(fn2) {
 }
 
 // node_modules/ventojs/esm/src/loader.js
-import path3 from "node:path";
-import fs2 from "node:fs/promises";
+import path4 from "node:path";
+import fs3 from "node:fs/promises";
 import process2 from "node:process";
 
 class FileLoader {
@@ -86358,17 +86377,17 @@ class FileLoader {
   }
   async load(file) {
     return {
-      source: await fs2.readFile(file, "utf-8")
+      source: await fs3.readFile(file, "utf-8")
     };
   }
   resolve(from, file) {
     if (file.startsWith(".")) {
-      return path3.join(path3.dirname(from), file);
+      return path4.join(path4.dirname(from), file);
     }
     if (file.startsWith(this.#root)) {
       return file;
     }
-    return path3.join(this.#root, file);
+    return path4.join(this.#root, file);
   }
 }
 
@@ -89477,8 +89496,8 @@ function getClient(endpoint, clientOptions = {}) {
   }
   const { allowInsecureConnection: allowInsecureConnection2, httpClient } = clientOptions;
   const endpointUrl = (_c2 = clientOptions.endpoint) !== null && _c2 !== undefined ? _c2 : endpoint;
-  const client = (path4, ...args) => {
-    const getUrl = (requestOptions) => buildRequestUrl(endpointUrl, path4, args, Object.assign({ allowInsecureConnection: allowInsecureConnection2 }, requestOptions));
+  const client = (path5, ...args) => {
+    const getUrl = (requestOptions) => buildRequestUrl(endpointUrl, path5, args, Object.assign({ allowInsecureConnection: allowInsecureConnection2 }, requestOptions));
     return {
       get: (requestOptions = {}) => {
         return buildOperation("GET", getUrl(requestOptions), pipeline, requestOptions, allowInsecureConnection2, httpClient);
@@ -90436,31 +90455,31 @@ function getClient2(endpoint, credentialsOrPipelineOptions, clientOptions = {}) 
   }
   const pipeline = createDefaultPipeline2(endpoint, credentials, clientOptions);
   const tspClient = getClient(endpoint, Object.assign(Object.assign({}, clientOptions), { pipeline }));
-  const client = (path4, ...args) => {
+  const client = (path5, ...args) => {
     return {
       get: (requestOptions = {}) => {
-        return tspClient.path(path4, ...args).get(wrapRequestParameters(requestOptions));
+        return tspClient.path(path5, ...args).get(wrapRequestParameters(requestOptions));
       },
       post: (requestOptions = {}) => {
-        return tspClient.path(path4, ...args).post(wrapRequestParameters(requestOptions));
+        return tspClient.path(path5, ...args).post(wrapRequestParameters(requestOptions));
       },
       put: (requestOptions = {}) => {
-        return tspClient.path(path4, ...args).put(wrapRequestParameters(requestOptions));
+        return tspClient.path(path5, ...args).put(wrapRequestParameters(requestOptions));
       },
       patch: (requestOptions = {}) => {
-        return tspClient.path(path4, ...args).patch(wrapRequestParameters(requestOptions));
+        return tspClient.path(path5, ...args).patch(wrapRequestParameters(requestOptions));
       },
       delete: (requestOptions = {}) => {
-        return tspClient.path(path4, ...args).delete(wrapRequestParameters(requestOptions));
+        return tspClient.path(path5, ...args).delete(wrapRequestParameters(requestOptions));
       },
       head: (requestOptions = {}) => {
-        return tspClient.path(path4, ...args).head(wrapRequestParameters(requestOptions));
+        return tspClient.path(path5, ...args).head(wrapRequestParameters(requestOptions));
       },
       options: (requestOptions = {}) => {
-        return tspClient.path(path4, ...args).options(wrapRequestParameters(requestOptions));
+        return tspClient.path(path5, ...args).options(wrapRequestParameters(requestOptions));
       },
       trace: (requestOptions = {}) => {
-        return tspClient.path(path4, ...args).trace(wrapRequestParameters(requestOptions));
+        return tspClient.path(path5, ...args).trace(wrapRequestParameters(requestOptions));
       }
     };
   };
@@ -90765,9 +90784,9 @@ function isUnexpected(response) {
   }
   return !pathDetails.includes(response.status);
 }
-function getParametrizedPathSuccess(method, path4) {
+function getParametrizedPathSuccess(method, path5) {
   var _a3, _b2, _c2, _d2;
-  const pathParts = path4.split("/");
+  const pathParts = path5.split("/");
   let matchedLen = -1, matchedValue = [];
   for (const [key, value] of Object.entries(responseMap)) {
     if (!key.startsWith(method)) {
@@ -91726,14 +91745,14 @@ function requestLog(octokit) {
     octokit.log.debug("request", options);
     const start = Date.now();
     const requestOptions = octokit.request.endpoint.parse(options);
-    const path4 = requestOptions.url.replace(options.baseUrl, "");
+    const path5 = requestOptions.url.replace(options.baseUrl, "");
     return request4(options).then((response) => {
       const requestId = response.headers["x-github-request-id"];
-      octokit.log.info(`${requestOptions.method} ${path4} - ${response.status} with id ${requestId} in ${Date.now() - start}ms`);
+      octokit.log.info(`${requestOptions.method} ${path5} - ${response.status} with id ${requestId} in ${Date.now() - start}ms`);
       return response;
     }).catch((error) => {
       const requestId = error.response?.headers["x-github-request-id"] || "UNKNOWN";
-      octokit.log.error(`${requestOptions.method} ${path4} - ${error.status} with id ${requestId} in ${Date.now() - start}ms`);
+      octokit.log.error(`${requestOptions.method} ${path5} - ${error.status} with id ${requestId} in ${Date.now() - start}ms`);
       throw error;
     });
   });
@@ -97768,7 +97787,7 @@ function createAppAuth(options) {
 }
 
 // node_modules/@octokit/plugin-paginate-graphql/dist-bundle/index.js
-var generateMessage = (path4, cursorValue) => `The cursor at "${path4.join(",")}" did not change its value "${cursorValue}" after a page transition. Please make sure your that your query is set up correctly.`;
+var generateMessage = (path5, cursorValue) => `The cursor at "${path5.join(",")}" did not change its value "${cursorValue}" after a page transition. Please make sure your that your query is set up correctly.`;
 var MissingCursorChange = class extends Error {
   constructor(pageInfo, cursorValue) {
     super(generateMessage(pageInfo.pathInQuery, cursorValue));
@@ -97798,9 +97817,9 @@ function findPaginatedResourcePath(responseData) {
   }
   return paginatedResourcePath;
 }
-var deepFindPathToProperty = (object, searchProp, path4 = []) => {
+var deepFindPathToProperty = (object, searchProp, path5 = []) => {
   for (const key of Object.keys(object)) {
-    const currentPath = [...path4, key];
+    const currentPath = [...path5, key];
     const currentValue = object[key];
     if (isObject2(currentValue)) {
       if (currentValue.hasOwnProperty(searchProp)) {
@@ -97814,12 +97833,12 @@ var deepFindPathToProperty = (object, searchProp, path4 = []) => {
   }
   return [];
 };
-var get2 = (object, path4) => {
-  return path4.reduce((current, nextProperty) => current[nextProperty], object);
+var get2 = (object, path5) => {
+  return path5.reduce((current, nextProperty) => current[nextProperty], object);
 };
-var set2 = (object, path4, mutator) => {
-  const lastProperty = path4[path4.length - 1];
-  const parentPath = [...path4].slice(0, -1);
+var set2 = (object, path5, mutator) => {
+  const lastProperty = path5[path5.length - 1];
+  const parentPath = [...path5].slice(0, -1);
   const parent = get2(object, parentPath);
   if (typeof mutator === "function") {
     parent[lastProperty] = mutator(parent[lastProperty]);
@@ -97869,22 +97888,22 @@ var mergeResponses = (response1, response2) => {
   if (Object.keys(response1).length === 0) {
     return Object.assign(response1, response2);
   }
-  const path4 = findPaginatedResourcePath(response1);
-  const nodesPath = [...path4, "nodes"];
+  const path5 = findPaginatedResourcePath(response1);
+  const nodesPath = [...path5, "nodes"];
   const newNodes = get2(response2, nodesPath);
   if (newNodes) {
     set2(response1, nodesPath, (values) => {
       return [...values, ...newNodes];
     });
   }
-  const edgesPath = [...path4, "edges"];
+  const edgesPath = [...path5, "edges"];
   const newEdges = get2(response2, edgesPath);
   if (newEdges) {
     set2(response1, edgesPath, (values) => {
       return [...values, ...newEdges];
     });
   }
-  const pageInfoPath = [...path4, "pageInfo"];
+  const pageInfoPath = [...path5, "pageInfo"];
   set2(response1, pageInfoPath, get2(response2, pageInfoPath));
   return response1;
 };
@@ -97973,7 +97992,7 @@ var triggers_notification_paths_default = [
   "/teams/{team_id}/discussions/{discussion_number}/comments"
 ];
 function routeMatcher2(paths) {
-  const regexes = paths.map((path4) => path4.split("/").map((c2) => c2.startsWith("{") ? "(?:.+?)" : c2).join("/"));
+  const regexes = paths.map((path5) => path5.split("/").map((c2) => c2.startsWith("{") ? "(?:.+?)" : c2).join("/"));
   const regex2 = `^(?:${regexes.map((r2) => `(?:${r2})`).join("|")})[^/]*$`;
   return new RegExp(regex2, "i");
 }
@@ -98175,9 +98194,9 @@ function handleUnexpectedResponse(response) {
 // src/3_transform/ai/cache.ts
 var import_cache = __toESM(require_cache3(), 1);
 import crypto from "node:crypto";
-import fs3 from "fs";
-import path4 from "path";
-var ACTIONS_CACHE_DIR = path4.resolve("./cache");
+import fs4 from "fs";
+import path5 from "path";
+var ACTIONS_CACHE_DIR = path5.resolve("./cache");
 
 class SummaryCache {
   static instance;
@@ -98188,8 +98207,8 @@ class SummaryCache {
     return SummaryCache.instance;
   }
   constructor() {
-    if (!fs3.existsSync(ACTIONS_CACHE_DIR)) {
-      fs3.mkdirSync(ACTIONS_CACHE_DIR, { recursive: true });
+    if (!fs4.existsSync(ACTIONS_CACHE_DIR)) {
+      fs4.mkdirSync(ACTIONS_CACHE_DIR, { recursive: true });
     }
   }
   static getPromptCacheKey(prompt, sources) {
@@ -98202,7 +98221,7 @@ class SummaryCache {
     return crypto.createHash("sha256").update(json).digest("hex").slice(0, 8);
   }
   static getCacheFile(cacheKey) {
-    return path4.join(ACTIONS_CACHE_DIR, `summary-${cacheKey}.blob`);
+    return path5.join(ACTIONS_CACHE_DIR, `summary-${cacheKey}.blob`);
   }
   async get(prompt, sources) {
     const key = SummaryCache.getPromptCacheKey(prompt, sources);
@@ -98220,7 +98239,7 @@ class SummaryCache {
       });
       return !!exists;
     }
-    return fs3.existsSync(file);
+    return fs4.existsSync(file);
   }
   async save(key, summary) {
     const file = SummaryCache.getCacheFile(key);
@@ -98230,7 +98249,7 @@ class SummaryCache {
       return;
     }
     console.log(`Saving summary cache to ${file}`);
-    await fs3.promises.writeFile(file, summary, "utf-8");
+    await fs4.promises.writeFile(file, summary, "utf-8");
     if (isGitHubAction()) {
       await import_cache.saveCache([file], key);
     }
@@ -98249,11 +98268,11 @@ class SummaryCache {
       }
     }
     console.log(`Loading summary cache from ${file}`);
-    return fs3.promises.readFile(file, "utf-8");
+    return fs4.promises.readFile(file, "utf-8");
   }
   async clear() {
-    const files = await fs3.promises.readdir(ACTIONS_CACHE_DIR);
-    await Promise.all(files.map((file) => fs3.promises.unlink(path4.join(ACTIONS_CACHE_DIR, file))));
+    const files = await fs4.promises.readdir(ACTIONS_CACHE_DIR);
+    await Promise.all(files.map((file) => fs4.promises.unlink(path5.join(ACTIONS_CACHE_DIR, file))));
   }
 }
 
@@ -98271,7 +98290,7 @@ function insertPlaceholders(params, placeholders) {
   return params;
 }
 // src/3_transform/ai/tokens.ts
-import fs4 from "fs";
+import fs5 from "fs";
 var import_init = __toESM(require_init(), 1);
 async function initWasm() {
   let wasmPath;
@@ -98280,8 +98299,8 @@ async function initWasm() {
   } else {
     wasmPath = __require.resolve("/Users/amymanny/Code/rollup-n-up-n-up/node_modules/tiktoken/tiktoken_bg.wasm");
   }
-  if (fs4.existsSync(wasmPath)) {
-    const wasm = await fs4.promises.readFile(wasmPath);
+  if (fs5.existsSync(wasmPath)) {
+    const wasm = await fs5.promises.readFile(wasmPath);
     await import_init.init((imports) => WebAssembly.instantiate(wasm, imports));
     return;
   }
@@ -98324,7 +98343,6 @@ function truncate(githubModelName, messages, maxTokens) {
   }
 }
 await initWasm();
-
 // src/3_transform/ai/summarize.ts
 var limiter = new RateLimiter({
   tokensPerInterval: 15,
@@ -99255,9 +99273,9 @@ ${quickchartError}` : "";
     return `data:image/${type3};base64,${b64buf}`;
   }
   async toFile(pathOrDescriptor) {
-    const fs5 = __require("fs");
+    const fs6 = __require("fs");
     const buf = await this.toBinary();
-    fs5.writeFileSync(pathOrDescriptor, buf);
+    fs6.writeFileSync(pathOrDescriptor, buf);
   }
   static getGradientFillHelper(direction, colors, dimensions) {
     return `__BEGINFUNCTION__getGradientFillHelper(${JSON.stringify(direction)}, ${JSON.stringify(colors)}, ${JSON.stringify(dimensions)})__ENDFUNCTION__`;
@@ -100512,9 +100530,7 @@ function overrideUpdateDetection(configBlob) {
   const updateDetection = UpdateDetection.getInstance();
   updateDetection.setStrategies(configBlob);
 }
-
 // src/4_template/render.ts
-var templatesDir = path5.join(process.cwd(), "templates");
 var env = mod_default({
   dataVarname: "global",
   autoDataVarname: true,
@@ -100532,10 +100548,15 @@ var memory = Memory.getInstance();
 var today = new Date().toISOString().split("T")[0];
 var globals = { github: github2, memory, today };
 async function renderTemplate(templatePath) {
+  const defaultTemplate2 = checkDefaultTemplates(templatePath);
+  if (defaultTemplate2) {
+    console.log("Using default template:", defaultTemplate2);
+    templatePath = defaultTemplate2;
+  }
   const template = await env.load(templatePath);
   const result = await template({
     ...globals,
-    getConfig: (config) => getConfig(config),
+    getConfig,
     ...exports_debug,
     debugTemplate: () => debugTemplate(template)
   });
@@ -100545,7 +100566,7 @@ async function renderTemplate(templatePath) {
 }
 
 // src/1_trigger/action-render.ts
-var template = getConfig("TEMPLATE") || "main.md.vto";
+var template = getConfig("TEMPLATE");
 var md = await renderTemplate(template);
 import_core4.setOutput("md", md);
 import_core4.summary.addRaw(`

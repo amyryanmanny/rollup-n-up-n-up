@@ -32001,7 +32001,7 @@ var require_strftime = __commonJS((exports, module) => {
 
 // src/5_push/github/client.ts
 var import_core5 = __toESM(require_core(), 1);
-import path from "path";
+import path2 from "path";
 
 // src/util/octokit.ts
 var import_github3 = __toESM(require_github(), 1);
@@ -39380,6 +39380,9 @@ function parsePushTargets(targetBlob) {
     return { type, url: url.join(":") };
   }).filter((config) => config !== undefined);
 }
+// src/util/config/templates.ts
+import path from "path";
+var templatesDir = path.join(process.cwd(), "templates");
 
 // src/util/config/index.ts
 function getConfig(key, required = false) {
@@ -39912,7 +39915,7 @@ class GitHubPushClient {
     }
     const { owner, repo, branch, directory } = match;
     const content = Buffer.from(body).toString("base64");
-    const filePath = path.join(directory, filename);
+    const filePath = path2.join(directory, filename);
     const data = await createOrUpdateRepoFile(this, {
       owner,
       repo,

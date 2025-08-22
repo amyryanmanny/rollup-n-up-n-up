@@ -36,6 +36,9 @@
       "@push/*": ["5_push/*"],
       "@util/*": ["util/*"],
       "@config": ["util/config/index.ts"],
+      // Assets
+      "@prompts/*": ["../.github/prompts/default/*"],
+      "@templates/*": ["../templates/default/*"],
     },
   },
 }

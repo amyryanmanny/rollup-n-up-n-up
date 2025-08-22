@@ -18,10 +18,10 @@ Locally, the secrets can be populated from a `.env` file. Typically you will use
 bun install
 ```
 
-Edit `./templates/main.md.vto`.
+Edit `./templates/default/summary.md.vto`.
 
 ```sh
-bun run local
+URL=https://github.com/ventojs/vento/issues bun render
 ```
 
 ## Husky

@@ -16,7 +16,6 @@ jobs:
           TLDR: tldr_gpt
           GITHUB_PAT_TOKEN: ${{ secrets.ROLLUP_PAT_TOKEN }}
         with:
-          template: './templates/main.md.vto'
           update_detection: |
             today(Summary)
             today(Update)

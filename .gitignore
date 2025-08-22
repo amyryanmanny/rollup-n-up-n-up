@@ -138,9 +138,14 @@ out
 .env
 *.pem
 
-# Output
+# templates
+templates/
+!templates/default/
+
+# prompts
+.github/prompts/
+!.github/prompts/default/
+
+# output
 cache/
-templates/*
-!templates/main.md.vto
-!templates/interrogator.md.vto
 output.md

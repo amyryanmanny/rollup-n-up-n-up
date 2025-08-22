@@ -77,18 +77,13 @@ export class UpdateDetection {
 
   static defaultStrategies: UpdateDetectionStrategy[] = [
     {
-      kind: "section",
-      section: "Update",
-      timeframe: "last-week",
-    },
-    {
       kind: "marker",
       marker: DEFAULT_MARKER,
-      timeframe: "last-week",
+      timeframe: "all-time",
     },
     {
       kind: "timebox",
-      timeframe: "last-week",
+      timeframe: "last-month",
     },
     { kind: "skip" },
   ];

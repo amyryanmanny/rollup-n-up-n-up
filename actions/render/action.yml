@@ -34,7 +34,7 @@ inputs:
   # Templating
   template:
     description: The path to the Vento.js template file to render.
-    required: true
+    required: false # Defaults to default/summary.md.vto
   update_detection:
     description: >
       An ordered list of strategies used to detect an update from issue comments (see docs for syntax).

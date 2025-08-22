@@ -3,7 +3,7 @@ import path from "path";
 import yaml from "yaml";
 
 import { context } from "@actions/github";
-import { getConfig } from "@util/config";
+import { getAssetPath, getConfig, isGitHubAction } from "@util/config";
 import type { PromptParameters } from "@transform/ai/summarize";
 
 export function getModelEndpoint(tokenKind: string): string {
@@ -41,10 +41,15 @@ export function loadPromptFile(promptFilePath: string): PromptParameters {
   const directories = [
     "", // Absolute path
     ".github/prompts",
+    ".github/prompts/default",
     ".github/Prompts",
     "prompts",
     "Prompts",
   ];
+
+  if (isGitHubAction()) {
+    directories.unshift(getAssetPath());
+  }
 
   let yamlBlob: string | undefined;
   for (const directory of directories) {

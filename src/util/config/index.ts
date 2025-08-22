@@ -43,5 +43,6 @@ export * from "./github";
 export * from "./issue-render";
 export * from "./model";
 export * from "./push";
+export * from "./templates";
 export * from "./truthy";
 export * from "./update";

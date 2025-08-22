@@ -1,4 +1,3 @@
-import path from "path";
 import vento from "ventojs";
 
 import * as filters from "@transform/filters";
@@ -6,13 +5,14 @@ import * as plugins from "./plugins";
 
 import { GitHubClient } from "@pull/github/client";
 
-import { getConfig } from "@util/config";
+import { getConfig, checkDefaultTemplates, templatesDir } from "@config";
 import { Memory } from "@transform/memory";
+
 import * as debug from "./debug";
 import { debugTotalGraphQLRateLimit } from "@pull/github/graphql/fragments/rate-limit";
 
-// TODO: Configurable templatesDir
-const templatesDir = path.join(process.cwd(), "templates");
+// Include default templates for bundling
+import "@templates/summary.md.vto";
 
 const env = vento({
   dataVarname: "global",
@@ -38,14 +38,21 @@ const today = new Date().toISOString().split("T")[0]; // TODO: Support the same 
 
 const globals = { github, memory, today };
 
-export async function renderTemplate(templatePath: string): Promise<string> {
+export async function renderTemplate(
+  templatePath: string | undefined,
+): Promise<string> {
   // Load the template
-  const template = await env.load(templatePath);
+  const defaultTemplate = checkDefaultTemplates(templatePath);
+  if (defaultTemplate) {
+    console.log("Using default template:", defaultTemplate);
+    templatePath = defaultTemplate;
+  }
+  const template = await env.load(templatePath!);
 
   // Render the template with the provided data
   const result = await template({
     ...globals,
-    getConfig: (config: string) => getConfig(config),
+    getConfig,
     // Debugging Functions
     ...debug,
     debugTemplate: () => debug.debugTemplate(template),
