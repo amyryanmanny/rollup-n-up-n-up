@@ -19,6 +19,8 @@ type ListCommentsForIssueParams = GetIssueParameters & {
   numComments: number;
 };
 
+// TODO: Batching can probably speed requests up
+// https://github.com/octokit/request.js/issues/204#issuecomment-661116220
 export async function listCommentsForIssue(
   // Same Params to lookup the issues
   params: ListCommentsForIssueParams,
