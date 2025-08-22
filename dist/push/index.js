@@ -32004,7 +32004,7 @@ var import_core5 = __toESM(require_core(), 1);
 import path from "path";
 
 // src/util/octokit.ts
-var import_github2 = __toESM(require_github(), 1);
+var import_github3 = __toESM(require_github(), 1);
 
 // node_modules/universal-user-agent/index.js
 function getUserAgent() {
@@ -39275,7 +39275,6 @@ throttling.triggersNotification = triggersNotification;
 // src/util/config/index.ts
 var import_dotenv = __toESM(require_main2(), 1);
 var import_core3 = __toESM(require_core(), 1);
-
 // src/util/config/model.ts
 var import_yaml = __toESM(require_dist(), 1);
 var import_github = __toESM(require_github(), 1);
@@ -39384,17 +39383,27 @@ function parsePushTargets(targetBlob) {
 
 // src/util/config/index.ts
 function getConfig(key, required = false) {
-  if (process.env.GITHUB_ACTIONS === "true") {
+  if (isGitHubAction()) {
     const input = import_core3.getInput(key, { required });
     if (input !== "") {
       return input;
     }
   }
+  const envValue = getEnv(key);
+  if (required && !envValue) {
+    throw new Error(`Missing required env variable: ${key}`);
+  }
+  return envValue;
+}
+function getEnv(key) {
   import_dotenv.default.config();
   return process.env[key] ?? process.env[key.toUpperCase()] ?? process.env[key.toLowerCase()];
 }
 
 // src/util/config/github.ts
+function isGitHubAction() {
+  return getEnv("GITHUB_ACTIONS") === "true";
+}
 function getGitHubSecrets() {
   const secrets = getGitHubAppSecrets() ?? getGitHubPatSecrets() ?? getGitHubDefaultSecrets();
   if (secrets !== undefined) {

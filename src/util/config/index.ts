@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 
 import { getInput } from "@actions/core";
+
 import { isGitHubAction } from "./github";
 
 export function getConfig(

@@ -1,6 +1,6 @@
 import Bun from "bun";
 
-export const PUBLIC_PATH = "./assets";
+import { PUBLIC_PATH } from "@config";
 
 // Render
 await Bun.build({

@@ -1,9 +1,9 @@
-import "tiktoken/tiktoken_bg.wasm";
+import "tiktoken/tiktoken_bg.wasm"; // So Bun knows to bundle it as an asset
+// TODO: There is a way to use the path directly from the import, but Typescript rejects it
 
 import fs from "fs";
-import path from "path";
 
-import { walk } from "@nodelib/fs.walk/promises";
+import { getAssetPath, isGitHubAction } from "@config";
 
 import {
   encoding_for_model,
@@ -15,19 +15,20 @@ import type { Message } from "./summarize";
 
 async function initWasm() {
   // Because of this bug https://github.com/oven-sh/bun/issues/4216
-  for (const file of await walk(
-    "/home/runner/work/_actions/amyryanmanny/rollup-n-up-n-up/tiktoken-wasm",
-  )) {
-    console.log(file.path);
+  let wasmPath: string;
+  if (isGitHubAction()) {
+    wasmPath = getAssetPath("tiktoken_bg.wasm");
+  } else {
+    // Locally we can just use the version in node_modules
+    wasmPath = require.resolve("tiktoken/tiktoken_bg.wasm");
   }
-  for (const candidate of [import.meta.dirname, "node_modules/tiktoken"]) {
-    const wasmPath = path.join(candidate, "tiktoken_bg.wasm");
-    if (fs.existsSync(wasmPath)) {
-      const wasm = await fs.promises.readFile(wasmPath);
-      await init((imports) => WebAssembly.instantiate(wasm, imports));
-      return;
-    }
+
+  if (fs.existsSync(wasmPath)) {
+    const wasm = await fs.promises.readFile(wasmPath);
+    await init((imports) => WebAssembly.instantiate(wasm, imports));
+    return;
   }
+
   throw new Error("Missing tiktoken_bg.wasm");
 }
 
