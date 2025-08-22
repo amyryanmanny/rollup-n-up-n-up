@@ -40,7 +40,6 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
-    "@nodelib/fs.walk": "^3.0.1",
     "@types/bun": "latest",
     "@types/lodash": "^4.17.20",
     "@types/pluralize": "^0.0.33",
