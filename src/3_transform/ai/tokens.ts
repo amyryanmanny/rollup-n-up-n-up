@@ -1,3 +1,5 @@
+import "tiktoken/tiktoken_bg.wasm";
+
 import fs from "fs";
 import path from "path";
 

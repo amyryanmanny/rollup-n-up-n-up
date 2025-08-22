@@ -1,5 +1,3 @@
-import "tiktoken/tiktoken_bg.wasm";
-
 import { setOutput, summary } from "@actions/core";
 
 import { getConfig } from "@config";
