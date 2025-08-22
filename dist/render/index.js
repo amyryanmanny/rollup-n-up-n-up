@@ -99471,7 +99471,7 @@ var import_init = __toESM(require_init(), 1);
 import fs4 from "fs";
 import path4 from "path";
 async function initWasm() {
-  for (const file of await import_promises2.walk("./")) {
+  for (const file of await import_promises2.walk("/home/runner/work/_actions/amyryanmanny/rollup-n-up-n-up/tiktoken-wasm")) {
     console.log(file.path);
   }
   for (const candidate of [import.meta.dirname, "node_modules/tiktoken"]) {

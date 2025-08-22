@@ -13,7 +13,9 @@ import type { Message } from "./summarize";
 
 async function initWasm() {
   // Because of this bug https://github.com/oven-sh/bun/issues/4216
-  for (const file of await walk("./")) {
+  for (const file of await walk(
+    "/home/runner/work/_actions/amyryanmanny/rollup-n-up-n-up/tiktoken-wasm",
+  )) {
     console.log(file.path);
   }
   for (const candidate of [import.meta.dirname, "node_modules/tiktoken"]) {
