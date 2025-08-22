@@ -4,4 +4,4 @@
 {{ set issues = await github.url(url) }}
 {{ issues.remember() }}
 
-{{ await memory.query("interrogator.prompt.yaml", query) }}
+{{ await memory.query("interrogate", query) }}

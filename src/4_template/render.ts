@@ -13,6 +13,7 @@ import { debugTotalGraphQLRateLimit } from "@pull/github/graphql/fragments/rate-
 
 // Include default templates for bundling
 import "@templates/summary.md.vto";
+import "@templates/interrogate.md.vto";
 
 const env = vento({
   dataVarname: "global",

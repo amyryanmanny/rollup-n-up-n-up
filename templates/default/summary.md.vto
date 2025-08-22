@@ -1,4 +1,5 @@
-{{- set issues = await github.url(getConfig("url")) -}}
+{{- set url = getConfig("url") -}}
+{{- set issues = await github.url(url) -}}
 
 # [{{ getConfig("title") || "Report" }} {{ today }}]({{ issues.url }})
 

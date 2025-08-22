@@ -1,0 +1,7 @@
+{{ set url = getConfig("url") }}
+{{ set query = getConfig("query") }}
+
+{{ set issues = await github.url(url) }}
+{{ issues.remember() }}
+
+{{ await memory.query("interrogate", query) }}

@@ -139,11 +139,11 @@ out
 *.pem
 
 # templates
-templates/
+templates/*
 !templates/default/
 
 # prompts
-.github/prompts/
+.github/prompts/*
 !.github/prompts/default/
 
 # output
