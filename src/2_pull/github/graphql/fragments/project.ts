@@ -1,6 +1,6 @@
 import {
-  projectFieldValueEdgesFragment,
-  type ProjectFieldValueEdge,
+  projectFieldValueFragment,
+  type ProjectFieldValueNode,
 } from "./project-fields";
 
 export const projectItemsFragment = `
@@ -10,7 +10,7 @@ export const projectItemsFragment = `
         number
       }
       fieldValues(first: 100) {
-        ${projectFieldValueEdgesFragment}
+        ${projectFieldValueFragment}
       }
     }
   }
@@ -23,7 +23,7 @@ export type ProjectItems = {
         number: number;
       };
       fieldValues: {
-        edges: Array<ProjectFieldValueEdge>;
+        nodes: Array<ProjectFieldValueNode>;
       };
     }>;
   };

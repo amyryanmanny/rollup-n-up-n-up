@@ -9,13 +9,18 @@ import {
   type IssueNode,
 } from "./fragments/issue";
 import { pageInfoFragment } from "./fragments/page-info";
+import {
+  debugGraphQLRateLimit,
+  rateLimitFragment,
+  type RateLimit,
+} from "./fragments/rate-limit";
 
 type IssueStateParam = "OPEN" | "CLOSED" | "ALL";
 type IssueState = Omit<IssueStateParam, "ALL">; // Doesn't work due to GraphQL weirdness
 
 export type ListIssuesForRepoParameters = {
-  owner: string;
-  repo: string;
+  organization: string;
+  repository: string;
   state?: IssueState;
 };
 
@@ -48,9 +53,9 @@ export async function listIssuesForRepo(
   }
 
   const query = `
-    query paginate($owner: String!, $repo: String!, $states: [IssueState!], $cursor: String) {
-      repositoryOwner(login: $owner) {
-        repository(name: $repo) {
+    query paginate($organization: String!, $repository: String!, $states: [IssueState!], $cursor: String) {
+      repositoryOwner(login: $organization) {
+        repository(name: $repository) {
           issues(first: 50, states: $states, after: $cursor) {
             nodes {
               ${issueNodeFragment}
@@ -59,23 +64,28 @@ export async function listIssuesForRepo(
           }
         }
       }
+      ${rateLimitFragment}
     }
   `;
 
-  const response = await octokit.graphql.paginate<{
-    repositoryOwner: {
-      repository: {
-        issues: {
-          nodes: Array<IssueNode>;
-          pageInfo: PageInfoForward;
+  const response = await octokit.graphql.paginate<
+    {
+      repositoryOwner: {
+        repository: {
+          issues: {
+            nodes: Array<IssueNode>;
+            pageInfo: PageInfoForward;
+          };
         };
       };
-    };
-  }>(query, {
-    owner: params.owner,
-    repo: params.repo,
+    } & RateLimit
+  >(query, {
+    organization: params.organization,
+    repository: params.repository,
     states,
   });
+
+  debugGraphQLRateLimit("List Issues for Repo", params, response);
 
   const issues = response.repositoryOwner.repository.issues.nodes.map(
     (issue) => {
@@ -89,7 +99,7 @@ export async function listIssuesForRepo(
   return {
     issues,
     // TODO: Move this logic out to IssueList
-    title: `Issues for ${params.owner}/${params.repo}`,
-    url: `https://github.com/${params.owner}/${params.repo}`,
+    title: `Issues for ${params.organization}/${params.repository}`,
+    url: `https://github.com/${params.organization}/${params.repository}`,
   };
 }

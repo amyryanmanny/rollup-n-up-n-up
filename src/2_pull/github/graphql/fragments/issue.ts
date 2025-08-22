@@ -1,7 +1,5 @@
 import type { Issue } from "@pull/github/issue";
 
-export const ISSUE_PAGE_SIZE = 50;
-
 export const issueNodeFragment = `
   __typename
   title
@@ -29,17 +27,6 @@ export const issueNodeFragment = `
   labels(first: 100) {
     nodes {
       name
-    }
-  }
-  comments(last: 25) {
-    nodes {
-      author {
-        login
-      }
-      body
-      createdAt
-      updatedAt
-      url
     }
   }
   parent {
@@ -74,17 +61,6 @@ export type IssueNode = {
   labels: {
     nodes: Array<{ name: string }>;
   };
-  comments: {
-    nodes: Array<{
-      author: {
-        login: string;
-      } | null;
-      body: string;
-      createdAt: string; // ISO 8601 date string
-      updatedAt: string; // ISO 8601 date string
-      url: string;
-    }>;
-  };
   parent: {
     title: string;
     url: string;
@@ -109,13 +85,6 @@ export function mapIssueNode(node: IssueNode): Issue {
     },
     assignees: node.assignees.nodes.map((assignee) => assignee.login),
     labels: node.labels.nodes.map((label) => label.name),
-    comments: node.comments.nodes.map((comment) => ({
-      author: comment.author?.login || "Unknown",
-      body: comment.body,
-      createdAt: new Date(comment.createdAt),
-      updatedAt: new Date(comment.updatedAt),
-      url: comment.url,
-    })),
     parent: node.parent
       ? {
           title: node.parent.title,

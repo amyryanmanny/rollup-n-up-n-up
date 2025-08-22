@@ -1,74 +1,50 @@
-export type IssueField = FieldSingleSelect | FieldMultiSelect | FieldDate;
+import {
+  slugifyProjectFieldName,
+  type ProjectField,
+} from "@pull/github/project-fields";
 
-export type FieldSingleSelect = {
-  kind: "SingleSelect";
-  value: string | null;
-  options?: string[]; // Value options for the field
-};
-
-type FieldMultiSelect = {
-  kind: "MultiSelect";
-  values: string[] | null;
-};
-
-type FieldDate = {
-  kind: "Date";
-  value: string | null; // ISO 8601 date string
-  date: Date | null;
-};
-
-export const slugifyProjectFieldName = (field: string): string => {
-  // RoB Area FY25Q4 -> rob-area-fy25q4
-  // Slugs are not accessible with GraphQL :(
-  return field.toLowerCase().replace(/\s+/g, "-");
-};
-
-export const projectFieldValueEdgesFragment = `
-  edges {
-    node {
-      __typename
-      ... on ProjectV2ItemFieldSingleSelectValue {
+export const projectFieldValueFragment = `
+  __typename
+  ... on ProjectV2ItemFieldSingleSelectValue {
+    name
+    field {
+      ... on ProjectV2SingleSelectField {
         name
-        field {
-          ... on ProjectV2SingleSelectField {
-            name
-            options {
-              name
-            }
-          }
+        options {
+          name
         }
       }
-      ... on ProjectV2ItemFieldDateValue {
-        date
-        field {
-          ... on ProjectV2Field {
-            name
-          }
-        }
+    }
+  }
+  ... on ProjectV2ItemFieldDateValue {
+    date
+    field {
+      ... on ProjectV2Field {
+        name
       }
     }
   }
 `;
 
-export type ProjectFieldValueEdge = {
-  node: {
-    __typename: string;
-    name: string | null; // SingleSelect value name
-    date: string | null; // Date value
-    field: {
-      name: string; // Field name
-      options?: Array<{ name: string }>; // For SingleSelect field options
-    };
-  } | null; // Null if no union type match
-};
+export type ProjectFieldValueNode = {
+  __typename: string;
+  name: string | null; // SingleSelect value name
+  date: string | null; // Date value
+  field: {
+    name: string; // Field name
+    options?: Array<{
+      // For SingleSelect field options
+      name: string;
+    }>;
+  };
+} | null; // Null if no union type match
 
 export function mapProjectFieldValues(
-  edges: Array<ProjectFieldValueEdge>,
-): Map<string, IssueField> {
-  return edges.reduce((accumulator, edge) => {
-    const node = edge.node;
+  nodes: Array<ProjectFieldValueNode>,
+): Map<string, ProjectField> {
+  return nodes.reduce((accumulator, node) => {
     if (node && node.field) {
-      let field: IssueField;
+      let field: ProjectField;
       switch (node.__typename) {
         case "ProjectV2ItemFieldSingleSelectValue":
           field = {
@@ -94,5 +70,5 @@ export function mapProjectFieldValues(
       accumulator.set(fieldName, field);
     }
     return accumulator;
-  }, new Map<string, IssueField>());
+  }, new Map<string, ProjectField>());
 }
