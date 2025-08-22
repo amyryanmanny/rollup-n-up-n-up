@@ -44,7 +44,7 @@ export class SummaryCache {
   }
 
   static getCacheFile(cacheKey: string): string {
-    return path.join(ACTIONS_CACHE_DIR, `summary-${cacheKey}.json`);
+    return path.join(ACTIONS_CACHE_DIR, `summary-${cacheKey}.blob`);
   }
 
   async get(
