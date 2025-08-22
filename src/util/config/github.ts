@@ -1,4 +1,9 @@
-import { getConfig } from ".";
+import { getConfig, getEnv } from ".";
+
+export function isGitHubAction() {
+  // Don't use getConfig, to avoid recursion
+  return getEnv("GITHUB_ACTIONS") === "true";
+}
 
 export type GitHubSecretKind = "app" | "pat" | "default";
 

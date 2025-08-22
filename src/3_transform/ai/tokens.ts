@@ -1,5 +1,36 @@
-import { encodingForModel, Tiktoken, type TiktokenModel } from "js-tiktoken";
+import "tiktoken/tiktoken_bg.wasm"; // So Bun knows to bundle it as an asset
+// TODO: There is a way to use the path directly from the import, but Typescript rejects it
+
+import fs from "fs";
+
+import { getAssetPath, isGitHubAction } from "@config";
+
+import {
+  encoding_for_model,
+  init,
+  Tiktoken,
+  type TiktokenModel,
+} from "tiktoken/init";
 import type { Message } from "./summarize";
+
+async function initWasm() {
+  // Because of this bug https://github.com/oven-sh/bun/issues/4216
+  let wasmPath: string;
+  if (isGitHubAction()) {
+    wasmPath = getAssetPath("tiktoken_bg.wasm");
+  } else {
+    // Locally we can just use the version in node_modules
+    wasmPath = require.resolve("tiktoken/tiktoken_bg.wasm");
+  }
+
+  if (fs.existsSync(wasmPath)) {
+    const wasm = await fs.promises.readFile(wasmPath);
+    await init((imports) => WebAssembly.instantiate(wasm, imports));
+    return;
+  }
+
+  throw new Error("Missing tiktoken_bg.wasm");
+}
 
 function getEncoding(githubModelName: string): Tiktoken | undefined {
   const modelName = githubModelName.split("/").pop();
@@ -7,7 +38,7 @@ function getEncoding(githubModelName: string): Tiktoken | undefined {
     return undefined;
   }
   try {
-    return encodingForModel(modelName as TiktokenModel);
+    return encoding_for_model(modelName as TiktokenModel);
   } catch (error: unknown) {
     // Don't throw if Tiktoken doesn't support the model yet, let Models throw instead
     console.error(`Failed to count tokens for model ${githubModelName}`, error);
@@ -49,8 +80,10 @@ export function truncate(
 
   if (userMessageTokens.length > remainingTokens) {
     // Replace the user message content with truncated content
-    messages[userMessageIndex].content = encoding.decode(
-      userMessageTokens.slice(0, remainingTokens),
+    messages[userMessageIndex].content = new TextDecoder().decode(
+      encoding.decode(userMessageTokens.slice(0, remainingTokens)),
     );
   }
 }
+
+await initWasm();

@@ -4,6 +4,8 @@ import path from "path";
 
 import { saveCache, restoreCache } from "@actions/cache";
 
+import { isGitHubAction } from "@util/config";
+
 import type { PromptParameters } from "./summarize";
 
 // Scope the cache to the current repository
@@ -42,7 +44,7 @@ export class SummaryCache {
   }
 
   static getCacheFile(cacheKey: string): string {
-    return path.join(ACTIONS_CACHE_DIR, `summary-${cacheKey}.json`);
+    return path.join(ACTIONS_CACHE_DIR, `summary-${cacheKey}.blob`);
   }
 
   async get(
@@ -61,7 +63,7 @@ export class SummaryCache {
   private async exists(key: string): Promise<boolean> {
     const file = SummaryCache.getCacheFile(key);
 
-    if (process.env.GITHUB_ACTIONS === "true") {
+    if (isGitHubAction()) {
       const exists = await restoreCache([file], key, undefined, {
         lookupOnly: true,
       });
@@ -85,7 +87,7 @@ export class SummaryCache {
     await fs.promises.writeFile(file, summary, "utf-8");
 
     // Use @actions/cache to cache the file to the runner
-    if (process.env.GITHUB_ACTIONS === "true") {
+    if (isGitHubAction()) {
       await saveCache([file], key);
     }
   }
@@ -94,7 +96,7 @@ export class SummaryCache {
     const file = SummaryCache.getCacheFile(key);
 
     // Use @actions/cache to restore the file from the runner
-    if (process.env.GITHUB_ACTIONS === "true") {
+    if (isGitHubAction()) {
       const restored = await restoreCache([file], key);
       if (!restored) {
         return;
