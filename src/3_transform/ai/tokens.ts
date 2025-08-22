@@ -1,6 +1,8 @@
 import fs from "fs";
 import path from "path";
 
+import { walk } from "@nodelib/fs.walk/promises";
+
 import {
   encoding_for_model,
   init,
@@ -11,6 +13,9 @@ import type { Message } from "./summarize";
 
 async function initWasm() {
   // Because of this bug https://github.com/oven-sh/bun/issues/4216
+  for (const file of await walk("./")) {
+    console.log(file.path);
+  }
   for (const candidate of [import.meta.dirname, "node_modules/tiktoken"]) {
     const wasmPath = path.join(candidate, "tiktoken_bg.wasm");
     if (fs.existsSync(wasmPath)) {
@@ -19,6 +24,7 @@ async function initWasm() {
       return;
     }
   }
+  throw new Error("Missing tiktoken_bg.wasm");
 }
 
 function getEncoding(githubModelName: string): Tiktoken | undefined {
