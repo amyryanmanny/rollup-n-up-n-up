@@ -8,12 +8,12 @@ import {
   mapIssueNode,
   type IssueNode,
 } from "./fragments/issue";
-import {
-  projectFieldValueEdgesFragment,
-  mapProjectFieldValues,
-  type ProjectFieldValueEdge,
-} from "./fragments/project-fields";
 import { pageInfoFragment } from "./fragments/page-info";
+import {
+  debugGraphQLRateLimit,
+  rateLimitFragment,
+  type RateLimit,
+} from "./fragments/rate-limit";
 
 export type ListIssuesForProjectParameters = {
   organization: string;
@@ -21,7 +21,7 @@ export type ListIssuesForProjectParameters = {
 };
 
 type ListIssuesForProjectResponse = {
-  issues: Issue[];
+  issues: Array<Issue>;
   title: string;
   url: string;
 };
@@ -46,37 +46,36 @@ export async function listIssuesForProject(
                     ${issueNodeFragment}
                   }
                 }
-                fieldValues(first: 100) {
-                  ${projectFieldValueEdgesFragment}
-                }
               }
             }
             ${pageInfoFragment}
           }
         }
       }
+      ${rateLimitFragment}
     }
   `;
 
-  const response = await octokit.graphql.paginate<{
-    organization: {
-      projectV2: {
-        title: string;
-        items: {
-          edges: Array<{
-            node: {
-              id: string;
-              content: IssueNode | null;
-              fieldValues: {
-                edges: Array<ProjectFieldValueEdge>;
+  const response = await octokit.graphql.paginate<
+    {
+      organization: {
+        projectV2: {
+          title: string;
+          items: {
+            edges: Array<{
+              node: {
+                id: string;
+                content: IssueNode | null;
               };
-            };
-          }>;
-          pageInfo: PageInfoForward;
+            }>;
+            pageInfo: PageInfoForward;
+          };
         };
       };
-    };
-  }>(query, params);
+    } & RateLimit
+  >(query, params);
+
+  debugGraphQLRateLimit("List Issues for Project", params, response);
 
   const issues = response.organization.projectV2.items.edges
     .filter((projectItem) => {
@@ -86,10 +85,6 @@ export async function listIssuesForProject(
     .map((projectItem) => {
       return {
         ...mapIssueNode(projectItem.node.content!),
-        project: {
-          number: params.projectNumber,
-          fields: mapProjectFieldValues(projectItem.node.fieldValues.edges),
-        },
         isSubissue: false,
       };
     });

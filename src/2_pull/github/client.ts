@@ -4,7 +4,10 @@ import { IssueList } from "./issue-list";
 import { getOctokit } from "@util/octokit";
 import { matchIssueUrl, matchProjectViewUrl } from "@util/github-url";
 
-import { validateFetchParameters, type DirtyFetchParameters } from "@config";
+import {
+  validateFetchParameters,
+  type DirtyIssueFetchParameters,
+} from "@config";
 
 // TODO: Positional and kwarg-based params
 // kwargs need fuzzy matching
@@ -18,7 +21,7 @@ export class GitHubClient {
 
   url(
     url: string,
-    params?: DirtyFetchParameters,
+    issueFetchParams?: DirtyIssueFetchParameters,
   ): Promise<IssueList | IssueWrapper> {
     // Single Issue
     const issueMatch = matchIssueUrl(url);
@@ -27,10 +30,10 @@ export class GitHubClient {
 
       if (issueNumber) {
         // If issueNumber is defined, return the specific issue
-        return this.issue(owner, repo, issueNumber, params);
+        return this.issue(owner, repo, issueNumber, issueFetchParams);
       } else {
         // Else return all issues for the repo
-        return this.issuesForRepo(owner, repo, params);
+        return this.issuesForRepo(owner, repo, issueFetchParams);
       }
     }
 
@@ -46,7 +49,7 @@ export class GitHubClient {
           organization,
           projectNumber,
           customQuery,
-          params,
+          issueFetchParams,
         );
       }
 
@@ -56,12 +59,16 @@ export class GitHubClient {
           organization,
           projectNumber,
           projectViewNumber,
-          params,
+          issueFetchParams,
         );
       }
 
       // Default to all Project Issues
-      return this.issuesForProject(organization, projectNumber, params);
+      return this.issuesForProject(
+        organization,
+        projectNumber,
+        issueFetchParams,
+      );
     }
 
     throw new Error(
@@ -70,82 +77,94 @@ export class GitHubClient {
   }
 
   issue(
-    owner: string,
-    repo: string,
+    organization: string,
+    repository: string,
     issueNumber: string | number,
-    params?: DirtyFetchParameters,
+    issueFetchParams?: DirtyIssueFetchParameters,
   ): Promise<IssueWrapper> {
-    return IssueWrapper.forIssue({
-      ...validateFetchParameters(params),
-      organization: owner,
-      repo,
-      issueNumber: Number(issueNumber),
-    });
+    return IssueWrapper.forIssue(
+      {
+        organization,
+        repository,
+        issueNumber: Number(issueNumber),
+      },
+      validateFetchParameters(issueFetchParams),
+    );
   }
 
   issuesForRepo(
-    owner: string,
-    repo: string,
-    params?: DirtyFetchParameters,
+    organization: string,
+    repository: string,
+    issueFetchParams?: DirtyIssueFetchParameters,
   ): Promise<IssueList> {
-    return IssueList.forRepo({
-      ...validateFetchParameters(params),
-      owner,
-      repo,
-    });
+    return IssueList.forRepo(
+      {
+        organization,
+        repository,
+      },
+      validateFetchParameters(issueFetchParams),
+    );
   }
 
   subissuesForIssue(
-    owner: string,
-    repo: string,
+    organization: string,
+    repository: string,
     issueNumber: string | number,
-    params?: DirtyFetchParameters,
+    issueFetchParams?: DirtyIssueFetchParameters,
   ): Promise<IssueList> {
-    return IssueList.forSubissues({
-      ...validateFetchParameters(params),
-      owner,
-      repo,
-      issueNumber: Number(issueNumber),
-    });
+    return IssueList.forSubissues(
+      {
+        organization,
+        repository,
+        issueNumber: Number(issueNumber),
+      },
+      validateFetchParameters(issueFetchParams),
+    );
   }
 
   issuesForProject(
     organization: string,
     projectNumber: string | number,
-    params?: DirtyFetchParameters,
+    issueFetchParams?: DirtyIssueFetchParameters,
   ): Promise<IssueList> {
-    return IssueList.forProject({
-      ...validateFetchParameters(params),
-      organization,
-      projectNumber: Number(projectNumber),
-    });
+    return IssueList.forProject(
+      {
+        organization,
+        projectNumber: Number(projectNumber),
+      },
+      validateFetchParameters(issueFetchParams),
+    );
   }
 
   issuesForProjectView(
     organization: string,
     projectNumber: number | string,
     projectViewNumber: number | string,
-    params?: DirtyFetchParameters,
+    issueFetchParams?: DirtyIssueFetchParameters,
   ): Promise<IssueList> {
-    return IssueList.forProjectView({
-      ...validateFetchParameters(params),
-      organization,
-      projectNumber: Number(projectNumber),
-      projectViewNumber: Number(projectViewNumber),
-    });
+    return IssueList.forProjectView(
+      {
+        organization,
+        projectNumber: Number(projectNumber),
+        projectViewNumber: Number(projectViewNumber),
+      },
+      validateFetchParameters(issueFetchParams),
+    );
   }
 
   issuesForProjectQuery(
     organization: string,
     projectNumber: number | string,
     customQuery: string,
-    params?: DirtyFetchParameters,
+    issueFetchParams?: DirtyIssueFetchParameters,
   ): Promise<IssueList> {
-    return IssueList.forProjectView({
-      ...validateFetchParameters(params),
-      organization,
-      projectNumber: Number(projectNumber),
-      customQuery,
-    });
+    return IssueList.forProjectView(
+      {
+        organization,
+        projectNumber: Number(projectNumber),
+        customQuery,
+      },
+      validateFetchParameters(issueFetchParams),
+    );
   }
 }

@@ -2,23 +2,22 @@ import { getOctokit } from "@util/octokit";
 import type { PageInfoForward } from "@octokit/plugin-paginate-graphql";
 
 import type { Issue } from "../issue";
+import type { GetIssueParameters } from "./issue";
 
 import {
   issueNodeFragment,
   mapIssueNode,
   type IssueNode,
 } from "./fragments/issue";
-import { projectItemsFragment, type ProjectItems } from "./fragments/project";
-import { mapProjectFieldValues } from "./fragments/project-fields";
+import { type ProjectItems } from "./fragments/project";
 import { pageInfoFragment } from "./fragments/page-info";
+import {
+  debugGraphQLRateLimit,
+  rateLimitFragment,
+  type RateLimit,
+} from "./fragments/rate-limit";
 
-export type ListSubissuesForIssueParameters = {
-  owner: string;
-  repo: string;
-  issueNumber: number;
-  projectNumber?: number; // Fetch ProjectFields
-};
-
+export type ListSubissuesForIssueParameters = GetIssueParameters;
 type ListSubissuesForIssueResponse = {
   subissues: Issue[];
   title: string;
@@ -31,60 +30,51 @@ export async function listSubissuesForIssue(
   const octokit = getOctokit();
 
   const query = `
-    query paginate($owner: String!, $repo: String!, $issueNumber: Int!, $cursor: String) {
-      repositoryOwner(login: $owner) {
-        repository(name: $repo) {
+    query paginate($organization: String!, $repository: String!, $issueNumber: Int!, $cursor: String) {
+      repositoryOwner(login: $organization) {
+        repository(name: $repository) {
           issue(number: $issueNumber) {
             title
             url
             subIssues(first: 50, after: $cursor) {
               nodes {
                 ${issueNodeFragment}
-                ${projectItemsFragment}
               }
               ${pageInfoFragment}
             }
           }
         }
       }
+      ${rateLimitFragment}
     }
   `;
 
-  const response = await octokit.graphql.paginate<{
-    repositoryOwner: {
-      repository: {
-        issue: {
-          title: string;
-          url: string;
-          subIssues: {
-            nodes: Array<IssueNode & ProjectItems>;
+  const response = await octokit.graphql.paginate<
+    {
+      repositoryOwner: {
+        repository: {
+          issue: {
+            title: string;
+            url: string;
+            subIssues: {
+              nodes: Array<IssueNode & ProjectItems>;
+            };
+            pageInfo: PageInfoForward;
           };
-          pageInfo: PageInfoForward;
         };
       };
-    };
-  }>(query, params);
+    } & RateLimit
+  >(query, params);
 
   const issue = response.repositoryOwner.repository.issue;
   const subissues = issue.subIssues.nodes.map((subIssue) => {
-    let project = undefined;
-    if (params.projectNumber) {
-      const projectItem = subIssue.projectItems.nodes.find(
-        (item) => item.project.number === params.projectNumber,
-      );
-      if (projectItem) {
-        project = {
-          number: projectItem.project.number,
-          fields: mapProjectFieldValues(projectItem.fieldValues.edges),
-        };
-      }
-    }
     return {
       ...mapIssueNode(subIssue),
-      project,
       isSubissue: true,
     };
   });
+
+  debugGraphQLRateLimit("List Subissues for Issue", params, response);
 
   return {
     subissues,

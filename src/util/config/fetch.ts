@@ -6,21 +6,35 @@ import { isTruthy } from "@config";
 //       org, owner -> `organization`
 //       repo -> `repository`
 
-export type FetchParameters = {
+export type IssueFetchParameters = {
+  comments: number; // Number of Comments to Fetch (default 20)
+  projectFields: number | undefined; // Project Number
   subissues: boolean;
 };
 
-export type DirtyFetchParameters = {
+export type DirtyIssueFetchParameters = {
+  comments?: number | string;
+  projectFields?: number | string;
   subissues?: boolean | string;
 };
 
 export function validateFetchParameters(
-  params: DirtyFetchParameters | undefined,
-): FetchParameters {
+  params: DirtyIssueFetchParameters | undefined,
+): IssueFetchParameters {
+  let comments = 20;
+  if (params?.comments !== undefined) {
+    comments = Number(params.comments);
+  }
+
+  let projectFields = undefined;
+  if (params?.projectFields !== undefined) {
+    projectFields = Number(params.projectFields);
+  }
+
   let subissues = false;
   if (params?.subissues !== undefined) {
     subissues = isTruthy(params.subissues);
   }
 
-  return { subissues };
+  return { comments, projectFields, subissues };
 }

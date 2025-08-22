@@ -1,6 +1,6 @@
 import {
   validateRenderOptions,
-  type FetchParameters,
+  type IssueFetchParameters,
   type DirtyIssueRenderOptions,
 } from "@config";
 
@@ -196,7 +196,7 @@ export class IssueList {
     this.issues = issues;
   }
 
-  async fetch(params: FetchParameters): Promise<IssueList> {
+  async fetch(params: IssueFetchParameters): Promise<IssueList> {
     for (const issue of this.issues) {
       await issue.fetch(params);
     }
@@ -204,43 +204,60 @@ export class IssueList {
   }
 
   static async forRepo(
-    params: ListIssuesForRepoParameters & FetchParameters,
+    params: ListIssuesForRepoParameters,
+    fetchParams: IssueFetchParameters,
   ): Promise<IssueList> {
     const response = await listIssuesForRepo(params);
     const { issues, title, url } = response;
     return new IssueList(
       issues.map((issue) => new IssueWrapper(issue)),
       { title, url },
-    ).fetch(params);
+    ).fetch(fetchParams);
   }
 
   static async forSubissues(
-    params: ListSubissuesForIssueParameters & FetchParameters,
+    params: ListSubissuesForIssueParameters,
+    fetchParams: IssueFetchParameters,
   ): Promise<IssueList> {
     const response = await listSubissuesForIssue(params);
     const { subissues, title, url } = response;
     return new IssueList(
       subissues.map((issue) => new IssueWrapper(issue)),
       { title, url },
-    ).fetch(params);
+    ).fetch(fetchParams);
   }
 
   static async forProject(
-    params: ListIssuesForProjectParameters & FetchParameters,
+    params: ListIssuesForProjectParameters,
+    fetchParams: IssueFetchParameters,
   ): Promise<IssueList> {
     const response = await listIssuesForProject(params);
     const { issues, title, url } = response;
-    return new IssueList(
+
+    const project = new IssueList(
       issues.map((issue) => new IssueWrapper(issue)),
       { title, url },
-    ).fetch(params);
+    );
+
+    return project.fetch({
+      ...fetchParams,
+      projectFields: params.projectNumber,
+    });
   }
 
   static async forProjectView(
-    params: GetProjectViewParameters & FetchParameters,
+    params: GetProjectViewParameters,
+    fetchParams: IssueFetchParameters,
   ): Promise<IssueList> {
-    let view: ProjectView;
+    const response = await listIssuesForProject(params);
+    const { issues, title, url } = response;
 
+    const project = new IssueList(
+      issues.map((issue) => new IssueWrapper(issue)),
+      { title, url },
+    );
+
+    let view: ProjectView;
     if (params.projectViewNumber === undefined) {
       if (params.customQuery === undefined) {
         throw new Error(
@@ -251,10 +268,12 @@ export class IssueList {
     } else {
       view = await getProjectView(params);
     }
+    project.applyViewFilter(view);
 
-    return IssueList.forProject({ ...params }).then((issueList) =>
-      issueList.applyViewFilter(view),
-    );
+    return await project.fetch({
+      ...fetchParams,
+      projectFields: params.projectNumber,
+    });
   }
 
   // Render / Memory Functions

@@ -9,6 +9,7 @@ import { GitHubClient } from "@pull/github/client";
 import { getConfig } from "@util/config";
 import { Memory } from "@transform/memory";
 import * as debug from "./debug";
+import { debugTotalGraphQLRateLimit } from "@pull/github/graphql/fragments/rate-limit";
 
 // TODO: Configurable templatesDir
 const templatesDir = path.join(process.cwd(), "templates");
@@ -51,6 +52,7 @@ export async function renderTemplate(templatePath: string): Promise<string> {
   });
 
   memory.headbonk(); // Reset memory after rendering
+  debugTotalGraphQLRateLimit(); // Check how much RateLimit this report used
 
   return result.content;
 }

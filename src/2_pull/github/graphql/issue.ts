@@ -7,10 +7,15 @@ import {
   mapIssueNode,
   type IssueNode,
 } from "./fragments/issue";
+import {
+  debugGraphQLRateLimit,
+  rateLimitFragment,
+  type RateLimit,
+} from "./fragments/rate-limit";
 
 export type GetIssueParameters = {
   organization: string;
-  repo: string;
+  repository: string;
   issueNumber: number;
 };
 
@@ -18,24 +23,29 @@ export async function getIssue(params: GetIssueParameters): Promise<Issue> {
   const octokit = getOctokit();
 
   const query = `
-    query ($organization: String!, $repo: String!, $issueNumber: Int!) {
+    query ($organization: String!, $repository: String!, $issueNumber: Int!) {
       organization(login: $organization) {
-        repository(name: $repo) {
+        repository(name: $repository) {
           issue(number: $issueNumber) {
             ${issueNodeFragment}
           }
         }
       }
+      ${rateLimitFragment}
     }
   `;
 
-  const response = await octokit.graphql<{
-    organization: {
-      repository: {
-        issue: IssueNode;
+  const response = await octokit.graphql<
+    {
+      organization: {
+        repository: {
+          issue: IssueNode;
+        };
       };
-    };
-  }>(query, params);
+    } & RateLimit
+  >(query, params);
+
+  debugGraphQLRateLimit("Get Issue", params, response);
 
   return mapIssueNode(response.organization.repository.issue);
 }

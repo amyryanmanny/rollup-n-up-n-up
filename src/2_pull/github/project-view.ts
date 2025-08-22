@@ -3,8 +3,8 @@ import { context } from "@actions/github";
 import { DefaultDict } from "@util/collections";
 import { getOctokit } from "@util/octokit";
 
-import type { IssueField } from "./graphql/project";
 import type { IssueWrapper } from "./issue";
+import type { IssueField } from "./project-fields";
 
 export type GetProjectViewParameters = {
   organization: string;

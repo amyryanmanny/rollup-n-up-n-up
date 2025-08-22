@@ -81589,11 +81589,19 @@ var import_core2 = __toESM(require_core(), 1);
 
 // src/util/config/fetch.ts
 function validateFetchParameters(params) {
+  let comments = 20;
+  if (params?.comments !== undefined) {
+    comments = Number(params.comments);
+  }
+  let projectFields = undefined;
+  if (params?.projectFields !== undefined) {
+    projectFields = Number(params.projectFields);
+  }
   let subissues = false;
   if (params?.subissues !== undefined) {
     subissues = isTruthy(params.subissues);
   }
-  return { subissues };
+  return { comments, projectFields, subissues };
 }
 // src/util/config/github.ts
 function getGitHubSecrets() {
@@ -99523,17 +99531,6 @@ var issueNodeFragment = `
       name
     }
   }
-  comments(last: 25) {
-    nodes {
-      author {
-        login
-      }
-      body
-      createdAt
-      updatedAt
-      url
-    }
-  }
   parent {
     title
     url
@@ -99557,81 +99554,12 @@ function mapIssueNode(node) {
     },
     assignees: node.assignees.nodes.map((assignee) => assignee.login),
     labels: node.labels.nodes.map((label) => label.name),
-    comments: node.comments.nodes.map((comment2) => ({
-      author: comment2.author?.login || "Unknown",
-      body: comment2.body,
-      createdAt: new Date(comment2.createdAt),
-      updatedAt: new Date(comment2.updatedAt),
-      url: comment2.url
-    })),
     parent: node.parent ? {
       title: node.parent.title,
       url: node.parent.url,
       number: node.parent.number
     } : undefined
   };
-}
-
-// src/2_pull/github/graphql/fragments/project-fields.ts
-var slugifyProjectFieldName = (field) => {
-  return field.toLowerCase().replace(/\s+/g, "-");
-};
-var projectFieldValueEdgesFragment = `
-  edges {
-    node {
-      __typename
-      ... on ProjectV2ItemFieldSingleSelectValue {
-        name
-        field {
-          ... on ProjectV2SingleSelectField {
-            name
-            options {
-              name
-            }
-          }
-        }
-      }
-      ... on ProjectV2ItemFieldDateValue {
-        date
-        field {
-          ... on ProjectV2Field {
-            name
-          }
-        }
-      }
-    }
-  }
-`;
-function mapProjectFieldValues(edges) {
-  return edges.reduce((accumulator, edge) => {
-    const node = edge.node;
-    if (node && node.field) {
-      let field;
-      switch (node.__typename) {
-        case "ProjectV2ItemFieldSingleSelectValue":
-          field = {
-            kind: "SingleSelect",
-            value: node.name,
-            options: node.field.options.map((option) => option.name)
-          };
-          break;
-        case "ProjectV2ItemFieldDateValue": {
-          const date = node.date;
-          field = {
-            kind: "Date",
-            value: date,
-            date: date ? new Date(date) : null
-          };
-          break;
-        }
-        default:
-          return accumulator;
-      }
-      const fieldName = slugifyProjectFieldName(node.field.name);
-      accumulator.set(fieldName, field);
-    }
-    return accumulator;
-  }, new Map);
 }
 
 // src/2_pull/github/graphql/fragments/page-info.ts
@@ -99641,6 +99569,25 @@ var pageInfoFragment = `
     endCursor
   }
 `;
+
+// src/2_pull/github/graphql/fragments/rate-limit.ts
+var rateLimitFragment = `
+  rateLimit {
+    cost
+  }
+`;
+var runningTotal = 0;
+function debugGraphQLRateLimit(caller, params, response) {
+  runningTotal += response.rateLimit.cost;
+  if (getConfig("DEBUG_RATE_LIMIT_QUERY_COST")) {
+    console.log(`Query: "${caller}"`);
+    console.log(`  ${JSON.stringify(params)}`);
+    console.log(`  Rate limit cost: ${response.rateLimit.cost}`);
+  }
+}
+function debugTotalGraphQLRateLimit() {
+  console.log(`Total GraphQL RateLimit cost of this Report: ${runningTotal}`);
+}
 
 // src/2_pull/github/graphql/project.ts
 async function listIssuesForProject(params) {
@@ -99660,28 +99607,23 @@ async function listIssuesForProject(params) {
                     ${issueNodeFragment}
                   }
                 }
-                fieldValues(first: 100) {
-                  ${projectFieldValueEdgesFragment}
-                }
               }
             }
             ${pageInfoFragment}
           }
         }
       }
+      ${rateLimitFragment}
     }
   `;
   const response = await octokit.graphql.paginate(query, params);
+  debugGraphQLRateLimit("List Issues for Project", params, response);
   const issues = response.organization.projectV2.items.edges.filter((projectItem) => {
     const content = projectItem.node.content;
     return content && content.__typename === "Issue";
   }).map((projectItem) => {
     return {
       ...mapIssueNode(projectItem.node.content),
-      project: {
-        number: params.projectNumber,
-        fields: mapProjectFieldValues(projectItem.node.fieldValues.edges)
-      },
       isSubissue: false
     };
   });
@@ -99709,9 +99651,9 @@ async function listIssuesForRepo(params) {
       throw new Error(`Unknown IssueState: ${state2}. Choose OPEN, CLOSED, or ALL.`);
   }
   const query = `
-    query paginate($owner: String!, $repo: String!, $states: [IssueState!], $cursor: String) {
-      repositoryOwner(login: $owner) {
-        repository(name: $repo) {
+    query paginate($organization: String!, $repository: String!, $states: [IssueState!], $cursor: String) {
+      repositoryOwner(login: $organization) {
+        repository(name: $repository) {
           issues(first: 50, states: $states, after: $cursor) {
             nodes {
               ${issueNodeFragment}
@@ -99720,13 +99662,15 @@ async function listIssuesForRepo(params) {
           }
         }
       }
+      ${rateLimitFragment}
     }
   `;
   const response = await octokit.graphql.paginate(query, {
-    owner: params.owner,
-    repo: params.repo,
+    organization: params.organization,
+    repository: params.repository,
     states
   });
+  debugGraphQLRateLimit("List Issues for Repo", params, response);
   const issues = response.repositoryOwner.repository.issues.nodes.map((issue2) => {
     return {
       ...mapIssueNode(issue2),
@@ -99735,66 +99679,42 @@ async function listIssuesForRepo(params) {
   });
   return {
     issues,
-    title: `Issues for ${params.owner}/${params.repo}`,
-    url: `https://github.com/${params.owner}/${params.repo}`
+    title: `Issues for ${params.organization}/${params.repository}`,
+    url: `https://github.com/${params.organization}/${params.repository}`
   };
 }
-
-// src/2_pull/github/graphql/fragments/project.ts
-var projectItemsFragment = `
-  projectItems(first: 10) {
-    nodes {
-      project {
-        number
-      }
-      fieldValues(first: 100) {
-        ${projectFieldValueEdgesFragment}
-      }
-    }
-  }
-`;
 
 // src/2_pull/github/graphql/subissues.ts
 async function listSubissuesForIssue(params) {
   const octokit = getOctokit();
   const query = `
-    query paginate($owner: String!, $repo: String!, $issueNumber: Int!, $cursor: String) {
-      repositoryOwner(login: $owner) {
-        repository(name: $repo) {
+    query paginate($organization: String!, $repository: String!, $issueNumber: Int!, $cursor: String) {
+      repositoryOwner(login: $organization) {
+        repository(name: $repository) {
           issue(number: $issueNumber) {
             title
             url
             subIssues(first: 50, after: $cursor) {
               nodes {
                 ${issueNodeFragment}
-                ${projectItemsFragment}
               }
               ${pageInfoFragment}
             }
           }
         }
       }
+      ${rateLimitFragment}
     }
   `;
   const response = await octokit.graphql.paginate(query, params);
   const issue2 = response.repositoryOwner.repository.issue;
   const subissues = issue2.subIssues.nodes.map((subIssue) => {
-    let project = undefined;
-    if (params.projectNumber) {
-      const projectItem = subIssue.projectItems.nodes.find((item) => item.project.number === params.projectNumber);
-      if (projectItem) {
-        project = {
-          number: projectItem.project.number,
-          fields: mapProjectFieldValues(projectItem.fieldValues.edges)
-        };
-      }
-    }
     return {
       ...mapIssueNode(subIssue),
-      project,
       isSubissue: true
     };
   });
+  debugGraphQLRateLimit("List Subissues for Issue", params, response);
   return {
     subissues,
     title: `Subissues for ${issue2.title} (#${params.issueNumber})`,
@@ -99905,22 +99825,29 @@ class IssueList {
     }
     return this;
   }
-  static async forRepo(params) {
+  static async forRepo(params, fetchParams) {
     const response = await listIssuesForRepo(params);
     const { issues, title: title2, url } = response;
-    return new IssueList(issues.map((issue2) => new IssueWrapper(issue2)), { title: title2, url }).fetch(params);
+    return new IssueList(issues.map((issue2) => new IssueWrapper(issue2)), { title: title2, url }).fetch(fetchParams);
   }
-  static async forSubissues(params) {
+  static async forSubissues(params, fetchParams) {
     const response = await listSubissuesForIssue(params);
     const { subissues, title: title2, url } = response;
-    return new IssueList(subissues.map((issue2) => new IssueWrapper(issue2)), { title: title2, url }).fetch(params);
+    return new IssueList(subissues.map((issue2) => new IssueWrapper(issue2)), { title: title2, url }).fetch(fetchParams);
   }
-  static async forProject(params) {
+  static async forProject(params, fetchParams) {
     const response = await listIssuesForProject(params);
     const { issues, title: title2, url } = response;
-    return new IssueList(issues.map((issue2) => new IssueWrapper(issue2)), { title: title2, url }).fetch(params);
+    const project = new IssueList(issues.map((issue2) => new IssueWrapper(issue2)), { title: title2, url });
+    return project.fetch({
+      ...fetchParams,
+      projectFields: params.projectNumber
+    });
   }
-  static async forProjectView(params) {
+  static async forProjectView(params, fetchParams) {
+    const response = await listIssuesForProject(params);
+    const { issues, title: title2, url } = response;
+    const project = new IssueList(issues.map((issue2) => new IssueWrapper(issue2)), { title: title2, url });
     let view;
     if (params.projectViewNumber === undefined) {
       if (params.customQuery === undefined) {
@@ -99930,7 +99857,11 @@ class IssueList {
     } else {
       view = await getProjectView(params);
     }
-    return IssueList.forProject({ ...params }).then((issueList) => issueList.applyViewFilter(view));
+    project.applyViewFilter(view);
+    return await project.fetch({
+      ...fetchParams,
+      projectFields: params.projectNumber
+    });
   }
   _render(options) {
     return renderIssueList(this, validateRenderOptions(options));
@@ -99958,18 +99889,164 @@ class IssueList {
 async function getIssue(params) {
   const octokit = getOctokit();
   const query = `
-    query ($organization: String!, $repo: String!, $issueNumber: Int!) {
+    query ($organization: String!, $repository: String!, $issueNumber: Int!) {
       organization(login: $organization) {
-        repository(name: $repo) {
+        repository(name: $repository) {
           issue(number: $issueNumber) {
             ${issueNodeFragment}
           }
         }
       }
+      ${rateLimitFragment}
     }
   `;
   const response = await octokit.graphql(query, params);
+  debugGraphQLRateLimit("Get Issue", params, response);
   return mapIssueNode(response.organization.repository.issue);
+}
+
+// src/2_pull/github/graphql/fragments/comment.ts
+var commentFragment = `
+  author {
+    login
+  }
+  body
+  createdAt
+  updatedAt
+  url
+`;
+function mapCommentNode(node) {
+  return {
+    author: node.author?.login || "Unknown",
+    body: node.body,
+    createdAt: new Date(node.createdAt),
+    updatedAt: new Date(node.updatedAt),
+    url: node.url
+  };
+}
+
+// src/2_pull/github/graphql/comment.ts
+async function listCommentsForIssue(params) {
+  const octokit = getOctokit();
+  const query = `
+    query ($organization: String!, $repository: String!, $issueNumber: Int!) {
+      repositoryOwner(login: $organization) {
+        repository(name: $repository) {
+          issue(number: $issueNumber) {
+            comments(last: ${params.numComments}) {
+              nodes {
+                ${commentFragment}
+              }
+              ${pageInfoFragment}
+            }
+          }
+        }
+      }
+      ${rateLimitFragment}
+    }
+  `;
+  const response = await octokit.graphql.paginate(query, {
+    organization: params.organization,
+    repository: params.repository,
+    issueNumber: params.issueNumber
+  });
+  debugGraphQLRateLimit("List Comments for Issue", params, response);
+  return response.repositoryOwner.repository.issue.comments.nodes.map(mapCommentNode);
+}
+
+// src/2_pull/github/project-fields.ts
+var slugifyProjectFieldName = (field) => {
+  return field.toLowerCase().replace(/\s+/g, "-");
+};
+
+// src/2_pull/github/graphql/fragments/project-fields.ts
+var projectFieldValueFragment = `
+  __typename
+  ... on ProjectV2ItemFieldSingleSelectValue {
+    name
+    field {
+      ... on ProjectV2SingleSelectField {
+        name
+        options {
+          name
+        }
+      }
+    }
+  }
+  ... on ProjectV2ItemFieldDateValue {
+    date
+    field {
+      ... on ProjectV2Field {
+        name
+      }
+    }
+  }
+`;
+function mapProjectFieldValues(nodes) {
+  return nodes.reduce((accumulator, node) => {
+    if (node && node.field) {
+      let field;
+      switch (node.__typename) {
+        case "ProjectV2ItemFieldSingleSelectValue":
+          field = {
+            kind: "SingleSelect",
+            value: node.name,
+            options: node.field.options.map((option) => option.name)
+          };
+          break;
+        case "ProjectV2ItemFieldDateValue": {
+          const date = node.date;
+          field = {
+            kind: "Date",
+            value: date,
+            date: date ? new Date(date) : null
+          };
+          break;
+        }
+        default:
+          return accumulator;
+      }
+      const fieldName = slugifyProjectFieldName(node.field.name);
+      accumulator.set(fieldName, field);
+    }
+    return accumulator;
+  }, new Map);
+}
+
+// src/2_pull/github/graphql/project-fields.ts
+async function listProjectFieldsForIssue(params) {
+  const octokit = getOctokit();
+  const query = `
+    query paginate($organization: String!, $repository: String!, $issueNumber: Int!, $cursor: String) {
+      organization(login: $organization) {
+        repository(name: $repository) {
+          issue(number: $issueNumber) {
+            projectItems(first: 10, after: $cursor) {
+              nodes {
+                project {
+                  number
+                }
+                fieldValues(first: 50) {
+                  nodes {
+                    ${projectFieldValueFragment}
+                  }
+                }
+              }
+              ${pageInfoFragment}
+            }
+          }
+        }
+      }
+      ${rateLimitFragment}
+    }
+  `;
+  const response = await octokit.graphql.paginate(query, params);
+  debugGraphQLRateLimit("List Project Fields for Issue", params, response);
+  const project = response.organization.repository.issue.projectItems.nodes.find((p2) => p2.project.number === params.projectNumber);
+  if (!project) {
+    return new Map;
+  }
+  return mapProjectFieldValues(project.fieldValues.nodes);
 }
 
 // src/2_pull/github/issue.ts
@@ -99980,11 +100057,17 @@ class IssueWrapper {
   constructor(issue2) {
     this.issue = issue2;
   }
-  static async forIssue(params) {
+  static async forIssue(params, fetchParams) {
     const issue2 = await getIssue(params);
-    return new IssueWrapper(issue2).fetch(params);
+    return new IssueWrapper(issue2).fetch(fetchParams);
   }
   async fetch(params) {
+    if (params.comments > 0) {
+      await this.fetchComments(params.comments);
+    }
+    if (params.projectFields !== undefined) {
+      await this.fetchProjectFields(params.projectFields);
+    }
     if (params.subissues) {
       await this.fetchSubissues();
     }
@@ -100029,6 +100112,15 @@ class IssueWrapper {
   }
   get repo() {
     return this.issue.repository.name;
+  }
+  get repository() {
+    return this.issue.repository.name;
+  }
+  get organization() {
+    return this.issue.repository.owner;
+  }
+  get org() {
+    return this.issue.repository.owner;
   }
   get owner() {
     return this.issue.repository.owner;
@@ -100079,7 +100171,10 @@ class IssueWrapper {
     return this.issue.project?.number;
   }
   get _projectFields() {
-    return this.issue.project?.fields ?? new Map;
+    if (!this.issue.project) {
+      return new Map;
+    }
+    return this.issue.project.fields;
   }
   get projectFields() {
     return new Map(Array.from(this._projectFields.entries()).map(([name, field]) => {
@@ -100122,14 +100217,34 @@ class IssueWrapper {
     }
     return value;
   }
+  async fetchComments(numComments) {
+    this.issue.comments = await listCommentsForIssue({
+      organization: this.organization,
+      repository: this.repository,
+      issueNumber: this.number,
+      numComments
+    });
+  }
+  async fetchProjectFields(projectNumber) {
+    this.issue.project = {
+      number: projectNumber,
+      fields: await listProjectFieldsForIssue({
+        organization: this.organization,
+        repository: this.repository,
+        issueNumber: this.number,
+        projectNumber
+      })
+    };
+  }
   async fetchSubissues() {
     this.subissues = await IssueList.forSubissues({
-      owner: this.owner,
-      repo: this.repo,
-      issueNumber: this.number,
-      subissues: false,
-      projectNumber: this.projectNumber
-    });
+      organization: this.organization,
+      repository: this.repository,
+      issueNumber: this.number
+    }, validateFetchParameters({
+      projectFields: this.projectNumber,
+      subissues: false
+    }));
   }
   get comments() {
     const sortCommentsByDateDesc = (a2, b2) => {
@@ -100258,74 +100373,68 @@ function matchProjectViewUrl(url) {
 // src/2_pull/github/client.ts
 class GitHubClient {
   octokit = getOctokit();
-  url(url, params) {
+  url(url, issueFetchParams) {
     const issueMatch = matchIssueUrl(url);
     if (issueMatch) {
       const { owner, repo, issueNumber } = issueMatch;
       if (issueNumber) {
-        return this.issue(owner, repo, issueNumber, params);
+        return this.issue(owner, repo, issueNumber, issueFetchParams);
       } else {
-        return this.issuesForRepo(owner, repo, params);
+        return this.issuesForRepo(owner, repo, issueFetchParams);
       }
     }
     const projectMatch = matchProjectViewUrl(url);
     if (projectMatch) {
       const { organization, projectNumber, projectViewNumber, customQuery } = projectMatch;
       if (customQuery) {
-        return this.issuesForProjectQuery(organization, projectNumber, customQuery, params);
+        return this.issuesForProjectQuery(organization, projectNumber, customQuery, issueFetchParams);
       }
       if (projectViewNumber) {
-        return this.issuesForProjectView(organization, projectNumber, projectViewNumber, params);
+        return this.issuesForProjectView(organization, projectNumber, projectViewNumber, issueFetchParams);
       }
-      return this.issuesForProject(organization, projectNumber, params);
+      return this.issuesForProject(organization, projectNumber, issueFetchParams);
     }
     throw new Error(`Unsupported URL: ${url}. Please provide a valid GitHub issues URL.`);
   }
-  issue(owner, repo, issueNumber, params) {
+  issue(organization, repository, issueNumber, issueFetchParams) {
     return IssueWrapper.forIssue({
-      ...validateFetchParameters(params),
-      organization: owner,
-      repo,
+      organization,
+      repository,
       issueNumber: Number(issueNumber)
-    });
+    }, validateFetchParameters(issueFetchParams));
   }
-  issuesForRepo(owner, repo, params) {
+  issuesForRepo(organization, repository, issueFetchParams) {
     return IssueList.forRepo({
-      ...validateFetchParameters(params),
-      owner,
-      repo
-    });
+      organization,
+      repository
+    }, validateFetchParameters(issueFetchParams));
   }
-  subissuesForIssue(owner, repo, issueNumber, params) {
+  subissuesForIssue(organization, repository, issueNumber, issueFetchParams) {
     return IssueList.forSubissues({
-      ...validateFetchParameters(params),
-      owner,
-      repo,
+      organization,
+      repository,
       issueNumber: Number(issueNumber)
-    });
+    }, validateFetchParameters(issueFetchParams));
   }
-  issuesForProject(organization, projectNumber, params) {
+  issuesForProject(organization, projectNumber, issueFetchParams) {
     return IssueList.forProject({
-      ...validateFetchParameters(params),
       organization,
       projectNumber: Number(projectNumber)
-    });
+    }, validateFetchParameters(issueFetchParams));
   }
-  issuesForProjectView(organization, projectNumber, projectViewNumber, params) {
+  issuesForProjectView(organization, projectNumber, projectViewNumber, issueFetchParams) {
     return IssueList.forProjectView({
-      ...validateFetchParameters(params),
       organization,
       projectNumber: Number(projectNumber),
       projectViewNumber: Number(projectViewNumber)
-    });
+    }, validateFetchParameters(issueFetchParams));
   }
-  issuesForProjectQuery(organization, projectNumber, customQuery, params) {
+  issuesForProjectQuery(organization, projectNumber, customQuery, issueFetchParams) {
     return IssueList.forProjectView({
-      ...validateFetchParameters(params),
       organization,
       projectNumber: Number(projectNumber),
       customQuery
-    });
+    }, validateFetchParameters(issueFetchParams));
   }
 }
 
@@ -100397,6 +100506,7 @@ async function renderTemplate(templatePath) {
     debugTemplate: () => debugTemplate(template)
   });
   memory.headbonk();
+  debugTotalGraphQLRateLimit();
   return result.content;
 }
 

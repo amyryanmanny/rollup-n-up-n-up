@@ -1,9 +1,10 @@
 import {
   getConfig,
   isTrueString,
+  validateFetchParameters,
   validateRenderOptions,
   type DirtyIssueRenderOptions,
-  type FetchParameters,
+  type IssueFetchParameters,
 } from "@config";
 import { fuzzy } from "@util/string";
 
@@ -15,10 +16,10 @@ import { findLatestUpdates } from "./update";
 import { IssueList } from "./issue-list";
 
 import { getIssue, type GetIssueParameters } from "./graphql/issue";
-import {
-  slugifyProjectFieldName,
-  type IssueField,
-} from "./graphql/fragments/project-fields";
+
+import { listCommentsForIssue } from "./graphql/comment";
+import { listProjectFieldsForIssue } from "./graphql/project-fields";
+import { slugifyProjectFieldName, type ProjectField } from "./project-fields";
 
 // Interface
 export type Issue = {
@@ -37,15 +38,16 @@ export type Issue = {
   };
   assignees: string[];
   labels: string[];
-  comments: Array<Comment>;
+  comments?: Array<Comment>;
   parent?: {
     title: string;
     url: string;
     number: number;
   };
   project?: {
+    // TODO: Support multiple projects
     number: number;
-    fields: Map<string, IssueField>;
+    fields: Map<string, ProjectField>;
   };
   isSubissue?: boolean;
 };
@@ -61,14 +63,21 @@ export class IssueWrapper {
   }
 
   static async forIssue(
-    params: GetIssueParameters & FetchParameters,
+    params: GetIssueParameters,
+    fetchParams: IssueFetchParameters,
   ): Promise<IssueWrapper> {
     // Create an IssueWrapper for a specific issue
     const issue = await getIssue(params);
-    return new IssueWrapper(issue).fetch(params);
+    return new IssueWrapper(issue).fetch(fetchParams);
   }
 
-  async fetch(params: FetchParameters): Promise<IssueWrapper> {
+  async fetch(params: IssueFetchParameters): Promise<IssueWrapper> {
+    if (params.comments > 0) {
+      await this.fetchComments(params.comments);
+    }
+    if (params.projectFields !== undefined) {
+      await this.fetchProjectFields(params.projectFields);
+    }
     if (params.subissues) {
       await this.fetchSubissues();
     }
@@ -124,8 +133,22 @@ export class IssueWrapper {
     return this.issue.type;
   }
 
+  // Repository
   get repo(): string {
     return this.issue.repository.name;
+  }
+
+  get repository(): string {
+    return this.issue.repository.name;
+  }
+
+  // Organization
+  get organization(): string {
+    return this.issue.repository.owner;
+  }
+
+  get org(): string {
+    return this.issue.repository.owner;
   }
 
   get owner(): string {
@@ -187,10 +210,11 @@ export class IssueWrapper {
     return this.issue.project?.number;
   }
 
-  get _projectFields(): Map<string, IssueField> {
-    // Internal Method - return issue projectFields
-    // For Issues pulled from a Repo, projectFields are undefined
-    return this.issue.project?.fields ?? new Map<string, IssueField>();
+  get _projectFields(): Map<string, ProjectField> {
+    if (!this.issue.project) {
+      return new Map<string, ProjectField>();
+    }
+    return this.issue.project.fields;
   }
 
   get projectFields(): Map<string, string> {
@@ -244,15 +268,41 @@ export class IssueWrapper {
     return value;
   }
 
-  // Subissues
-  private async fetchSubissues() {
-    this.subissues = await IssueList.forSubissues({
-      owner: this.owner,
-      repo: this.repo,
+  // Issue Details
+  // Called after filters is applied, to avoid wasted queries
+  private async fetchComments(numComments: number) {
+    this.issue.comments = await listCommentsForIssue({
+      organization: this.organization,
+      repository: this.repository,
       issueNumber: this.number,
-      subissues: false, // Don't recursively fetch subissues
-      projectNumber: this.projectNumber, // Fetch ProjectFields for subissues of a project issue
+      numComments,
     });
+  }
+
+  private async fetchProjectFields(projectNumber: number) {
+    this.issue.project = {
+      number: projectNumber,
+      fields: await listProjectFieldsForIssue({
+        organization: this.organization,
+        repository: this.repository,
+        issueNumber: this.number,
+        projectNumber,
+      }),
+    };
+  }
+
+  private async fetchSubissues() {
+    this.subissues = await IssueList.forSubissues(
+      {
+        organization: this.organization,
+        repository: this.repository,
+        issueNumber: this.number,
+      },
+      validateFetchParameters({
+        projectFields: this.projectNumber, // For Subissues of a Project Issue, fetch their Fields
+        subissues: false, // But don't recursively fetch Subissues, it would spiral out of control
+      }),
+    );
   }
 
   // Comment
