@@ -12,7 +12,7 @@
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "noEmit": true,
-    "sourceMap": true,
+    // "sourceMap": true,
 
     // Best practices
     "strict": true,
