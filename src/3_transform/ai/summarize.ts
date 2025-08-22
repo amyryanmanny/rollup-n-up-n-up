@@ -4,7 +4,9 @@ import ModelClient, { isUnexpected } from "@azure-rest/ai-inference";
 import { AzureKeyCredential } from "@azure/core-auth";
 
 import { getConfig, getModelEndpoint, loadPromptFile } from "@config";
+
 import { getToken } from "@util/octokit";
+import { handleUnexpectedResponse } from "@util/error";
 
 import { type MemoryBank } from "@transform/memory";
 
@@ -90,12 +92,7 @@ export async function runPrompt(params: PromptParameters): Promise<string> {
     });
 
     if (isUnexpected(response)) {
-      if (response.body.error) {
-        throw response.body.error;
-      }
-      throw new Error(
-        `An error occurred while fetching the response (${response.status}) ${response.body}`,
-      );
+      handleUnexpectedResponse(response);
     }
 
     const modelResponse = response.body.choices[0].message.content;
