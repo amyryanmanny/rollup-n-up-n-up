@@ -100556,7 +100556,11 @@ async function renderTemplate(templatePath) {
     console.log("Using default template:", defaultTemplate2);
     templatePath = defaultTemplate2;
   }
-  const template = await env.load(templatePath, path6.isAbsolute(templatePath) ? "/" : undefined);
+  const isAbsolute = path6.isAbsolute(templatePath);
+  if (isAbsolute) {
+    templatePath = `./${templatePath}`;
+  }
+  const template = await env.load(templatePath, isAbsolute ? "/" : undefined);
   const result = await template({
     ...globals,
     getConfig,

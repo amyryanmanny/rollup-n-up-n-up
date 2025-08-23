@@ -51,10 +51,14 @@ export async function renderTemplate(
     templatePath = defaultTemplate;
   }
 
-  const template = await env.load(
-    templatePath!,
-    path.isAbsolute(templatePath!) ? "/" : undefined,
-  );
+  // TODO: Remove workaround
+  // PR: https://github.com/ventojs/vento/pull/143/files
+  const isAbsolute = path.isAbsolute(templatePath!);
+  if (isAbsolute) {
+    templatePath = `./${templatePath}`;
+  }
+
+  const template = await env.load(templatePath!, isAbsolute ? "/" : undefined);
 
   // Render the template with the provided data
   const result = await template({
