@@ -1,3 +1,5 @@
+import path from "path";
+
 import vento from "ventojs";
 
 import * as filters from "@transform/filters";
@@ -48,7 +50,11 @@ export async function renderTemplate(
     console.log("Using default template:", defaultTemplate);
     templatePath = defaultTemplate;
   }
-  const template = await env.load(templatePath!);
+
+  const template = await env.load(
+    templatePath!,
+    path.isAbsolute(templatePath!) ? "/" : undefined,
+  );
 
   // Render the template with the provided data
   const result = await template({

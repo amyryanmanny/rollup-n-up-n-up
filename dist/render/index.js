@@ -82029,6 +82029,9 @@ function getEnv(key) {
   return process.env[key] ?? process.env[key.toUpperCase()] ?? process.env[key.toLowerCase()];
 }
 
+// src/4_template/render.ts
+import path6 from "path";
+
 // node_modules/ventojs/esm/_dnt.polyfills.js
 if (!Object.hasOwn) {
   Object.defineProperty(Object, "hasOwn", {
@@ -100553,7 +100556,7 @@ async function renderTemplate(templatePath) {
     console.log("Using default template:", defaultTemplate2);
     templatePath = defaultTemplate2;
   }
-  const template = await env.load(templatePath);
+  const template = await env.load(templatePath, path6.isAbsolute(templatePath) ? "/" : undefined);
   const result = await template({
     ...globals,
     getConfig,
