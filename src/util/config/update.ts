@@ -79,7 +79,7 @@ export class UpdateDetection {
     {
       kind: "marker",
       marker: DEFAULT_MARKER,
-      timeframe: "all-time",
+      timeframe: "last-month",
     },
     {
       kind: "timebox",
