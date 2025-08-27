@@ -36,9 +36,16 @@ export class CommentWrapper {
   private boldedSections: Map<string, string>;
   private dataBlocks: Map<string, string>;
 
-  constructor(issue: IssueWrapper, comment: Comment) {
+  constructor(issue: IssueWrapper, comment: Comment | CommentWrapper) {
     // TODO: Move this.issue onto CommentList class instead
     // Call it parent, also support Discussion since there's big overlap
+
+    if (comment instanceof CommentWrapper) {
+      // CommentWrapper overlaps, so TypeScript doesn't reject it. But it causes issues
+      // So explicitly allow it, and extract the underlying comment obj if it happens
+      comment = comment.comment;
+    }
+
     this.issue = issue;
     this.comment = comment;
 

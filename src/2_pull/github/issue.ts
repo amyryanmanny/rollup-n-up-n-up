@@ -185,7 +185,7 @@ export class IssueWrapper {
       case fuzzy("number"):
         return String(this.number);
       case fuzzy("body"):
-        return this.body;
+        return this.body; // Counts as a valid .body access
       case fuzzy("type"):
         return this.type;
       case fuzzy("repo"):
@@ -333,7 +333,7 @@ export class IssueWrapper {
       .sort(sortCommentsByDateDesc); // Newest comments first
   }
 
-  set comments(comments: CommentWrapper[]) {
+  set comments(comments: Comment[]) {
     this.issue.comments = comments;
   }
 

@@ -61,7 +61,7 @@ export class UpdateDetection {
   setStrategies(config?: string) {
     let strategies: UpdateDetectionStrategy[];
 
-    if (config) {
+    if (config !== undefined) {
       strategies = UpdateDetection.parseStrategies(config);
       if (strategies.length === 0) {
         throw new Error(

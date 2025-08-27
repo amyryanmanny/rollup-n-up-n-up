@@ -81921,7 +81921,7 @@ class UpdateDetection {
   }
   setStrategies(config) {
     let strategies;
-    if (config) {
+    if (config !== undefined) {
       strategies = UpdateDetection.parseStrategies(config);
       if (strategies.length === 0) {
         throw new Error('No valid strategies found in the "update_detection" input. See docs.');
@@ -98808,6 +98808,9 @@ class CommentWrapper {
   boldedSections;
   dataBlocks;
   constructor(issue, comment) {
+    if (comment instanceof CommentWrapper) {
+      comment = comment.comment;
+    }
     this.issue = issue;
     this.comment = comment;
     this.sections = splitMarkdownByHeaders(comment.body);
@@ -100205,7 +100208,7 @@ class IssueList {
     for (const [params, comments2] of commentsMap) {
       const issue3 = this.find(params);
       if (issue3 !== undefined) {
-        issue3.comments = comments2.map((c2) => new CommentWrapper(issue3, c2));
+        issue3.comments = comments2;
       } else {
         throw new Error(`Fetching Comments for nonexistent Issue ${JSON.stringify(params)}`);
       }

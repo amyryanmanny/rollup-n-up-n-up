@@ -33,7 +33,6 @@ import {
 } from "./graphql";
 
 import { IssueWrapper, type Issue } from "./issue";
-import { CommentWrapper } from "./comment";
 
 type SourceOfTruth = {
   title: string;
@@ -323,7 +322,7 @@ export class IssueList {
     for (const [params, comments] of commentsMap) {
       const issue = this.find(params);
       if (issue !== undefined) {
-        issue.comments = comments.map((c) => new CommentWrapper(issue, c));
+        issue.comments = comments;
       } else {
         // This is good at catching race conditions, not much else
         throw new Error(
