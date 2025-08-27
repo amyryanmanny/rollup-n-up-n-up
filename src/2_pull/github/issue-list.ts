@@ -32,7 +32,7 @@ import {
   listProjectFieldsForListOfIssues,
 } from "./graphql";
 
-import { IssueWrapper } from "./issue";
+import { IssueWrapper, type Issue } from "./issue";
 import { CommentWrapper } from "./comment";
 
 type SourceOfTruth = {
@@ -207,17 +207,16 @@ export class IssueList {
   }
 
   get blame(): IssueList {
-    const issuesWithNoUpdate = this.issues.filter((issue) => !issue.hasUpdate);
-    return new IssueList(issuesWithNoUpdate, {
-      title: `${this.sourceOfTruth.title} - Missing Updates`,
-      url: this.sourceOfTruth.url,
-    });
+    const blameList = this.copy();
+    blameList.filter((issue) => !issue.hasUpdate);
+    blameList.sourceOfTruth.title += " - Missing Updates";
+    return blameList;
   }
 
   // Constructors
-  private constructor(issues: IssueWrapper[], sourceOfTruth: SourceOfTruth) {
+  private constructor(issues: Issue[], sourceOfTruth: SourceOfTruth) {
     this.sourceOfTruth = sourceOfTruth;
-    this.issues = issues;
+    this.issues = issues.map((issue) => new IssueWrapper(issue));
   }
 
   static async forRepo(
@@ -226,10 +225,8 @@ export class IssueList {
   ): Promise<IssueList> {
     const response = await listIssuesForRepo(params);
     const { issues, title, url } = response;
-    return new IssueList(
-      issues.map((issue) => new IssueWrapper(issue)),
-      { title, url },
-    ).fetch(fetchParams);
+
+    return await new IssueList(issues, { title, url }).fetch(fetchParams);
   }
 
   static async forSubissues(
@@ -238,10 +235,8 @@ export class IssueList {
   ): Promise<IssueList> {
     const response = await listSubissuesForIssue(params);
     const { subissues, title, url } = response;
-    return new IssueList(
-      subissues.map((issue) => new IssueWrapper(issue)),
-      { title, url },
-    ).fetch(fetchParams);
+
+    return await new IssueList(subissues, { title, url }).fetch(fetchParams);
   }
 
   static async forProject(
@@ -251,12 +246,7 @@ export class IssueList {
     const response = await listIssuesForProject(params);
     const { issues, title, url } = response;
 
-    const project = new IssueList(
-      issues.map((issue) => new IssueWrapper(issue)),
-      { title, url },
-    );
-
-    return await project.fetch({
+    return await new IssueList(issues, { title, url }).fetch({
       ...fetchParams,
       projectFields: params.projectNumber,
     });
@@ -269,10 +259,7 @@ export class IssueList {
     const response = await listIssuesForProject(params);
     const { issues, title, url } = response;
 
-    const project = new IssueList(
-      issues.map((issue) => new IssueWrapper(issue)),
-      { title, url },
-    );
+    const project = new IssueList(issues, { title, url });
 
     let view: ProjectView;
     if (params.projectViewNumber === undefined) {
