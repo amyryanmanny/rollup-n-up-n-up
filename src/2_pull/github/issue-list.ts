@@ -21,19 +21,19 @@ import {
 } from "./project-view";
 
 import {
-  listIssuesForProject,
-  type ListIssuesForProjectParameters,
-} from "./graphql/project";
-import {
+  type GetIssueParameters,
   listIssuesForRepo,
   type ListIssuesForRepoParameters,
-} from "./graphql/repo";
-import {
+  listIssuesForProject,
+  type ListIssuesForProjectParameters,
   listSubissuesForIssue,
   type ListSubissuesForIssueParameters,
-} from "./graphql/subissues";
+  listCommentsForListOfIssues,
+  listProjectFieldsForListOfIssues,
+} from "./graphql";
 
 import { IssueWrapper } from "./issue";
+import { CommentWrapper } from "./comment";
 
 type SourceOfTruth = {
   title: string;
@@ -46,6 +46,10 @@ export class IssueList {
 
   private sourceOfTruth: SourceOfTruth;
   private issues: IssueWrapper[];
+
+  // State to prevent unnecessary fetching
+  private commentsFetched = false;
+  private projectFieldsFetched = false;
 
   // Some Array functions should fall through
   get length(): number {
@@ -60,15 +64,32 @@ export class IssueList {
     return this.issues[Symbol.iterator]();
   }
 
-  find(predicate: (issue: IssueWrapper) => boolean): IssueWrapper | undefined {
-    // Find an issue by a predicate
-    return this.issues.find(predicate);
+  private find(params: GetIssueParameters): IssueWrapper | undefined {
+    return this.issues.find(
+      (issue) =>
+        issue.organization === params.organization &&
+        issue.repository === params.repository &&
+        issue.number === params.issueNumber,
+    );
   }
 
   filter(predicate: (issue: IssueWrapper) => boolean): IssueList {
     // Filter the issues by a predicate
-    const filteredIssues = this.issues.filter(predicate);
-    return new IssueList(filteredIssues, this.sourceOfTruth);
+    // A bit naughty, but it mutates the original list
+    // More like an ORM QuerySet than a JavaScript array
+    this.issues = this.issues.filter(predicate);
+    return this;
+  }
+
+  copy(): IssueList {
+    // Useful to perform multiple inline filters in templates
+    const copy = new IssueList([], {
+      title: this.sourceOfTruth.title,
+      url: this.sourceOfTruth.url,
+      groupKey: this.sourceOfTruth.groupKey,
+    });
+    copy.issues = [...this.issues]; // Shallow copy the issues
+    return copy;
   }
 
   // Properties
@@ -92,9 +113,12 @@ export class IssueList {
   }
 
   // Issue Filtering / Grouping / Sorting
-  private applyViewFilter(view: ProjectView): IssueList {
+  private async applyViewFilter(view: ProjectView): Promise<IssueList> {
+    // Make sure the Project Fields are fetched first so we can filter on them
+    await this.fetchProjectFields(view.projectNumber);
+
     // Filter the issues by the view's query
-    this.issues = this.issues.filter((issue) => view.filter(issue));
+    this.filter((issue) => view.filter(issue));
 
     // Scope the Source of Truth to the view
     if (view.number) {
@@ -196,13 +220,6 @@ export class IssueList {
     this.issues = issues;
   }
 
-  async fetch(params: IssueFetchParameters): Promise<IssueList> {
-    for (const issue of this.issues) {
-      await issue.fetch(params);
-    }
-    return this;
-  }
-
   static async forRepo(
     params: ListIssuesForRepoParameters,
     fetchParams: IssueFetchParameters,
@@ -239,7 +256,7 @@ export class IssueList {
       { title, url },
     );
 
-    return project.fetch({
+    return await project.fetch({
       ...fetchParams,
       projectFields: params.projectNumber,
     });
@@ -264,16 +281,100 @@ export class IssueList {
           "Either projectViewNumber or customQuery must be provided.",
         );
       }
-      view = new ProjectView({ filterQuery: params.customQuery });
+      view = new ProjectView({
+        projectNumber: params.projectNumber,
+        filterQuery: params.customQuery,
+      });
     } else {
       view = await getProjectView(params);
     }
-    project.applyViewFilter(view);
+    await project.applyViewFilter(view);
 
     return await project.fetch({
       ...fetchParams,
       projectFields: params.projectNumber,
     });
+  }
+
+  // Fetching
+  async fetch(params: IssueFetchParameters): Promise<IssueList> {
+    // Batch Fields and Project Fields when constructing IssueList
+    if (params.projectFields !== undefined) {
+      await this.fetchProjectFields(params.projectFields);
+    }
+
+    if (params.comments > 0) {
+      await this.fetchComments(params.comments);
+    }
+
+    // Unfortunately it's too confusing to filter any earlier
+    // As it would silently break filtering on Comments / Fields
+    this.filter(params.filter);
+
+    for (const issue of this.issues) {
+      await issue.fetch(params);
+    }
+
+    return this;
+  }
+
+  private async fetchComments(numComments: number) {
+    if (this.commentsFetched) return;
+
+    // Fetching all issues at once is much faster, especially with throttling
+    const commentsMap = await listCommentsForListOfIssues({
+      issues: this.issues.map((issue) => {
+        return {
+          organization: issue.organization,
+          repository: issue.repository,
+          issueNumber: issue.number,
+        };
+      }),
+      numComments,
+    });
+
+    for (const [params, comments] of commentsMap) {
+      const issue = this.find(params);
+      if (issue !== undefined) {
+        issue.comments = comments.map((c) => new CommentWrapper(issue, c));
+      } else {
+        // This is good at catching race conditions, not much else
+        throw new Error(
+          `Fetching Comments for nonexistent Issue ${JSON.stringify(params)}`,
+        );
+      }
+    }
+
+    this.commentsFetched = true;
+  }
+
+  private async fetchProjectFields(projectNumber: number) {
+    if (this.projectFieldsFetched) return;
+
+    const projectFields = await listProjectFieldsForListOfIssues({
+      issues: this.issues.map((issue) => ({
+        organization: issue.organization,
+        repository: issue.repository,
+        issueNumber: issue.number,
+      })),
+      projectNumber,
+    });
+
+    for (const [params, fields] of projectFields) {
+      const issue = this.find(params);
+      if (issue !== undefined) {
+        issue.project = {
+          number: projectNumber,
+          fields,
+        };
+      } else {
+        throw new Error(
+          `Fetching Project Fields for nonexistent Issue ${JSON.stringify(params)}`,
+        );
+      }
+    }
+
+    this.projectFieldsFetched = true;
   }
 
   // Render / Memory Functions

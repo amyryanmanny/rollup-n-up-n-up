@@ -23,3 +23,8 @@ export const slugifyProjectFieldName = (field: string): string => {
   // Slugs are not accessible with GraphQL :(
   return field.toLowerCase().replace(/\s+/g, "-");
 };
+
+export type Project = {
+  number: number;
+  fields: Map<string, ProjectField>;
+};

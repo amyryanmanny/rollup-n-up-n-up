@@ -15,11 +15,18 @@ import { CommentWrapper, type Comment } from "./comment";
 import { findLatestUpdates } from "./update";
 import { IssueList } from "./issue-list";
 
-import { getIssue, type GetIssueParameters } from "./graphql/issue";
+import {
+  getIssue,
+  type GetIssueParameters,
+  listCommentsForIssue,
+  listProjectFieldsForIssue,
+} from "./graphql";
 
-import { listCommentsForIssue } from "./graphql/comment";
-import { listProjectFieldsForIssue } from "./graphql/project-fields";
-import { slugifyProjectFieldName, type ProjectField } from "./project-fields";
+import {
+  slugifyProjectFieldName,
+  type Project,
+  type ProjectField,
+} from "./project-fields";
 
 // Interface
 export type Issue = {
@@ -44,11 +51,7 @@ export type Issue = {
     url: string;
     number: number;
   };
-  project?: {
-    // TODO: Support multiple projects
-    number: number;
-    fields: Map<string, ProjectField>;
-  };
+  project?: Project; // TODO: Support multiple projects
   isSubissue?: boolean;
 };
 
@@ -206,6 +209,10 @@ export class IssueWrapper {
     return this.projectFields.get(slugifyProjectFieldName(fieldName)) || "";
   }
 
+  set project(project: Project) {
+    this.issue.project = project;
+  }
+
   get projectNumber(): number | undefined {
     return this.issue.project?.number;
   }
@@ -268,9 +275,12 @@ export class IssueWrapper {
     return value;
   }
 
-  // Issue Details
-  // Called after filters is applied, to avoid wasted queries
+  // Fetching
+  // Should be called as late as possible, to avoid wasted queries
   private async fetchComments(numComments: number) {
+    if (this.issue.comments) {
+      return; // Already fetched, probably at the list level
+    }
     this.issue.comments = await listCommentsForIssue({
       organization: this.organization,
       repository: this.repository,
@@ -280,6 +290,10 @@ export class IssueWrapper {
   }
 
   private async fetchProjectFields(projectNumber: number) {
+    if (this.issue.project?.number === projectNumber) {
+      return; // Already fetched
+    }
+
     this.issue.project = {
       number: projectNumber,
       fields: await listProjectFieldsForIssue({
@@ -317,6 +331,10 @@ export class IssueWrapper {
     return (this.issue.comments as Comment[])
       .map((comment) => new CommentWrapper(this, comment))
       .sort(sortCommentsByDateDesc); // Newest comments first
+  }
+
+  set comments(comments: CommentWrapper[]) {
+    this.issue.comments = comments;
   }
 
   get latestComment(): CommentWrapper {

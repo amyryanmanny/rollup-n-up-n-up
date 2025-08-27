@@ -15,6 +15,7 @@ export type GetProjectViewParameters = {
 
 type ProjectViewParameters = {
   name?: string;
+  projectNumber: number;
   number?: number;
   filterQuery: string;
 };
@@ -107,6 +108,10 @@ export class ProjectView {
   // Properties
   get name(): string | undefined {
     return this.params.name;
+  }
+
+  get projectNumber(): number {
+    return this.params.projectNumber;
   }
 
   get number(): number | undefined {
@@ -319,6 +324,7 @@ export async function getProjectView(
   return new ProjectView({
     name: response.organization.projectV2.view.name,
     number: params.projectViewNumber,
+    projectNumber: params.projectNumber,
     filterQuery: response.organization.projectV2.view.filter,
   });
 }
