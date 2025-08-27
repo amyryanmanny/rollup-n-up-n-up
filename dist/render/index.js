@@ -81658,7 +81658,11 @@ function validateFetchParameters(params) {
   if (params?.subissues !== undefined) {
     subissues = isTruthy(params.subissues);
   }
-  return { comments, projectFields, subissues };
+  let filter = () => true;
+  if (params?.filter !== undefined) {
+    filter = params.filter;
+  }
+  return { comments, projectFields, subissues, filter };
 }
 // src/util/config/truthy.ts
 function isTrueString(value) {
@@ -99389,6 +99393,9 @@ class ProjectView {
   get name() {
     return this.params.name;
   }
+  get projectNumber() {
+    return this.params.projectNumber;
+  }
   get number() {
     return this.params.number;
   }
@@ -99552,10 +99559,118 @@ async function getProjectView(params) {
   return new ProjectView({
     name: response.organization.projectV2.view.name,
     number: params.projectViewNumber,
+    projectNumber: params.projectNumber,
     filterQuery: response.organization.projectV2.view.filter
   });
 }
 
+// src/2_pull/github/graphql/fragments/comment.ts
+var commentFragment = `
+  author {
+    login
+  }
+  body
+  createdAt
+  updatedAt
+  url
+`;
+function mapCommentNode(node) {
+  return {
+    author: node.author?.login || "Unknown",
+    body: node.body,
+    createdAt: new Date(node.createdAt),
+    updatedAt: new Date(node.updatedAt),
+    url: node.url
+  };
+}
+
+// src/2_pull/github/graphql/fragments/page-info.ts
+var pageInfoFragment = `
+  pageInfo {
+    hasNextPage
+    endCursor
+  }
+`;
+
+// src/2_pull/github/graphql/fragments/rate-limit.ts
+var rateLimitFragment = `
+  rateLimit {
+    cost
+  }
+`;
+var runningTotal = 0;
+function debugGraphQLRateLimit(caller, params, response) {
+  runningTotal += response.rateLimit.cost;
+  if (getConfig("DEBUG_RATE_LIMIT_QUERY_COST")) {
+    console.log(`Query: "${caller}"`);
+    console.log(`  ${JSON.stringify(params, null, 2)}`);
+    console.log(`  Rate limit cost: ${response.rateLimit.cost}`);
+  }
+}
+function debugTotalGraphQLRateLimit() {
+  console.log(`Total GraphQL RateLimit cost of this Report: ${runningTotal}`);
+}
+
+// src/2_pull/github/graphql/comments.ts
+async function listCommentsForIssue(params) {
+  const octokit = getOctokit();
+  const query = `
+    query ($organization: String!, $repository: String!, $issueNumber: Int!) {
+      repositoryOwner(login: $organization) {
+        repository(name: $repository) {
+          issue(number: $issueNumber) {
+            comments(last: ${params.numComments}) {
+              nodes {
+                ${commentFragment}
+              }
+              ${pageInfoFragment}
+            }
+          }
+        }
+      }
+      ${rateLimitFragment}
+    }
+  `;
+  const response = await octokit.graphql.paginate(query, {
+    organization: params.organization,
+    repository: params.repository,
+    issueNumber: params.issueNumber
+  });
+  debugGraphQLRateLimit("List Comments for Issue", params, response);
+  return response.repositoryOwner.repository.issue.comments.nodes.map(mapCommentNode);
+}
+// src/2_pull/github/graphql/comments-for-issue-list.ts
+async function listCommentsForListOfIssues(params) {
+  if (!params.issues.length) {
+    return new Map;
+  }
+  const octokit = getOctokit();
+  const query = `
+    query {
+      ${params.issues.map(({ organization, repository, issueNumber }, index) => `issue${index + 1}: repository(owner: "${organization}", name: "${repository}") {
+              issue(number: ${issueNumber}) {
+                comments(last: ${params.numComments}) {
+                  nodes {
+                    ${commentFragment}
+                  }
+                }
+              }
+            }
+          `).join(`
+`)}
+      ${rateLimitFragment}
+    }
+  `;
+  const response = await octokit.graphql(query);
+  debugGraphQLRateLimit("List Comments for List of Issues", `Num Issues: ${params.issues.length}`, response);
+  const issues = new Map;
+  for (let i2 = 0;i2 < params.issues.length; i2++) {
+    const issueResponse = response[`issue${i2 + 1}`];
+    const comments = issueResponse.issue.comments.nodes.map(mapCommentNode);
+    issues.set(params.issues[i2], comments);
+  }
+  return issues;
+}
 // src/2_pull/github/graphql/fragments/issue.ts
 var issueNodeFragment = `
   __typename
@@ -99617,329 +99732,6 @@ function mapIssueNode(node) {
   };
 }
 
-// src/2_pull/github/graphql/fragments/page-info.ts
-var pageInfoFragment = `
-  pageInfo {
-    hasNextPage
-    endCursor
-  }
-`;
-
-// src/2_pull/github/graphql/fragments/rate-limit.ts
-var rateLimitFragment = `
-  rateLimit {
-    cost
-  }
-`;
-var runningTotal = 0;
-function debugGraphQLRateLimit(caller, params, response) {
-  runningTotal += response.rateLimit.cost;
-  if (getConfig("DEBUG_RATE_LIMIT_QUERY_COST")) {
-    console.log(`Query: "${caller}"`);
-    console.log(`  ${JSON.stringify(params)}`);
-    console.log(`  Rate limit cost: ${response.rateLimit.cost}`);
-  }
-}
-function debugTotalGraphQLRateLimit() {
-  console.log(`Total GraphQL RateLimit cost of this Report: ${runningTotal}`);
-}
-
-// src/2_pull/github/graphql/project.ts
-async function listIssuesForProject(params) {
-  const octokit = getOctokit();
-  const query = `
-    query paginate($organization: String!, $projectNumber: Int!, $cursor: String) {
-      organization(login: $organization) {
-        projectV2(number: $projectNumber) {
-          title
-          items(first: 50, after: $cursor) {
-            edges {
-              node {
-                id
-                content {
-                  __typename
-                  ... on Issue {
-                    ${issueNodeFragment}
-                  }
-                }
-              }
-            }
-            ${pageInfoFragment}
-          }
-        }
-      }
-      ${rateLimitFragment}
-    }
-  `;
-  const response = await octokit.graphql.paginate(query, params);
-  debugGraphQLRateLimit("List Issues for Project", params, response);
-  const issues = response.organization.projectV2.items.edges.filter((projectItem) => {
-    const content = projectItem.node.content;
-    return content && content.__typename === "Issue";
-  }).map((projectItem) => {
-    return {
-      ...mapIssueNode(projectItem.node.content),
-      isSubissue: false
-    };
-  });
-  return {
-    issues,
-    title: response.organization.projectV2.title,
-    url: `https://github.com/orgs/${params.organization}/projects/${params.projectNumber}`
-  };
-}
-
-// src/2_pull/github/graphql/repo.ts
-async function listIssuesForRepo(params) {
-  const octokit = getOctokit();
-  const state2 = params.state?.trim().toUpperCase() || "OPEN";
-  let states;
-  switch (state2) {
-    case "OPEN":
-    case "CLOSED":
-      states = [state2];
-      break;
-    case "ALL":
-      states = ["OPEN", "CLOSED"];
-      break;
-    default:
-      throw new Error(`Unknown IssueState: ${state2}. Choose OPEN, CLOSED, or ALL.`);
-  }
-  const query = `
-    query paginate($organization: String!, $repository: String!, $states: [IssueState!], $cursor: String) {
-      repositoryOwner(login: $organization) {
-        repository(name: $repository) {
-          issues(first: 50, states: $states, after: $cursor) {
-            nodes {
-              ${issueNodeFragment}
-            }
-            ${pageInfoFragment}
-          }
-        }
-      }
-      ${rateLimitFragment}
-    }
-  `;
-  const response = await octokit.graphql.paginate(query, {
-    organization: params.organization,
-    repository: params.repository,
-    states
-  });
-  debugGraphQLRateLimit("List Issues for Repo", params, response);
-  const issues = response.repositoryOwner.repository.issues.nodes.map((issue2) => {
-    return {
-      ...mapIssueNode(issue2),
-      isSubissue: false
-    };
-  });
-  return {
-    issues,
-    title: `Issues for ${params.organization}/${params.repository}`,
-    url: `https://github.com/${params.organization}/${params.repository}`
-  };
-}
-
-// src/2_pull/github/graphql/subissues.ts
-async function listSubissuesForIssue(params) {
-  const octokit = getOctokit();
-  const query = `
-    query paginate($organization: String!, $repository: String!, $issueNumber: Int!, $cursor: String) {
-      repositoryOwner(login: $organization) {
-        repository(name: $repository) {
-          issue(number: $issueNumber) {
-            title
-            url
-            subIssues(first: 50, after: $cursor) {
-              nodes {
-                ${issueNodeFragment}
-              }
-              ${pageInfoFragment}
-            }
-          }
-        }
-      }
-      ${rateLimitFragment}
-    }
-  `;
-  const response = await octokit.graphql.paginate(query, params);
-  const issue2 = response.repositoryOwner.repository.issue;
-  const subissues = issue2.subIssues.nodes.map((subIssue) => {
-    return {
-      ...mapIssueNode(subIssue),
-      isSubissue: true
-    };
-  });
-  debugGraphQLRateLimit("List Subissues for Issue", params, response);
-  return {
-    subissues,
-    title: `Subissues for ${issue2.title} (#${params.issueNumber})`,
-    url: issue2.url
-  };
-}
-
-// src/2_pull/github/issue-list.ts
-class IssueList {
-  memory = Memory.getInstance();
-  sourceOfTruth;
-  issues;
-  get length() {
-    return this.issues.length;
-  }
-  get isEmpty() {
-    return this.issues.length === 0;
-  }
-  [Symbol.iterator]() {
-    return this.issues[Symbol.iterator]();
-  }
-  find(predicate) {
-    return this.issues.find(predicate);
-  }
-  filter(predicate) {
-    const filteredIssues = this.issues.filter(predicate);
-    return new IssueList(filteredIssues, this.sourceOfTruth);
-  }
-  get header() {
-    return `[${this.sourceOfTruth.title}](${this.sourceOfTruth.url})`;
-  }
-  get title() {
-    return this.sourceOfTruth.title;
-  }
-  get url() {
-    return this.sourceOfTruth.url;
-  }
-  get groupKey() {
-    if (!this.sourceOfTruth.groupKey) {
-      throw new Error("Don't use groupKey without a groupBy.");
-    }
-    return this.sourceOfTruth.groupKey;
-  }
-  applyViewFilter(view) {
-    this.issues = this.issues.filter((issue2) => view.filter(issue2));
-    if (view.number) {
-      this.sourceOfTruth.url += `/views/${view.number}`;
-    } else {
-      this.sourceOfTruth.url += `?filterQuery=${encodeURIComponent(view.filterQuery)}`;
-    }
-    if (view.name) {
-      this.sourceOfTruth.title += ` (${view.name})`;
-    }
-    return this;
-  }
-  sort(fieldName, direction = "asc") {
-    this.issues.sort((a2, b2) => {
-      const aValue = a2.field(fieldName);
-      const bValue = b2.field(fieldName);
-      const comparison = emojiCompare(aValue, bValue) ?? aValue.localeCompare(bValue, undefined, { sensitivity: "base" });
-      return direction === "asc" ? comparison : -comparison;
-    });
-    return this;
-  }
-  groupBy(fieldName) {
-    const groups2 = new Map;
-    for (const issue2 of this.issues) {
-      const key = issue2.field(fieldName);
-      if (!groups2.has(key)) {
-        groups2.set(key, new IssueList([], {
-          title: this.sourceOfTruth.title,
-          url: this.sourceOfTruth.url,
-          groupKey: key || "No " + title(fieldName)
-        }));
-      }
-      groups2.get(key).issues.push(issue2);
-    }
-    return Array.from(groups2.entries()).sort(([a2], [b2]) => emojiCompare(a2, b2) ?? a2.localeCompare(b2)).map(([, group]) => group);
-  }
-  chart(fieldName, title2) {
-    const groups2 = this.groupBy(fieldName);
-    if (groups2.length === 0) {
-      return "ERROR: No issues found. Cannot create chart.";
-    }
-    title2 = title2 || `Number of Issues by ${fieldName}`;
-    return barChart(new Map(groups2.map((group) => [group.groupKey, group.length])), fieldName, title2);
-  }
-  overallStatus(fieldName) {
-    return this.issues.map((issue2) => issue2.field(fieldName) ?? "").sort((a2, b2) => emojiCompare(a2, b2) ?? a2.localeCompare(b2))[0];
-  }
-  get hasUpdates() {
-    return this.issues.some((issue2) => issue2.hasUpdate);
-  }
-  get blame() {
-    const issuesWithNoUpdate = this.issues.filter((issue2) => !issue2.hasUpdate);
-    return new IssueList(issuesWithNoUpdate, {
-      title: `${this.sourceOfTruth.title} - Missing Updates`,
-      url: this.sourceOfTruth.url
-    });
-  }
-  constructor(issues, sourceOfTruth) {
-    this.sourceOfTruth = sourceOfTruth;
-    this.issues = issues;
-  }
-  async fetch(params) {
-    for (const issue2 of this.issues) {
-      await issue2.fetch(params);
-    }
-    return this;
-  }
-  static async forRepo(params, fetchParams) {
-    const response = await listIssuesForRepo(params);
-    const { issues, title: title2, url } = response;
-    return new IssueList(issues.map((issue2) => new IssueWrapper(issue2)), { title: title2, url }).fetch(fetchParams);
-  }
-  static async forSubissues(params, fetchParams) {
-    const response = await listSubissuesForIssue(params);
-    const { subissues, title: title2, url } = response;
-    return new IssueList(subissues.map((issue2) => new IssueWrapper(issue2)), { title: title2, url }).fetch(fetchParams);
-  }
-  static async forProject(params, fetchParams) {
-    const response = await listIssuesForProject(params);
-    const { issues, title: title2, url } = response;
-    const project = new IssueList(issues.map((issue2) => new IssueWrapper(issue2)), { title: title2, url });
-    return project.fetch({
-      ...fetchParams,
-      projectFields: params.projectNumber
-    });
-  }
-  static async forProjectView(params, fetchParams) {
-    const response = await listIssuesForProject(params);
-    const { issues, title: title2, url } = response;
-    const project = new IssueList(issues.map((issue2) => new IssueWrapper(issue2)), { title: title2, url });
-    let view;
-    if (params.projectViewNumber === undefined) {
-      if (params.customQuery === undefined) {
-        throw new Error("Either projectViewNumber or customQuery must be provided.");
-      }
-      view = new ProjectView({ filterQuery: params.customQuery });
-    } else {
-      view = await getProjectView(params);
-    }
-    project.applyViewFilter(view);
-    return await project.fetch({
-      ...fetchParams,
-      projectFields: params.projectNumber
-    });
-  }
-  _render(options) {
-    return renderIssueList(this, validateRenderOptions(options));
-  }
-  remember(options = {}) {
-    const rendered = this._render(options);
-    if (rendered) {
-      this.memory.remember({
-        content: rendered.markdown,
-        sources: rendered.sources
-      });
-    }
-  }
-  render(options = {}) {
-    this.remember(options);
-    const rendered = this._render(options);
-    if (rendered) {
-      return rendered.markdown;
-    }
-    return "";
-  }
-}
-
 // src/2_pull/github/graphql/issue.ts
 async function getIssue(params) {
   const octokit = getOctokit();
@@ -99959,56 +99751,6 @@ async function getIssue(params) {
   debugGraphQLRateLimit("Get Issue", params, response);
   return mapIssueNode(response.organization.repository.issue);
 }
-
-// src/2_pull/github/graphql/fragments/comment.ts
-var commentFragment = `
-  author {
-    login
-  }
-  body
-  createdAt
-  updatedAt
-  url
-`;
-function mapCommentNode(node) {
-  return {
-    author: node.author?.login || "Unknown",
-    body: node.body,
-    createdAt: new Date(node.createdAt),
-    updatedAt: new Date(node.updatedAt),
-    url: node.url
-  };
-}
-
-// src/2_pull/github/graphql/comment.ts
-async function listCommentsForIssue(params) {
-  const octokit = getOctokit();
-  const query = `
-    query ($organization: String!, $repository: String!, $issueNumber: Int!) {
-      repositoryOwner(login: $organization) {
-        repository(name: $repository) {
-          issue(number: $issueNumber) {
-            comments(last: ${params.numComments}) {
-              nodes {
-                ${commentFragment}
-              }
-              ${pageInfoFragment}
-            }
-          }
-        }
-      }
-      ${rateLimitFragment}
-    }
-  `;
-  const response = await octokit.graphql.paginate(query, {
-    organization: params.organization,
-    repository: params.repository,
-    issueNumber: params.issueNumber
-  });
-  debugGraphQLRateLimit("List Comments for Issue", params, response);
-  return response.repositoryOwner.repository.issue.comments.nodes.map(mapCommentNode);
-}
-
 // src/2_pull/github/project-fields.ts
 var slugifyProjectFieldName = (field) => {
   return field.toLowerCase().replace(/\s+/g, "-");
@@ -100076,12 +99818,12 @@ async function listProjectFieldsForIssue(params) {
       organization(login: $organization) {
         repository(name: $repository) {
           issue(number: $issueNumber) {
-            projectItems(first: 10, after: $cursor) {
+            projectItems(first: 7, after: $cursor) {
               nodes {
                 project {
                   number
                 }
-                fieldValues(first: 50) {
+                fieldValues(first: 30) {
                   nodes {
                     ${projectFieldValueFragment}
                   }
@@ -100103,18 +99845,430 @@ async function listProjectFieldsForIssue(params) {
   }
   return mapProjectFieldValues(project.fieldValues.nodes);
 }
+// src/2_pull/github/graphql/project-fields-for-issue-list.ts
+var BATCH_SIZE = 50;
+async function listProjectFieldsForBatch(issues) {
+  const octokit = getOctokit();
+  const query = `
+    query {
+      ${issues.map(({ organization, repository, issueNumber }, index) => `issue${index + 1}: repository(owner: "${organization}", name: "${repository}") {
+              issue(number: ${issueNumber}) {
+                projectItems(first: 7) {
+                  nodes {
+                    project {
+                      number
+                    }
+                    fieldValues(first: 30) {
+                      nodes {
+                        ${projectFieldValueFragment}
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          `).join(`
+`)}
+      ${rateLimitFragment}
+    }
+  `;
+  const response = await octokit.graphql(query);
+  debugGraphQLRateLimit("List Project Fields for List of Issues", issues, response);
+  return response;
+}
+async function listProjectFieldsForListOfIssues(params) {
+  if (!params.issues.length) {
+    return new Map;
+  }
+  const projectFieldsMap = new Map;
+  let cursor = 0;
+  while (cursor < params.issues.length) {
+    const batch = params.issues.slice(cursor, cursor + BATCH_SIZE);
+    const response = await listProjectFieldsForBatch(batch);
+    for (let i2 = 0;i2 < batch.length; i2++) {
+      const issueResponse = response[`issue${i2 + 1}`];
+      const project = issueResponse.issue.projectItems.nodes.find((p2) => p2.project.number === params.projectNumber);
+      if (project !== undefined) {
+        projectFieldsMap.set(batch[i2], mapProjectFieldValues(project.fieldValues.nodes));
+      } else {
+        projectFieldsMap.set(batch[i2], new Map);
+      }
+    }
+    cursor += BATCH_SIZE;
+  }
+  return projectFieldsMap;
+}
+// src/2_pull/github/graphql/project.ts
+async function listIssuesForProject(params) {
+  const octokit = getOctokit();
+  const query = `
+    query paginate($organization: String!, $projectNumber: Int!, $cursor: String) {
+      organization(login: $organization) {
+        projectV2(number: $projectNumber) {
+          title
+          items(first: 50, after: $cursor) {
+            edges {
+              node {
+                id
+                content {
+                  __typename
+                  ... on Issue {
+                    ${issueNodeFragment}
+                  }
+                }
+              }
+            }
+            ${pageInfoFragment}
+          }
+        }
+      }
+      ${rateLimitFragment}
+    }
+  `;
+  const response = await octokit.graphql.paginate(query, params);
+  debugGraphQLRateLimit("List Issues for Project", params, response);
+  const issues = response.organization.projectV2.items.edges.filter((projectItem) => {
+    const content = projectItem.node.content;
+    return content && content.__typename === "Issue";
+  }).map((projectItem) => {
+    return {
+      ...mapIssueNode(projectItem.node.content),
+      isSubissue: false
+    };
+  });
+  return {
+    issues,
+    title: response.organization.projectV2.title,
+    url: `https://github.com/orgs/${params.organization}/projects/${params.projectNumber}`
+  };
+}
+// src/2_pull/github/graphql/repo.ts
+async function listIssuesForRepo(params) {
+  const octokit = getOctokit();
+  const state2 = params.state?.trim().toUpperCase() || "OPEN";
+  let states;
+  switch (state2) {
+    case "OPEN":
+    case "CLOSED":
+      states = [state2];
+      break;
+    case "ALL":
+      states = ["OPEN", "CLOSED"];
+      break;
+    default:
+      throw new Error(`Unknown IssueState: ${state2}. Choose OPEN, CLOSED, or ALL.`);
+  }
+  const query = `
+    query paginate($organization: String!, $repository: String!, $states: [IssueState!], $cursor: String) {
+      repositoryOwner(login: $organization) {
+        repository(name: $repository) {
+          issues(first: 50, states: $states, after: $cursor) {
+            nodes {
+              ${issueNodeFragment}
+            }
+            ${pageInfoFragment}
+          }
+        }
+      }
+      ${rateLimitFragment}
+    }
+  `;
+  const response = await octokit.graphql.paginate(query, {
+    organization: params.organization,
+    repository: params.repository,
+    states
+  });
+  debugGraphQLRateLimit("List Issues for Repo", params, response);
+  const issues = response.repositoryOwner.repository.issues.nodes.map((issue2) => {
+    return {
+      ...mapIssueNode(issue2),
+      isSubissue: false
+    };
+  });
+  return {
+    issues,
+    title: `Issues for ${params.organization}/${params.repository}`,
+    url: `https://github.com/${params.organization}/${params.repository}`
+  };
+}
+// src/2_pull/github/graphql/subissues.ts
+async function listSubissuesForIssue(params) {
+  const octokit = getOctokit();
+  const query = `
+    query paginate($organization: String!, $repository: String!, $issueNumber: Int!, $cursor: String) {
+      repositoryOwner(login: $organization) {
+        repository(name: $repository) {
+          issue(number: $issueNumber) {
+            title
+            url
+            subIssues(first: 50, after: $cursor) {
+              nodes {
+                ${issueNodeFragment}
+              }
+              ${pageInfoFragment}
+            }
+          }
+        }
+      }
+      ${rateLimitFragment}
+    }
+  `;
+  const response = await octokit.graphql.paginate(query, params);
+  const issue2 = response.repositoryOwner.repository.issue;
+  const subissues = issue2.subIssues.nodes.map((subIssue) => {
+    return {
+      ...mapIssueNode(subIssue),
+      isSubissue: true
+    };
+  });
+  debugGraphQLRateLimit("List Subissues for Issue", params, response);
+  return {
+    subissues,
+    title: `Subissues for ${issue2.title} (#${params.issueNumber})`,
+    url: issue2.url
+  };
+}
+// src/2_pull/github/issue-list.ts
+class IssueList {
+  memory = Memory.getInstance();
+  sourceOfTruth;
+  issues;
+  commentsFetched = false;
+  projectFieldsFetched = false;
+  get length() {
+    return this.issues.length;
+  }
+  get isEmpty() {
+    return this.issues.length === 0;
+  }
+  [Symbol.iterator]() {
+    return this.issues[Symbol.iterator]();
+  }
+  find(params) {
+    return this.issues.find((issue3) => issue3.organization === params.organization && issue3.repository === params.repository && issue3.number === params.issueNumber);
+  }
+  filter(predicate) {
+    this.issues = this.issues.filter(predicate);
+    return this;
+  }
+  copy() {
+    const copy = new IssueList([], {
+      title: this.sourceOfTruth.title,
+      url: this.sourceOfTruth.url,
+      groupKey: this.sourceOfTruth.groupKey
+    });
+    copy.issues = [...this.issues];
+    return copy;
+  }
+  get header() {
+    return `[${this.sourceOfTruth.title}](${this.sourceOfTruth.url})`;
+  }
+  get title() {
+    return this.sourceOfTruth.title;
+  }
+  get url() {
+    return this.sourceOfTruth.url;
+  }
+  get groupKey() {
+    if (!this.sourceOfTruth.groupKey) {
+      throw new Error("Don't use groupKey without a groupBy.");
+    }
+    return this.sourceOfTruth.groupKey;
+  }
+  async applyViewFilter(view) {
+    await this.fetchProjectFields(view.projectNumber);
+    this.filter((issue3) => view.filter(issue3));
+    if (view.number) {
+      this.sourceOfTruth.url += `/views/${view.number}`;
+    } else {
+      this.sourceOfTruth.url += `?filterQuery=${encodeURIComponent(view.filterQuery)}`;
+    }
+    if (view.name) {
+      this.sourceOfTruth.title += ` (${view.name})`;
+    }
+    return this;
+  }
+  sort(fieldName, direction = "asc") {
+    this.issues.sort((a2, b2) => {
+      const aValue = a2.field(fieldName);
+      const bValue = b2.field(fieldName);
+      const comparison = emojiCompare(aValue, bValue) ?? aValue.localeCompare(bValue, undefined, { sensitivity: "base" });
+      return direction === "asc" ? comparison : -comparison;
+    });
+    return this;
+  }
+  groupBy(fieldName) {
+    const groups2 = new Map;
+    for (const issue3 of this.issues) {
+      const key = issue3.field(fieldName);
+      if (!groups2.has(key)) {
+        groups2.set(key, new IssueList([], {
+          title: this.sourceOfTruth.title,
+          url: this.sourceOfTruth.url,
+          groupKey: key || "No " + title(fieldName)
+        }));
+      }
+      groups2.get(key).issues.push(issue3);
+    }
+    return Array.from(groups2.entries()).sort(([a2], [b2]) => emojiCompare(a2, b2) ?? a2.localeCompare(b2)).map(([, group]) => group);
+  }
+  chart(fieldName, title2) {
+    const groups2 = this.groupBy(fieldName);
+    if (groups2.length === 0) {
+      return "ERROR: No issues found. Cannot create chart.";
+    }
+    title2 = title2 || `Number of Issues by ${fieldName}`;
+    return barChart(new Map(groups2.map((group) => [group.groupKey, group.length])), fieldName, title2);
+  }
+  overallStatus(fieldName) {
+    return this.issues.map((issue3) => issue3.field(fieldName) ?? "").sort((a2, b2) => emojiCompare(a2, b2) ?? a2.localeCompare(b2))[0];
+  }
+  get hasUpdates() {
+    return this.issues.some((issue3) => issue3.hasUpdate);
+  }
+  get blame() {
+    const blameList = this.copy();
+    blameList.filter((issue3) => !issue3.hasUpdate);
+    blameList.sourceOfTruth.title += " - Missing Updates";
+    return blameList;
+  }
+  constructor(issues, sourceOfTruth) {
+    this.sourceOfTruth = sourceOfTruth;
+    this.issues = issues.map((issue3) => new IssueWrapper(issue3));
+  }
+  static async forRepo(params, fetchParams) {
+    const response = await listIssuesForRepo(params);
+    const { issues, title: title2, url } = response;
+    return await new IssueList(issues, { title: title2, url }).fetch(fetchParams);
+  }
+  static async forSubissues(params, fetchParams) {
+    const response = await listSubissuesForIssue(params);
+    const { subissues: subissues2, title: title2, url } = response;
+    return await new IssueList(subissues2, { title: title2, url }).fetch(fetchParams);
+  }
+  static async forProject(params, fetchParams) {
+    const response = await listIssuesForProject(params);
+    const { issues, title: title2, url } = response;
+    return await new IssueList(issues, { title: title2, url }).fetch({
+      ...fetchParams,
+      projectFields: params.projectNumber
+    });
+  }
+  static async forProjectView(params, fetchParams) {
+    const response = await listIssuesForProject(params);
+    const { issues, title: title2, url } = response;
+    const project2 = new IssueList(issues, { title: title2, url });
+    let view;
+    if (params.projectViewNumber === undefined) {
+      if (params.customQuery === undefined) {
+        throw new Error("Either projectViewNumber or customQuery must be provided.");
+      }
+      view = new ProjectView({
+        projectNumber: params.projectNumber,
+        filterQuery: params.customQuery
+      });
+    } else {
+      view = await getProjectView(params);
+    }
+    await project2.applyViewFilter(view);
+    return await project2.fetch({
+      ...fetchParams,
+      projectFields: params.projectNumber
+    });
+  }
+  async fetch(params) {
+    if (params.projectFields !== undefined) {
+      await this.fetchProjectFields(params.projectFields);
+    }
+    if (params.comments > 0) {
+      await this.fetchComments(params.comments);
+    }
+    this.filter(params.filter);
+    for (const issue3 of this.issues) {
+      await issue3.fetch(params);
+    }
+    return this;
+  }
+  async fetchComments(numComments) {
+    if (this.commentsFetched)
+      return;
+    const commentsMap = await listCommentsForListOfIssues({
+      issues: this.issues.map((issue3) => {
+        return {
+          organization: issue3.organization,
+          repository: issue3.repository,
+          issueNumber: issue3.number
+        };
+      }),
+      numComments
+    });
+    for (const [params, comments2] of commentsMap) {
+      const issue3 = this.find(params);
+      if (issue3 !== undefined) {
+        issue3.comments = comments2.map((c2) => new CommentWrapper(issue3, c2));
+      } else {
+        throw new Error(`Fetching Comments for nonexistent Issue ${JSON.stringify(params)}`);
+      }
+    }
+    this.commentsFetched = true;
+  }
+  async fetchProjectFields(projectNumber) {
+    if (this.projectFieldsFetched)
+      return;
+    const projectFields = await listProjectFieldsForListOfIssues({
+      issues: this.issues.map((issue3) => ({
+        organization: issue3.organization,
+        repository: issue3.repository,
+        issueNumber: issue3.number
+      })),
+      projectNumber
+    });
+    for (const [params, fields] of projectFields) {
+      const issue3 = this.find(params);
+      if (issue3 !== undefined) {
+        issue3.project = {
+          number: projectNumber,
+          fields
+        };
+      } else {
+        throw new Error(`Fetching Project Fields for nonexistent Issue ${JSON.stringify(params)}`);
+      }
+    }
+    this.projectFieldsFetched = true;
+  }
+  _render(options) {
+    return renderIssueList(this, validateRenderOptions(options));
+  }
+  remember(options = {}) {
+    const rendered = this._render(options);
+    if (rendered) {
+      this.memory.remember({
+        content: rendered.markdown,
+        sources: rendered.sources
+      });
+    }
+  }
+  render(options = {}) {
+    this.remember(options);
+    const rendered = this._render(options);
+    if (rendered) {
+      return rendered.markdown;
+    }
+    return "";
+  }
+}
 
 // src/2_pull/github/issue.ts
 class IssueWrapper {
   memory = Memory.getInstance();
   issue;
   subissues;
-  constructor(issue2) {
-    this.issue = issue2;
+  constructor(issue3) {
+    this.issue = issue3;
   }
   static async forIssue(params, fetchParams) {
-    const issue2 = await getIssue(params);
-    return new IssueWrapper(issue2).fetch(fetchParams);
+    const issue3 = await getIssue(params);
+    return new IssueWrapper(issue3).fetch(fetchParams);
   }
   async fetch(params) {
     if (params.comments > 0) {
@@ -100222,6 +100376,9 @@ class IssueWrapper {
     }
     return this.projectFields.get(slugifyProjectFieldName(fieldName)) || "";
   }
+  set project(project2) {
+    this.issue.project = project2;
+  }
   get projectNumber() {
     return this.issue.project?.number;
   }
@@ -100273,6 +100430,9 @@ class IssueWrapper {
     return value;
   }
   async fetchComments(numComments) {
+    if (this.issue.comments) {
+      return;
+    }
     this.issue.comments = await listCommentsForIssue({
       organization: this.organization,
       repository: this.repository,
@@ -100281,6 +100441,9 @@ class IssueWrapper {
     });
   }
   async fetchProjectFields(projectNumber) {
+    if (this.issue.project?.number === projectNumber) {
+      return;
+    }
     this.issue.project = {
       number: projectNumber,
       fields: await listProjectFieldsForIssue({
@@ -100307,17 +100470,20 @@ class IssueWrapper {
     };
     return this.issue.comments.map((comment2) => new CommentWrapper(this, comment2)).sort(sortCommentsByDateDesc);
   }
+  set comments(comments2) {
+    this.issue.comments = comments2;
+  }
   get latestComment() {
-    const comments = this.comments;
-    if (comments.length !== 0) {
-      return comments[0];
+    const comments2 = this.comments;
+    if (comments2.length !== 0) {
+      return comments2[0];
     }
     return CommentWrapper.empty(this);
   }
   latestComments(n2) {
-    const comments = this.comments;
-    if (comments.length !== 0) {
-      return comments.slice(0, n2);
+    const comments2 = this.comments;
+    if (comments2.length !== 0) {
+      return comments2.slice(0, n2);
     }
     return [CommentWrapper.empty(this)];
   }
@@ -100379,8 +100545,8 @@ function matchIssueUrl(url) {
   if (!match) {
     return;
   }
-  const [, owner, repo, issueNumber] = match;
-  if (!owner || !repo) {
+  const [, owner, repo2, issueNumber] = match;
+  if (!owner || !repo2) {
     throw new Error(`Invalid GitHub URL: ${url}`);
   }
   let parsedIssueNumber;
@@ -100392,7 +100558,7 @@ function matchIssueUrl(url) {
   }
   return {
     owner,
-    repo,
+    repo: repo2,
     issueNumber: parsedIssueNumber
   };
 }
@@ -100431,11 +100597,11 @@ class GitHubClient {
   url(url, issueFetchParams) {
     const issueMatch = matchIssueUrl(url);
     if (issueMatch) {
-      const { owner, repo, issueNumber } = issueMatch;
+      const { owner, repo: repo2, issueNumber } = issueMatch;
       if (issueNumber) {
-        return this.issue(owner, repo, issueNumber, issueFetchParams);
+        return this.issue(owner, repo2, issueNumber, issueFetchParams);
       } else {
-        return this.issuesForRepo(owner, repo, issueFetchParams);
+        return this.issuesForRepo(owner, repo2, issueFetchParams);
       }
     }
     const projectMatch = matchProjectViewUrl(url);
