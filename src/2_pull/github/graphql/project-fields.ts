@@ -29,12 +29,12 @@ export async function listProjectFieldsForIssue(
       organization(login: $organization) {
         repository(name: $repository) {
           issue(number: $issueNumber) {
-            projectItems(first: 10, after: $cursor) {
+            projectItems(first: 7, after: $cursor) {
               nodes {
                 project {
                   number
                 }
-                fieldValues(first: 50) {
+                fieldValues(first: 30) {
                   nodes {
                     ${projectFieldValueFragment}
                   }
