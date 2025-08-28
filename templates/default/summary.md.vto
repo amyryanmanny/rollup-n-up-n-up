@@ -1,7 +1,17 @@
 {{- set url = getConfig("url") -}}
-{{- set issues = await github.url(url, { subissues: true, fields: ['Status', 'Trending'] }) -}}
+{{- set title = getConfig("title") || "Report" -}}
+{{- set numUpdates = getConfig("number_of_updates") || 1 -}}
+{{- set timeframe = getConfig("timeframe") || "lastWeek" -}}
 
-# [{{ getConfig("title") || "Report" }} {{ today }}]({{ issues.url }})
+{{- overrideUpdateDetection(`${timeframe}\nskip()`) -}}
+
+{{- set issues = await github.url(url, {
+  subissues: true,
+  updates: numUpdates,
+  fields: ['Status', 'Trending'],
+}) -}}
+
+# [{{ title }} {{ today }}]({{ issues.url }})
 
 {{ issues.remember() }}
 {{ await memory.summarize("tldr") }}
