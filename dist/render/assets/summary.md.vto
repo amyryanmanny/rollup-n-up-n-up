@@ -1,9 +1,0 @@
-{{- set url = getConfig("url") -}}
-{{- set issues = await github.url(url, { subissues: true, fields: ['Status', 'Trending'] }) -}}
-
-# [{{ getConfig("title") || "Report" }} {{ today }}]({{ issues.url }})
-
-{{ issues.remember() }}
-{{ await memory.summarize("tldr") }}
-
-{{ debugMemory() |> safe }}
