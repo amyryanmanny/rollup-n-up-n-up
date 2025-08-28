@@ -109,21 +109,65 @@ export class CommentWrapper {
     return this.comment.updatedAt;
   }
 
-  // Date Properties
+  // Date Logic
+  wasPostedSince(daysAgo: number): boolean {
+    return new Date().getTime() - this.createdAt.getTime() < daysAgo * ONE_DAY;
+  }
+
+  wasUpdatedSince(daysAgo: number): boolean {
+    return new Date().getTime() - this.updatedAt.getTime() < daysAgo * ONE_DAY;
+  }
+
   get wasPostedToday(): boolean {
-    return new Date().getTime() - this.createdAt.getTime() < ONE_DAY;
+    return this.wasPostedSince(1);
   }
 
   get wasPostedThisWeek(): boolean {
-    return new Date().getTime() - this.createdAt.getTime() < 7 * ONE_DAY;
+    return this.wasPostedSince(7);
   }
 
   get wasPostedThisMonth(): boolean {
-    return new Date().getTime() - this.createdAt.getTime() < 31 * ONE_DAY;
+    return this.wasPostedSince(31);
   }
 
   get wasPostedThisYear(): boolean {
-    return new Date().getTime() - this.createdAt.getTime() < 365 * ONE_DAY;
+    return this.wasPostedSince(365);
+  }
+
+  get wasUpdatedToday(): boolean {
+    return this.wasUpdatedSince(1);
+  }
+
+  get wasUpdatedThisWeek(): boolean {
+    return this.wasUpdatedSince(7);
+  }
+
+  get wasUpdatedThisMonth(): boolean {
+    return this.wasUpdatedSince(31);
+  }
+
+  get wasUpdatedThisYear(): boolean {
+    return this.wasUpdatedSince(365);
+  }
+
+  isWithinTimeframe(timeframe: Timeframe): boolean {
+    // Check if the comment was created within the given Timeframe
+    switch (timeframe) {
+      case "all-time":
+        return true;
+      case "today":
+        return this.wasPostedToday;
+      case "last-week":
+        return this.wasPostedThisWeek;
+      case "last-month":
+        return this.wasPostedThisMonth;
+      case "last-year":
+        return this.wasPostedThisYear;
+      default:
+        throw new Error(
+          `Invalid Timeframe for Comment filtering: "${timeframe}".`,
+        );
+    }
   }
 
   // Helpers
@@ -149,26 +193,6 @@ export class CommentWrapper {
     }
 
     return undefined;
-  }
-
-  isWithinTimeframe(timeframe: Timeframe): boolean {
-    // Check if the comment was created within the given timeframe
-    switch (timeframe) {
-      case "all-time":
-        return true;
-      case "today":
-        return this.wasPostedToday;
-      case "last-week":
-        return this.wasPostedThisWeek;
-      case "last-month":
-        return this.wasPostedThisMonth;
-      case "last-year":
-        return this.wasPostedThisYear;
-      default:
-        throw new Error(
-          `Invalid timeframe for comment filtering: "${timeframe}".`,
-        );
-    }
   }
 
   emojiStatus(sections?: string | string[]): string | undefined {
