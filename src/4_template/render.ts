@@ -13,10 +13,6 @@ import { Memory } from "@transform/memory";
 import * as debug from "./debug";
 import { debugTotalGraphQLRateLimit } from "@pull/github/graphql/fragments/rate-limit";
 
-// Include default templates for bundling
-import "@templates/summary.md.vto";
-import "@templates/interrogate.md.vto";
-
 const env = vento({
   dataVarname: "global",
   autoDataVarname: true,
@@ -51,8 +47,7 @@ export async function renderTemplate(
     templatePath = defaultTemplate;
   }
 
-  // TODO: Remove workaround
-  // PR: https://github.com/ventojs/vento/pull/143/files
+  // TODO: Use custom loader instead
   const isAbsolute = path.isAbsolute(templatePath!);
   if (isAbsolute) {
     templatePath = `./${templatePath}`;

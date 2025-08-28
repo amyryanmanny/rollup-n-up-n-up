@@ -19,10 +19,6 @@ export type Message = {
   content: string;
 };
 
-// Include default prompts for bundling
-import "@prompts/tldr.prompt.yaml";
-import "@prompts/interrogate.prompt.yaml";
-
 export type PromptParameters = {
   name?: string;
   description?: string;

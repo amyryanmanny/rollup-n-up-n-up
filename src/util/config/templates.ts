@@ -1,9 +1,8 @@
 import fs from "fs";
 import path from "path";
 
-import { getAssetPath, isGitHubAction } from "@util/config";
+import { getActionPath, isGitHubAction } from "@config";
 
-// TODO: Configurable templatesDir
 export const templatesDir = path.join(process.cwd(), "templates");
 const defaultTemplate = "summary";
 
@@ -19,11 +18,10 @@ export function checkDefaultTemplates(
     template += ".md.vto";
   }
 
-  let defaultDir: string;
+  // Search for templates bundled with the action
+  let defaultDir = path.join(templatesDir, "default");
   if (isGitHubAction()) {
-    defaultDir = getAssetPath();
-  } else {
-    defaultDir = path.join(templatesDir, "default");
+    defaultDir = getActionPath(defaultDir);
   }
 
   const templatePath = path.join(defaultDir, template);

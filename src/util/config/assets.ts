@@ -1,10 +1,14 @@
 import path from "path";
 
+import { getActionPath, isGitHubAction } from "./github";
+
 export const PUBLIC_PATH = "./assets";
 
 export function getAssetPath(fileName?: string): string {
-  // Only works when running the index.js bundle
-  const assetsPath = path.join(import.meta.dirname, PUBLIC_PATH);
+  let assetsPath = PUBLIC_PATH;
+  if (isGitHubAction()) {
+    assetsPath = getActionPath(assetsPath);
+  }
   if (!fileName) {
     return assetsPath;
   }

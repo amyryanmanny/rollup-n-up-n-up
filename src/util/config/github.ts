@@ -1,8 +1,22 @@
-import { getConfig, getEnv } from ".";
+import path from "path";
+
+import { getConfig, getEnv } from "@config";
 
 export function isGitHubAction() {
   // Don't use getConfig, to avoid recursion
   return getEnv("GITHUB_ACTIONS") === "true";
+}
+
+export function getActionPath(fileName?: string): string {
+  if (!isGitHubAction()) {
+    // Only works when running the index.js bundle
+    throw new Error("Not running in a GitHub Action, don't use this function");
+  }
+  const actionPath = import.meta.dirname;
+  if (!fileName) {
+    return actionPath;
+  }
+  return path.join(actionPath, fileName);
 }
 
 export type GitHubSecretKind = "app" | "pat" | "default";

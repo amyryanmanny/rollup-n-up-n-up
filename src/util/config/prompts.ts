@@ -2,28 +2,8 @@ import fs from "fs";
 import path from "path";
 import yaml from "yaml";
 
-import { context } from "@actions/github";
-import { getAssetPath, getConfig, isGitHubAction } from "@util/config";
+import { getActionPath, getConfig, isGitHubAction } from "@config";
 import type { PromptParameters } from "@transform/ai/summarize";
-
-export function getModelEndpoint(tokenKind: string): string {
-  const customEndpoint = getConfig("MODEL_ENDPOINT") || "";
-  if (customEndpoint !== "") {
-    return customEndpoint;
-  }
-
-  switch (tokenKind) {
-    case "app":
-      // Apps must use the org-specific endpoint. Assume the current org
-      return `https://models.github.ai/orgs/${context.repo.owner}/inference`;
-    case "pat":
-    case "default":
-      // Default endpoint for PAT or default token
-      return "https://models.github.ai/inference";
-    default:
-      throw new Error(`Unknown token kind: ${tokenKind}`);
-  }
-}
 
 export function loadPromptFile(promptFilePath: string): PromptParameters {
   const configPath = getConfig(promptFilePath);
@@ -33,7 +13,7 @@ export function loadPromptFile(promptFilePath: string): PromptParameters {
     promptFilePath = configPath;
   }
 
-  if (!promptFilePath.includes(".")) {
+  if (!path.basename(promptFilePath).includes(".")) {
     // If no file extension is provided, assume it's a .prompt.yaml file
     promptFilePath += ".prompt.yaml";
   }
@@ -41,15 +21,17 @@ export function loadPromptFile(promptFilePath: string): PromptParameters {
   const directories = [
     "", // Absolute path
     ".github/prompts",
-    ".github/prompts/default",
     ".github/Prompts",
     "prompts",
     "Prompts",
   ];
 
+  // Search for prompts bundled with the action
+  let defaultPromptDir = ".github/prompts/default";
   if (isGitHubAction()) {
-    directories.unshift(getAssetPath());
+    defaultPromptDir = getActionPath(defaultPromptDir);
   }
+  directories.unshift(defaultPromptDir);
 
   let yamlBlob: string | undefined;
   for (const directory of directories) {
@@ -67,5 +49,6 @@ export function loadPromptFile(promptFilePath: string): PromptParameters {
   }
 
   // Parse YAML
+  // TODO: Validate file structure
   return yaml.parse(yamlBlob) as PromptParameters;
 }
