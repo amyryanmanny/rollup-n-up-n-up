@@ -5,6 +5,7 @@ import { getActionPath, isGitHubAction } from "@config";
 
 export const TEMPLATE_DIR = path.join(process.cwd(), "templates");
 
+const defaultDir = path.join("templates", "default");
 const defaultTemplate = "summary";
 
 export function checkDefaultTemplates(
@@ -20,12 +21,14 @@ export function checkDefaultTemplates(
   }
 
   // Search for templates bundled with the action
-  let defaultDir = path.join(TEMPLATE_DIR, "default");
+  let dir;
   if (isGitHubAction()) {
-    defaultDir = getActionPath(defaultDir);
+    dir = getActionPath(defaultDir);
+  } else {
+    dir = path.join(process.cwd(), defaultDir);
   }
 
-  const templatePath = path.join(defaultDir, template);
+  const templatePath = path.join(dir, template);
   if (fs.existsSync(templatePath) && fs.lstatSync(templatePath).isFile()) {
     return templatePath;
   }

@@ -39384,6 +39384,7 @@ function parsePushTargets(targetBlob) {
 // src/util/config/templates.ts
 import path from "path";
 var TEMPLATE_DIR = path.join(process.cwd(), "templates");
+var defaultDir = path.join("templates", "default");
 
 // src/util/config/index.ts
 function getConfig(key, required = false) {

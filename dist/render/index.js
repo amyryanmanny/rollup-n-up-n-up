@@ -81870,6 +81870,7 @@ function extractDataBlocks(markdown) {
 import fs2 from "fs";
 import path4 from "path";
 var TEMPLATE_DIR = path4.join(process.cwd(), "templates");
+var defaultDir = path4.join("templates", "default");
 var defaultTemplate = "summary";
 function checkDefaultTemplates(template) {
   if (!template || template === "default") {
@@ -81878,11 +81879,13 @@ function checkDefaultTemplates(template) {
   if (!template.includes(".")) {
     template += ".md.vto";
   }
-  let defaultDir = path4.join(TEMPLATE_DIR, "default");
+  let dir;
   if (isGitHubAction()) {
-    defaultDir = getActionPath(defaultDir);
+    dir = getActionPath(defaultDir);
+  } else {
+    dir = path4.join(process.cwd(), defaultDir);
   }
-  const templatePath = path4.join(defaultDir, template);
+  const templatePath = path4.join(dir, template);
   if (fs2.existsSync(templatePath) && fs2.lstatSync(templatePath).isFile()) {
     return templatePath;
   }
