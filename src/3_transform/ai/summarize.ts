@@ -95,7 +95,7 @@ export async function runPrompt(params: PromptParameters): Promise<string> {
       handleUnexpectedResponse(response);
     }
 
-    const modelResponse = response.body.choices[0].message.content;
+    const modelResponse = response.body.choices[0]?.message.content;
     if (!modelResponse) {
       throw new Error("No response from model.");
     } else if (modelResponse.startsWith("ERROR:")) {

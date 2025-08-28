@@ -342,7 +342,7 @@ export class IssueWrapper {
     const comments = this.comments;
 
     if (comments.length !== 0) {
-      return comments[0];
+      return comments[0] as CommentWrapper;
     }
     return CommentWrapper.empty(this);
   }
@@ -359,7 +359,7 @@ export class IssueWrapper {
   get latestUpdate(): CommentWrapper {
     const updates = findLatestUpdates(this.comments);
     if (updates !== undefined) {
-      return updates[0];
+      return updates[0] as CommentWrapper;
     }
     return CommentWrapper.empty(this);
   }

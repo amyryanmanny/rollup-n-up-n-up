@@ -191,7 +191,7 @@ export class IssueList {
     );
   }
 
-  overallStatus(fieldName: string): string {
+  overallStatus(fieldName: string): string | undefined {
     // TODO: Custom sort order in case they don't use emoji
     // Get the max status emoji from the issues
     return this.issues

@@ -20,6 +20,7 @@
     "noFallthroughCasesInSwitch": true,
     "noImplicitAny": true,
     "noImplicitOverride": true,
+    "noUncheckedIndexedAccess": true,
 
     // Some stricter flags (disabled by default)
     "noUnusedLocals": true,
