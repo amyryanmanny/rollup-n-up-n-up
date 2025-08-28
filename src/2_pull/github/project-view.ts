@@ -92,7 +92,7 @@ export class ProjectView {
           }
 
           return v; // Return as is for other values
-        });
+        }) as string[];
 
       if (key.startsWith("-")) {
         // Exclude filter
@@ -205,7 +205,7 @@ export class ProjectView {
       return false; // Null dates are not valid
     }
 
-    const dateString = date.toISOString().split("T")[0]; // Format as YYYY-MM-DD
+    const dateString = date.toISOString().split("T")[0] as string; // Format as YYYY-MM-DD
 
     for (const condition of filter) {
       if (condition.startsWith(">=")) {

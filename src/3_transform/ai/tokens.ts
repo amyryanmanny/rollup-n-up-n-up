@@ -80,7 +80,7 @@ export function truncate(
 
   if (userMessageTokens.length > remainingTokens) {
     // Replace the user message content with truncated content
-    messages[userMessageIndex].content = new TextDecoder().decode(
+    messages[userMessageIndex]!.content = new TextDecoder().decode(
       encoding.decode(userMessageTokens.slice(0, remainingTokens)),
     );
   }

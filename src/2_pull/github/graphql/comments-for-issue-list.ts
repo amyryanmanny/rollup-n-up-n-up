@@ -76,8 +76,12 @@ export async function listCommentsForListOfIssues(
   const issues = new Map<GetIssueParameters, Array<Comment>>();
   for (let i = 0; i < params.issues.length; i++) {
     const issueResponse = response[`issue${i + 1}`];
+    if (issueResponse === undefined) {
+      continue;
+    }
+
     const comments = issueResponse.issue.comments.nodes.map(mapCommentNode);
-    issues.set(params.issues[i], comments);
+    issues.set(params.issues[i] as GetIssueParameters, comments);
   }
 
   return issues;

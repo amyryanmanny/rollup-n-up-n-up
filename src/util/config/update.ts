@@ -94,11 +94,11 @@ export class UpdateDetection {
     const match = input.match(functionCallRegex);
     if (match) {
       const [, functionName, argsString] = match;
-      const args = argsString
+      const args = argsString!
         .split(",")
         .map((arg) => arg.trim())
         .map((arg) => arg.replace(/^["']|["']$/g, "")); // Remove optional quotes
-      return { name: functionName, args };
+      return { name: functionName!, args };
     } else {
       return { name: input, args: [] };
     }

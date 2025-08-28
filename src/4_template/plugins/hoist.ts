@@ -51,10 +51,10 @@ function hoist(
   const [, markerName, variable] = match;
   const marker = env.compileFilters(
     tokens,
-    formatMarker(markerName),
+    formatMarker(markerName!),
     env.options.autoescape,
   );
-  const val = env.compileFilters(tokens, variable, env.options.autoescape);
+  const val = env.compileFilters(tokens, variable!, env.options.autoescape);
 
   return `${outputVar} = ${outputVar}.replace(${marker}, ${val});`;
 }

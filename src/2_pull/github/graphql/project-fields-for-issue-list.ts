@@ -105,18 +105,21 @@ export async function listProjectFieldsForListOfIssues(
 
     for (let i = 0; i < batch.length; i++) {
       const issueResponse = response[`issue${i + 1}`];
+      if (issueResponse === undefined) {
+        continue;
+      }
 
       const project = issueResponse.issue.projectItems.nodes.find(
         (p) => p.project.number === params.projectNumber,
       );
       if (project !== undefined) {
         projectFieldsMap.set(
-          batch[i],
+          batch[i] as GetIssueParameters,
           mapProjectFieldValues(project.fieldValues.nodes),
         );
       } else {
         // Set this issue to an empty map so their fields aren't fetched again
-        projectFieldsMap.set(batch[i], new Map());
+        projectFieldsMap.set(batch[i] as GetIssueParameters, new Map());
       }
     }
 

@@ -47,7 +47,7 @@ function splitMarkdownByRegex(
     if (lastHeader !== null) {
       sections.set(lastHeader, markdown.slice(lastIndex, match.index).trim());
     }
-    lastHeader = toSnakeCase(match[1].trim());
+    lastHeader = toSnakeCase(match[1]!.trim());
     lastIndex = match.index + match[0].length;
   }
 
@@ -79,8 +79,8 @@ export function extractDataBlocks(markdown: string): Map<string, string> {
   const blocks = new Map<string, string>();
   let match: RegExpExecArray | null;
   while ((match = regex.exec(markdown)) !== null) {
-    const key = toSnakeCase(match[1].trim());
-    const content = match[2].trim();
+    const key = toSnakeCase(match[1]!.trim());
+    const content = match[2]!.trim();
     blocks.set(key, content);
   }
   return blocks;
