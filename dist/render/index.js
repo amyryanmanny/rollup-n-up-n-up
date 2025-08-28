@@ -99682,6 +99682,9 @@ async function listCommentsForListOfIssues(params) {
   const issues = new Map;
   for (let i2 = 0;i2 < params.issues.length; i2++) {
     const issueResponse = response[`issue${i2 + 1}`];
+    if (issueResponse === undefined) {
+      continue;
+    }
     const comments = issueResponse.issue.comments.nodes.map(mapCommentNode);
     issues.set(params.issues[i2], comments);
   }
@@ -99834,12 +99837,12 @@ async function listProjectFieldsForIssue(params) {
       organization(login: $organization) {
         repository(name: $repository) {
           issue(number: $issueNumber) {
-            projectItems(first: 7, after: $cursor) {
+            projectItems(first: 10, after: $cursor) {
               nodes {
                 project {
                   number
                 }
-                fieldValues(first: 30) {
+                fieldValues(first: 50) {
                   nodes {
                     ${projectFieldValueFragment}
                   }
@@ -99862,19 +99865,19 @@ async function listProjectFieldsForIssue(params) {
   return mapProjectFieldValues(project.fieldValues.nodes);
 }
 // src/2_pull/github/graphql/project-fields-for-issue-list.ts
-var BATCH_SIZE = 50;
+var BATCH_SIZE = 20;
 async function listProjectFieldsForBatch(issues) {
   const octokit = getOctokit();
   const query = `
     query {
       ${issues.map(({ organization, repository, issueNumber }, index) => `issue${index + 1}: repository(owner: "${organization}", name: "${repository}") {
               issue(number: ${issueNumber}) {
-                projectItems(first: 7) {
+                projectItems(first: 10) {
                   nodes {
                     project {
                       number
                     }
-                    fieldValues(first: 30) {
+                    fieldValues(first: 50) {
                       nodes {
                         ${projectFieldValueFragment}
                       }
@@ -99903,6 +99906,9 @@ async function listProjectFieldsForListOfIssues(params) {
     const response = await listProjectFieldsForBatch(batch);
     for (let i2 = 0;i2 < batch.length; i2++) {
       const issueResponse = response[`issue${i2 + 1}`];
+      if (issueResponse === undefined) {
+        continue;
+      }
       const project = issueResponse.issue.projectItems.nodes.find((p2) => p2.project.number === params.projectNumber);
       if (project !== undefined) {
         projectFieldsMap.set(batch[i2], mapProjectFieldValues(project.fieldValues.nodes));
