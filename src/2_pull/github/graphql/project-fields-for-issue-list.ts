@@ -24,7 +24,7 @@ type ListProjectFieldsForListOfIssuesResponse = Map<
   Map<string, ProjectField>
 >;
 
-const BATCH_SIZE = 50;
+const BATCH_SIZE = 20;
 
 async function listProjectFieldsForBatch(issues: Array<GetIssueParameters>) {
   const octokit = getOctokit();
@@ -37,12 +37,12 @@ async function listProjectFieldsForBatch(issues: Array<GetIssueParameters>) {
             index + 1
           }: repository(owner: "${organization}", name: "${repository}") {
               issue(number: ${issueNumber}) {
-                projectItems(first: 7) {
+                projectItems(first: 10) {
                   nodes {
                     project {
                       number
                     }
-                    fieldValues(first: 30) {
+                    fieldValues(first: 50) {
                       nodes {
                         ${projectFieldValueFragment}
                       }
