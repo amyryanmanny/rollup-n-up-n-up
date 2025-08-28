@@ -100,8 +100,9 @@ export class IssueWrapper {
     return this.issue.body || "";
   }
 
-  get body(): string {
-    this.remember({ body: true });
+  get body(): void {
+    this.remember({ body: true, updates: 0, subissues: false });
+    // @ts-expect-error: Only call within templates
     return this._body;
   }
 
@@ -185,7 +186,7 @@ export class IssueWrapper {
       case fuzzy("number"):
         return String(this.number);
       case fuzzy("body"):
-        return this.body; // Counts as a valid .body access
+        return this.body as unknown as string; // Counts as a valid .body access
       case fuzzy("type"):
         return this.type;
       case fuzzy("repo"):

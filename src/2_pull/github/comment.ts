@@ -36,16 +36,9 @@ export class CommentWrapper {
   private boldedSections: Map<string, string>;
   private dataBlocks: Map<string, string>;
 
-  constructor(issue: IssueWrapper, comment: Comment | CommentWrapper) {
+  constructor(issue: IssueWrapper, comment: Comment) {
     // TODO: Move this.issue onto CommentList class instead
     // Call it parent, also support Discussion since there's big overlap
-
-    if (comment instanceof CommentWrapper) {
-      // CommentWrapper overlaps, so TypeScript doesn't reject it. But it causes issues
-      // So explicitly allow it, and extract the underlying comment obj if it happens
-      comment = comment.comment;
-    }
-
     this.issue = issue;
     this.comment = comment;
 
@@ -78,19 +71,19 @@ export class CommentWrapper {
     return stripHtml(this.comment.body).trim();
   }
 
-  get body(): string {
-    // Beware using this for logic checks! Use _body internally
+  get body(): void {
     this.remember();
+    // @ts-expect-error: Only call within templates
     return this._body;
   }
 
-  get _update(): string | undefined {
+  get _update(): string {
     return extractUpdate(this) || this._body;
   }
 
-  get update(): string | undefined {
-    // Beware using this for logic checks! Use _update internally
+  get update(): void {
     this.remember();
+    // @ts-expect-error: Only call within templates
     return this._update;
   }
 
