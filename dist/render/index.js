@@ -81787,12 +81787,12 @@ function loadPromptFile(promptFilePath) {
   }
   const directories = [
     "",
-    ".github/prompts",
-    ".github/Prompts",
+    path3.join(".github", "prompts"),
+    path3.join(".github", "Prompts"),
     "prompts",
     "Prompts"
   ];
-  let defaultPromptDir = ".github/prompts/default";
+  let defaultPromptDir = path3.join(".github", "prompts", "default");
   if (isGitHubAction()) {
     defaultPromptDir = getActionPath(defaultPromptDir);
   }

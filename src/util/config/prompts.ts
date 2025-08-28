@@ -20,14 +20,14 @@ export function loadPromptFile(promptFilePath: string): PromptParameters {
 
   const directories = [
     "", // Absolute path
-    ".github/prompts",
-    ".github/Prompts",
+    path.join(".github", "prompts"),
+    path.join(".github", "Prompts"),
     "prompts",
     "Prompts",
   ];
 
   // Search for prompts bundled with the action
-  let defaultPromptDir = ".github/prompts/default";
+  let defaultPromptDir = path.join(".github", "prompts", "default");
   if (isGitHubAction()) {
     defaultPromptDir = getActionPath(defaultPromptDir);
   }
