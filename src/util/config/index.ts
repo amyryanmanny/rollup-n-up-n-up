@@ -37,6 +37,7 @@ export function getEnv(key: string): string | undefined {
   );
 }
 
+// TODO: Maybe remove these, the bun tree-shaking is not strong enough
 export * from "./assets";
 export * from "./fetch";
 export * from "./github";

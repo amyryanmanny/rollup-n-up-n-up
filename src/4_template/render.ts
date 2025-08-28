@@ -7,7 +7,7 @@ import * as plugins from "./plugins";
 
 import { GitHubClient } from "@pull/github/client";
 
-import { getConfig, checkDefaultTemplates, templatesDir } from "@config";
+import { getConfig, checkDefaultTemplates, TEMPLATE_DIR } from "@config";
 import { Memory } from "@transform/memory";
 
 import * as debug from "./debug";
@@ -16,7 +16,7 @@ import { debugTotalGraphQLRateLimit } from "@pull/github/graphql/fragments/rate-
 const env = vento({
   dataVarname: "global",
   autoDataVarname: true,
-  includes: templatesDir,
+  includes: TEMPLATE_DIR,
   autoescape: true,
 });
 

@@ -17,7 +17,7 @@ async function initWasm() {
   // Because of this bug https://github.com/oven-sh/bun/issues/4216
   let wasmPath: string;
   if (isGitHubAction()) {
-    wasmPath = getAssetPath("tiktoken_bg.wasm");
+    wasmPath = getAssetPath("render", "tiktoken_bg.wasm");
   } else {
     // Locally we can just use the version in node_modules
     wasmPath = require.resolve("tiktoken/tiktoken_bg.wasm");

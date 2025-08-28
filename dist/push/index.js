@@ -39383,7 +39383,7 @@ function parsePushTargets(targetBlob) {
 }
 // src/util/config/templates.ts
 import path from "path";
-var templatesDir = path.join(process.cwd(), "templates");
+var TEMPLATE_DIR = path.join(process.cwd(), "templates");
 
 // src/util/config/index.ts
 function getConfig(key, required = false) {

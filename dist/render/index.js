@@ -81597,7 +81597,7 @@ function getActionPath(fileName) {
   if (!isGitHubAction()) {
     throw new Error("Not running in a GitHub Action, don't use this function");
   }
-  const actionPath = import.meta.dirname;
+  const actionPath = path.resolve(path.join(import.meta.dirname, ".."));
   if (!fileName) {
     return actionPath;
   }
@@ -81648,8 +81648,8 @@ function getGitHubDefaultSecrets() {
 // src/util/config/assets.ts
 import path2 from "path";
 var PUBLIC_PATH = "./assets";
-function getAssetPath(fileName) {
-  let assetsPath = PUBLIC_PATH;
+function getAssetPath(action, fileName) {
+  let assetsPath = path2.join("dist", action, PUBLIC_PATH);
   if (isGitHubAction()) {
     assetsPath = getActionPath(assetsPath);
   }
@@ -81869,7 +81869,7 @@ function extractDataBlocks(markdown) {
 // src/util/config/templates.ts
 import fs2 from "fs";
 import path4 from "path";
-var templatesDir = path4.join(process.cwd(), "templates");
+var TEMPLATE_DIR = path4.join(process.cwd(), "templates");
 var defaultTemplate = "summary";
 function checkDefaultTemplates(template) {
   if (!template || template === "default") {
@@ -81878,7 +81878,7 @@ function checkDefaultTemplates(template) {
   if (!template.includes(".")) {
     template += ".md.vto";
   }
-  let defaultDir = path4.join(templatesDir, "default");
+  let defaultDir = path4.join(TEMPLATE_DIR, "default");
   if (isGitHubAction()) {
     defaultDir = getActionPath(defaultDir);
   }
@@ -98316,7 +98316,7 @@ var import_init = __toESM(require_init(), 1);
 async function initWasm() {
   let wasmPath;
   if (isGitHubAction()) {
-    wasmPath = getAssetPath("tiktoken_bg.wasm");
+    wasmPath = getAssetPath("render", "tiktoken_bg.wasm");
   } else {
     wasmPath = __require.resolve("/Users/amymanny/Code/rollup-n-up-n-up/node_modules/tiktoken/tiktoken_bg.wasm");
   }
@@ -100726,7 +100726,7 @@ function overrideUpdateDetection(configBlob) {
 var env = mod_default({
   dataVarname: "global",
   autoDataVarname: true,
-  includes: templatesDir,
+  includes: TEMPLATE_DIR,
   autoescape: true
 });
 for (const filter of Object.values(exports_filters)) {

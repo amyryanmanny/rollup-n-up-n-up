@@ -3,7 +3,8 @@ import path from "path";
 
 import { getActionPath, isGitHubAction } from "@config";
 
-export const templatesDir = path.join(process.cwd(), "templates");
+export const TEMPLATE_DIR = path.join(process.cwd(), "templates");
+
 const defaultTemplate = "summary";
 
 export function checkDefaultTemplates(
@@ -19,7 +20,7 @@ export function checkDefaultTemplates(
   }
 
   // Search for templates bundled with the action
-  let defaultDir = path.join(templatesDir, "default");
+  let defaultDir = path.join(TEMPLATE_DIR, "default");
   if (isGitHubAction()) {
     defaultDir = getActionPath(defaultDir);
   }
