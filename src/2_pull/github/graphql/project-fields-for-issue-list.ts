@@ -26,6 +26,8 @@ type ListProjectFieldsForListOfIssuesResponse = Map<
 
 const BATCH_SIZE = 20;
 
+// TODO: https://github.com/RyanMyrvold/Performance-Decorators
+// To warn if a batch gets too close to 11 seconds (GraphQL 504 GatewayTimeout)
 async function listProjectFieldsForBatch(issues: Array<GetIssueParameters>) {
   const octokit = getOctokit();
 
