@@ -81597,7 +81597,7 @@ function getActionPath(fileName) {
   if (!isGitHubAction()) {
     throw new Error("Not running in a GitHub Action, don't use this function");
   }
-  const actionPath = path.resolve(path.join(import.meta.dirname, ".."));
+  const actionPath = path.resolve(path.join(import.meta.dirname, "..", ".."));
   if (!fileName) {
     return actionPath;
   }

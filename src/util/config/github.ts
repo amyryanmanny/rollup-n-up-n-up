@@ -14,7 +14,7 @@ export function getActionPath(fileName?: string): string {
     throw new Error("Not running in a GitHub Action, don't use this function");
   }
   // Back out of dist/ directory
-  const actionPath = path.resolve(path.join(import.meta.dirname, ".."));
+  const actionPath = path.resolve(path.join(import.meta.dirname, "..", ".."));
   if (!fileName) {
     return actionPath;
   }
