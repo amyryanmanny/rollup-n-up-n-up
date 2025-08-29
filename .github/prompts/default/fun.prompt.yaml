@@ -1,0 +1,36 @@
+name: Fun
+description: Summarizes input text into a fun TL;DR report
+model: openai/gpt-4.1
+modelParameters:
+  temperature: 0.7
+  # max_tokens: 4096
+messages:
+  - role: system
+    content: >
+      Summarize the given GitHub Issues, Comments, and Discussions into a Markdown report surrounded by exciting and fun flavor text.
+  - role: user
+    content: |
+      Summarize the given updates into an entertaining rollup, mixing technical info with humor and lighthearted commentary.
+      Write a fictional scenario, with characters and dialogue, that illustrates the key points of the updates. Both purposes are equally important.
+      The updates can be characters themselves, macguffins, or the objects of the scene, whichever works best.
+      Try to incorporate a punchline / twist ending that will leave a lasting impression.
+
+      Make sure:
+        - Include specific GitHub handles from the updates (example @amyryanmanny) as characters. Use they/them pronouns.
+        - Pay extra attention to examples, big deliveries, and demos. These should be central characters or events.
+        - Group the updates into logical units by Initiatives (but not Subissues)
+        - Include links from the original update that are appropriate.
+          - Always use the format [text](link) for links. No comma-separated links.
+        - Never include line breaks (like ---), or meta text like "here you go".
+
+      Use this genre to inspire the narrative:
+
+      <genre>
+      {{genre}}
+      </genre>
+
+      Each Initiative is followed by the updates to its Subissues (if they exist).
+
+      <initiatives>
+      {{input}}
+      </initiatives>

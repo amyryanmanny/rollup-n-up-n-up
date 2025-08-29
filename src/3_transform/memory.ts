@@ -1,5 +1,6 @@
 import { DefaultDict } from "@util/collections";
 import { generateSummary } from "./ai/summarize";
+import { generateFunSummary } from "./ai/fun";
 
 type MemoryItem = {
   content: string;
@@ -56,6 +57,15 @@ export class Memory {
     }
 
     return await generateSummary({ content, prompt: promptFilePath });
+  }
+
+  async summarizeFun(memoryBank: number = 0): Promise<string> {
+    const content = this.getBank(memoryBank);
+    if (content.length === 0) {
+      return "No content in memory to summarize.";
+    }
+
+    return await generateFunSummary({ content });
   }
 
   async query(
