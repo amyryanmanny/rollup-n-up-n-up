@@ -74242,12 +74242,12 @@ var require_lodash = __commonJS((exports, module) => {
         while ((fromRight ? index-- : ++index < length) && predicate(array[index], index, array)) {}
         return isDrop ? baseSlice(array, fromRight ? 0 : index, fromRight ? index + 1 : length) : baseSlice(array, fromRight ? index + 1 : 0, fromRight ? length : index);
       }
-      function baseWrapperValue(value, actions) {
+      function baseWrapperValue(value, actions2) {
         var result2 = value;
         if (result2 instanceof LazyWrapper) {
           result2 = result2.value();
         }
-        return arrayReduce(actions, function(result3, action) {
+        return arrayReduce(actions2, function(result3, action) {
           return action.func.apply(action.thisArg, arrayPush([result3], action.args));
         }, result2);
       }
@@ -77161,8 +77161,8 @@ __p += '`;
             object.prototype[methodName] = function() {
               var chainAll = this.__chain__;
               if (chain2 || chainAll) {
-                var result2 = object(this.__wrapped__), actions = result2.__actions__ = copyArray(this.__actions__);
-                actions.push({ func, args: arguments, thisArg: object });
+                var result2 = object(this.__wrapped__), actions2 = result2.__actions__ = copyArray(this.__actions__);
+                actions2.push({ func, args: arguments, thisArg: object });
                 result2.__chain__ = chainAll;
                 return result2;
               }
@@ -81588,7 +81588,7 @@ var import_core4 = __toESM(require_core(), 1);
 var import_dotenv = __toESM(require_main2(), 1);
 var import_core2 = __toESM(require_core(), 1);
 
-// src/util/config/github.ts
+// src/util/config/github/actions.ts
 import path from "path";
 function isGitHubAction() {
   return getEnv("GITHUB_ACTIONS") === "true";
@@ -81603,6 +81603,7 @@ function getActionPath(fileName) {
   }
   return path.join(actionPath, fileName);
 }
+// src/util/config/github/secrets.ts
 function getGitHubSecrets() {
   const secrets = getGitHubAppSecrets() ?? getGitHubPatSecrets() ?? getGitHubDefaultSecrets();
   if (secrets !== undefined) {
@@ -81644,7 +81645,6 @@ function getGitHubDefaultSecrets() {
     token
   };
 }
-
 // src/util/config/assets.ts
 import path2 from "path";
 var PUBLIC_PATH = "./assets";
@@ -98149,15 +98149,15 @@ var throttle = {
   }
 };
 function initOctokit() {
-  const secrets = getGitHubSecrets();
-  if (secrets.kind === "pat" || secrets.kind === "default") {
-    const { token } = secrets;
+  const secrets2 = getGitHubSecrets();
+  if (secrets2.kind === "pat" || secrets2.kind === "default") {
+    const { token } = secrets2;
     return new OctokitWithPlugins({
       auth: token,
       throttle
     });
-  } else if (secrets.kind === "app") {
-    const { appId, installationId, privateKey } = secrets;
+  } else if (secrets2.kind === "app") {
+    const { appId, installationId, privateKey } = secrets2;
     return new OctokitWithPlugins({
       authStrategy: createAppAuth,
       auth: {
@@ -98173,15 +98173,15 @@ function initOctokit() {
 }
 async function getToken2() {
   const octokit = getOctokit();
-  const secrets = getGitHubSecrets();
-  if (secrets.kind === "pat" || secrets.kind === "default") {
-    const { token } = secrets;
+  const secrets2 = getGitHubSecrets();
+  if (secrets2.kind === "pat" || secrets2.kind === "default") {
+    const { token } = secrets2;
     return {
       value: token,
-      kind: secrets.kind
+      kind: secrets2.kind
     };
-  } else if (secrets.kind === "app") {
-    let installationId = secrets.installationId;
+  } else if (secrets2.kind === "app") {
+    let installationId = secrets2.installationId;
     if (installationId === undefined) {
       const { data: installation } = await octokit.apps.getOrgInstallation({
         org: import_github4.context.repo.owner
@@ -98423,7 +98423,7 @@ async function runPrompt(params) {
   }
 }
 async function generateSummary(params) {
-  let { content, prompt } = params;
+  let { content, prompt, placeholders } = params;
   if (typeof prompt === "string") {
     if (!prompt || prompt.trim() === "") {
       throw new Error("prompt cannot be empty.");
@@ -98443,11 +98443,14 @@ async function generateSummary(params) {
   const input = content.map((item) => item.content).join(`
 
 `);
-  const summary = await runPrompt(insertPlaceholders(prompt, {
+  placeholders = {
+    ...placeholders,
     input,
     content: input,
-    query: params.query || ""
-  }));
+    memory: input
+  };
+  const hydratedPrompt = insertPlaceholders(prompt, placeholders);
+  const summary = await runPrompt(hydratedPrompt);
   summaryCache.set(prompt, sources, summary);
   return summary;
 }
@@ -98564,6 +98567,29 @@ class DefaultDict extends Map {
   }
 }
 
+// src/3_transform/ai/fun.ts
+var genres = [
+  "Western",
+  "Mystery",
+  "Horror",
+  "Sci-Fi",
+  "Fantasy",
+  "Comedy",
+  "Thriller",
+  "True Crime"
+];
+async function generateFunSummary(params) {
+  const randomGenre = genres[Math.floor(Math.random() * genres.length)];
+  return await generateSummary({
+    ...params,
+    prompt: "fun.prompt.yaml",
+    placeholders: {
+      ...params.placeholders,
+      genre: randomGenre
+    }
+  });
+}
+
 // src/3_transform/memory.ts
 class Memory {
   static instance;
@@ -98598,12 +98624,23 @@ class Memory {
     }
     return await generateSummary({ content, prompt: promptFilePath });
   }
+  async summarizeFun(memoryBank = 0) {
+    const content = this.getBank(memoryBank);
+    if (content.length === 0) {
+      return "No content in memory to summarize.";
+    }
+    return await generateFunSummary({ content });
+  }
   async query(promptFilePath, query, memoryBank = 0) {
     const content = this.getBank(memoryBank);
     if (content.length === 0) {
       return "No content in memory to summarize.";
     }
-    return await generateSummary({ content, prompt: promptFilePath, query });
+    return await generateSummary({
+      content,
+      prompt: promptFilePath,
+      placeholders: { query }
+    });
   }
   headbonk(memoryBank) {
     if (memoryBank === undefined) {
@@ -99107,6 +99144,7 @@ function renderIssueList(issueList, options, headerLevel = 2) {
 `;
     return { markdown, sources };
   }
+  let someIssueWasRendered = false;
   for (const issue of issueList) {
     const renderedIssue = renderIssue(issue, options, headerLevel + 1);
     if (renderedIssue) {
@@ -99114,7 +99152,11 @@ function renderIssueList(issueList, options, headerLevel = 2) {
 
 `;
       sources.push(...renderedIssue.sources);
+      someIssueWasRendered = true;
     }
+  }
+  if (options.skipIfEmpty && !someIssueWasRendered) {
+    return;
   }
   markdown += `---
 

@@ -39404,10 +39404,11 @@ function getEnv(key) {
   return process.env[key] ?? process.env[key.toUpperCase()] ?? process.env[key.toLowerCase()];
 }
 
-// src/util/config/github.ts
+// src/util/config/github/actions.ts
 function isGitHubAction() {
   return getEnv("GITHUB_ACTIONS") === "true";
 }
+// src/util/config/github/secrets.ts
 function getGitHubSecrets() {
   const secrets = getGitHubAppSecrets() ?? getGitHubPatSecrets() ?? getGitHubDefaultSecrets();
   if (secrets !== undefined) {
@@ -39449,7 +39450,6 @@ function getGitHubDefaultSecrets() {
     token
   };
 }
-
 // src/util/octokit.ts
 var OctokitWithPlugins = Octokit2.plugin(paginateGraphQL, throttling);
 var octokitInstance;
@@ -39466,15 +39466,15 @@ var throttle = {
   }
 };
 function initOctokit() {
-  const secrets = getGitHubSecrets();
-  if (secrets.kind === "pat" || secrets.kind === "default") {
-    const { token } = secrets;
+  const secrets2 = getGitHubSecrets();
+  if (secrets2.kind === "pat" || secrets2.kind === "default") {
+    const { token } = secrets2;
     return new OctokitWithPlugins({
       auth: token,
       throttle
     });
-  } else if (secrets.kind === "app") {
-    const { appId, installationId, privateKey } = secrets;
+  } else if (secrets2.kind === "app") {
+    const { appId, installationId, privateKey } = secrets2;
     return new OctokitWithPlugins({
       authStrategy: createAppAuth,
       auth: {
