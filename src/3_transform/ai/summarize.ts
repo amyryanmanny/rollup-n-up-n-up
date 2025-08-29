@@ -109,16 +109,16 @@ export async function runPrompt(params: PromptParameters): Promise<string> {
   }
 }
 
-type SummaryParameters = {
+export type SummaryParameters = {
   content: string | MemoryBank;
   prompt: string | PromptParameters;
-  query?: string;
+  placeholders?: Record<string, string>;
 };
 
 export async function generateSummary(
   params: SummaryParameters,
 ): Promise<string> {
-  let { content, prompt } = params;
+  let { content, prompt, placeholders } = params;
 
   if (typeof prompt === "string") {
     // Try to load the prompt file if a string is provided
@@ -145,14 +145,16 @@ export async function generateSummary(
   }
 
   const input = content.map((item) => item.content).join("\n\n");
+  // Insert content to summarize into a few sensible placeholders
+  placeholders = {
+    ...placeholders,
+    input,
+    content: input,
+    memory: input,
+  };
 
-  const summary = await runPrompt(
-    insertPlaceholders(prompt, {
-      input,
-      content: input,
-      query: params.query || "",
-    }),
-  );
+  const hydratedPrompt = insertPlaceholders(prompt, placeholders);
+  const summary = await runPrompt(hydratedPrompt);
 
   // Save the summary in the cache
   summaryCache.set(prompt, sources, summary);

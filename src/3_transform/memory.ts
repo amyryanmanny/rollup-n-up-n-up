@@ -68,7 +68,11 @@ export class Memory {
       return "No content in memory to summarize.";
     }
 
-    return await generateSummary({ content, prompt: promptFilePath, query });
+    return await generateSummary({
+      content,
+      prompt: promptFilePath,
+      placeholders: { query },
+    });
   }
 
   headbonk(memoryBank?: number): void {
