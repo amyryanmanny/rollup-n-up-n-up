@@ -1,6 +1,6 @@
 import memoize from "memoize";
 
-import { UpdateDetection } from "@util/config/update";
+import { UpdateDetection } from "@config";
 import { CommentWrapper } from "./comment";
 
 export type UpdateDetectionStrategy =

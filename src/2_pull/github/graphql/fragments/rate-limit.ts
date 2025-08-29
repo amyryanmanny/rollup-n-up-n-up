@@ -1,4 +1,4 @@
-import { getConfig } from "@util/config";
+import { getConfig } from "@config";
 
 export const rateLimitFragment = `
   rateLimit {

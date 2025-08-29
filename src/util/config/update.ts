@@ -1,5 +1,5 @@
 // TODO: This file needs test cases bad
-import { getConfig } from "@util/config";
+import { getConfig } from "@config";
 
 import {
   type Timeframe,

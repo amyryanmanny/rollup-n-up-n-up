@@ -1,5 +1,5 @@
 import { GitHubPushClient } from "./github/client";
-import { getPushConfig } from "@util/config/push";
+import { getPushConfig } from "@config";
 
 const client = new GitHubPushClient();
 

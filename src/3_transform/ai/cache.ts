@@ -4,7 +4,7 @@ import path from "path";
 
 import { saveCache, restoreCache } from "@actions/cache";
 
-import { isGitHubAction } from "@util/config";
+import { isGitHubAction } from "@config";
 
 import type { PromptParameters } from "./summarize";
 
