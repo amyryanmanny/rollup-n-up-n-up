@@ -27,12 +27,18 @@ export function renderIssueList(
     return { markdown, sources };
   }
 
+  let someIssueWasRendered = false;
   for (const issue of issueList) {
     const renderedIssue = renderIssue(issue, options, headerLevel + 1);
     if (renderedIssue) {
       markdown += `${renderedIssue.markdown}\n\n`;
       sources.push(...renderedIssue.sources);
+      someIssueWasRendered = true;
     }
+  }
+
+  if (options.skipIfEmpty && !someIssueWasRendered) {
+    return undefined;
   }
 
   markdown += `---\n\n`; // End IssueLists with a horizontal rule
