@@ -89,6 +89,8 @@ export async function runPrompt(params: PromptParameters): Promise<string> {
         model,
         messages,
       },
+      timeout: 2 * 60 * 1000, // Sometimes the AI never responds
+      // TODO: Catch the error and ask the user to try again
     });
 
     if (isUnexpected(response)) {
