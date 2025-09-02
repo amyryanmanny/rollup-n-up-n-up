@@ -2,6 +2,7 @@ import { generateSummary, type SummaryParameters } from "./summarize";
 
 const genres = [
   "Western",
+  `Western Parody overusing terms like "y'all" and "pardner" and "rootin' tootin'"`,
   "Mystery",
   "Horror",
   "Sci-Fi",
@@ -9,12 +10,25 @@ const genres = [
   "Comedy",
   "Thriller",
   "True Crime",
+  "Action",
+  "Adventure",
+  "Drama",
+  "Documentary",
+  "Found Footage",
+  "Mockumentary",
+  "Biopic",
+  "Superhero",
+  "Animated Kids Movie",
+  "Musical",
+  "Seinfeld Episode",
+  "Musical Biopic Parody",
 ];
 
 export async function generateFunSummary(
   params: Omit<SummaryParameters, "prompt">,
 ) {
-  const randomGenre = genres[Math.floor(Math.random() * genres.length)]!;
+  const funIndex = Math.floor(Math.random() * genres.length);
+  const randomGenre = genres[funIndex]!;
 
   return await generateSummary({
     ...params,
