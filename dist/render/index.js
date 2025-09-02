@@ -98406,7 +98406,8 @@ async function runPrompt(params) {
         ...modelParameters,
         model,
         messages
-      }
+      },
+      timeout: 2 * 60 * 1000
     });
     if (isUnexpected(response)) {
       handleUnexpectedResponse(response);
@@ -98570,16 +98571,30 @@ class DefaultDict extends Map {
 // src/3_transform/ai/fun.ts
 var genres = [
   "Western",
+  `Western Parody overusing terms like "y'all" and "pardner" and "rootin' tootin'"`,
   "Mystery",
   "Horror",
   "Sci-Fi",
   "Fantasy",
   "Comedy",
   "Thriller",
-  "True Crime"
+  "True Crime",
+  "Action",
+  "Adventure",
+  "Drama",
+  "Documentary",
+  "Found Footage",
+  "Mockumentary",
+  "Biopic",
+  "Superhero",
+  "Animated Kids Movie",
+  "Musical",
+  "Seinfeld Episode",
+  "Musical Biopic Parody"
 ];
 async function generateFunSummary(params) {
-  const randomGenre = genres[Math.floor(Math.random() * genres.length)];
+  const funIndex = Math.floor(Math.random() * genres.length);
+  const randomGenre = genres[funIndex];
   return await generateSummary({
     ...params,
     prompt: "fun.prompt.yaml",
