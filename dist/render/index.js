@@ -81789,8 +81789,8 @@ function validateRenderOptions(options) {
 // src/util/config/models.ts
 var import_github2 = __toESM(require_github(), 1);
 function getModelEndpoint(tokenKind) {
-  const customEndpoint = getConfig("MODEL_ENDPOINT") || "";
-  if (customEndpoint !== "") {
+  const customEndpoint = getConfig("MODEL_ENDPOINT");
+  if (customEndpoint) {
     return customEndpoint;
   }
   switch (tokenKind) {
@@ -100775,12 +100775,12 @@ function hoist(env, code, outputVar, tokens) {
 }
 
 // src/4_template/load.ts
-var TEMPLATE_DIR = path6.join(process.cwd(), "templates");
+var TEMPLATE_DIR = "templates";
 var DEFAULT_TEMPLATE = "summary";
 var env = mod_default({
   dataVarname: "global",
   autoDataVarname: true,
-  includes: TEMPLATE_DIR,
+  includes: path6.join(process.cwd(), TEMPLATE_DIR),
   autoescape: true
 });
 for (const filter of Object.values(exports_filters)) {
@@ -100814,7 +100814,7 @@ function checkDefaultTemplates(template) {
   }
   let defaultDir = path6.join(TEMPLATE_DIR, "default");
   if (isGitHubAction()) {
-    defaultDir = getActionPath(path6.join("templates", "default"));
+    defaultDir = getActionPath(defaultDir);
   }
   const templatePath = path6.join(defaultDir, template);
   if (fs5.existsSync(templatePath) && fs5.lstatSync(templatePath).isFile()) {
