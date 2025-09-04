@@ -25550,7 +25550,7 @@ ${indent}`) + "'";
   }
   function blockString({ comment, type, value }, ctx, onComment, onChompKeep) {
     const { blockQuote, commentString, lineWidth } = ctx.options;
-    if (!blockQuote || /\n[\t ]+$/.test(value) || /^\s*$/.test(value)) {
+    if (!blockQuote || /\n[\t ]+$/.test(value)) {
       return quotedString(value, ctx);
     }
     const indent = ctx.indent || (ctx.forceBlockIndent || containsDocumentMarker(value) ? "  " : "");
@@ -32001,7 +32001,7 @@ var require_strftime = __commonJS((exports, module) => {
 
 // src/5_push/github/client.ts
 var import_core5 = __toESM(require_core(), 1);
-import path2 from "path";
+import path from "path";
 
 // src/util/octokit.ts
 var import_github4 = __toESM(require_github(), 1);
@@ -39381,9 +39381,6 @@ function parsePushTargets(targetBlob) {
     return { type, url: url.join(":") };
   }).filter((config) => config !== undefined);
 }
-// src/util/config/templates.ts
-import path from "path";
-var TEMPLATE_DIR = path.join(process.cwd(), "templates");
 
 // src/util/config/index.ts
 function getConfig(key, required = false) {
@@ -39916,7 +39913,7 @@ class GitHubPushClient {
     }
     const { owner, repo, branch, directory } = match;
     const content = Buffer.from(body).toString("base64");
-    const filePath = path2.join(directory, filename);
+    const filePath = path.join(directory, filename);
     const data = await createOrUpdateRepoFile(this, {
       owner,
       repo,
