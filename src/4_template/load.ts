@@ -8,13 +8,13 @@ import * as plugins from "./plugins";
 
 import { getActionPath, isGitHubAction } from "@config";
 
-const TEMPLATE_DIR = path.join(process.cwd(), "templates");
+const TEMPLATE_DIR = "templates";
 const DEFAULT_TEMPLATE = "summary";
 
 const env = vento({
   dataVarname: "global",
   autoDataVarname: true,
-  includes: TEMPLATE_DIR,
+  includes: path.join(process.cwd(), TEMPLATE_DIR),
   autoescape: true,
 });
 
@@ -46,6 +46,8 @@ export async function loadTemplate(templatePath: string | undefined) {
 
   let from: string | undefined;
   if (path.isAbsolute(templatePath)) {
+    // TODO: With a custom Loader for absolute paths
+    // It should allow composing default templates
     from = "/";
     templatePath = `./${templatePath}`;
   }
@@ -63,7 +65,7 @@ export function checkDefaultTemplates(
   // Search for templates bundled with the action
   let defaultDir = path.join(TEMPLATE_DIR, "default");
   if (isGitHubAction()) {
-    defaultDir = getActionPath(path.join("templates", "default"));
+    defaultDir = getActionPath(defaultDir);
   }
 
   const templatePath = path.join(defaultDir, template);
