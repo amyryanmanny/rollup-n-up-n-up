@@ -1,34 +1,12 @@
-import path from "path";
-
-import vento from "ventojs";
-
-import * as filters from "@transform/filters";
-import * as plugins from "./plugins";
-
 import { GitHubClient } from "@pull/github/client";
 
-import { getConfig, checkDefaultTemplates, TEMPLATE_DIR } from "@config";
+import { getConfig } from "@config";
 import { Memory } from "@transform/memory";
 
+import { loadTemplate } from "./load";
 import * as debug from "./debug";
+
 import { debugTotalGraphQLRateLimit } from "@pull/github/graphql/fragments/rate-limit";
-
-const env = vento({
-  dataVarname: "global",
-  autoDataVarname: true,
-  includes: TEMPLATE_DIR,
-  autoescape: true,
-});
-
-// Register Filters
-for (const filter of Object.values(filters)) {
-  env.filters[filter.name] = filter;
-}
-
-// Register Plugins
-for (const plugin of Object.values(plugins)) {
-  env.use(plugin());
-}
 
 // Setup Globals
 const github = new GitHubClient();
@@ -40,27 +18,12 @@ const globals = { github, memory, today };
 export async function renderTemplate(
   templatePath: string | undefined,
 ): Promise<string> {
-  // Load the template
-  const defaultTemplate = checkDefaultTemplates(templatePath);
-  if (defaultTemplate) {
-    console.log("Using default template:", defaultTemplate);
-    templatePath = defaultTemplate;
-  }
+  const template = await loadTemplate(templatePath);
 
-  // TODO: Use custom loader instead
-  const isAbsolute = path.isAbsolute(templatePath!);
-  if (isAbsolute) {
-    templatePath = `./${templatePath}`;
-  }
-
-  const template = await env.load(templatePath!, isAbsolute ? "/" : undefined);
-
-  // Render the template with the provided data
   const result = await template({
     ...globals,
     getConfig,
-    // Debugging Functions
-    ...debug,
+    ...debug, // Debugging Functions
     debugTemplate: () => debug.debugTemplate(template),
   });
 

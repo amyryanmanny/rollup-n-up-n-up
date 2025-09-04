@@ -8,7 +8,7 @@ export function isGitHubAction() {
 }
 
 export function getActionPath(fileName?: string): string {
-  // Constructs a path relative to the running GitHub Action directory
+  // Constructs an absolute path relative to the running GitHub Action directory
   if (!isGitHubAction()) {
     // Only works when running the index.js bundle
     throw new Error("Not running in a GitHub Action, don't use this function");
