@@ -2,8 +2,8 @@ import { context } from "@actions/github";
 import { getConfig } from "@config";
 
 export function getModelEndpoint(tokenKind: string): string {
-  const customEndpoint = getConfig("MODEL_ENDPOINT") || "";
-  if (customEndpoint !== "") {
+  const customEndpoint = getConfig("MODEL_ENDPOINT");
+  if (customEndpoint) {
     return customEndpoint;
   }
 
