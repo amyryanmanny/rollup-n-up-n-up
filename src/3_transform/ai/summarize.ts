@@ -77,7 +77,7 @@ export async function runPrompt(params: PromptParameters): Promise<string> {
   try {
     // TODO: Detailed debug info MODEL_NAME, etc. Prepare for Datadog
     const client = ModelClient(endpoint, new AzureKeyCredential(token.value), {
-      apiVersion: "2024-12-01-preview", // For o1 support
+      apiVersion: "2025-04-01-preview",
       userAgentOptions: { userAgentPrefix: "github-actions-rollup-n-up-n-up" },
     });
 
