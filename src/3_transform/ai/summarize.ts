@@ -63,9 +63,9 @@ export async function runPrompt(params: PromptParameters): Promise<string> {
     truncate(model, messages, Number(truncateTokens));
   }
 
-  const totalTokens = countTokens(model, messages);
-  if (totalTokens !== undefined) {
-    console.log("Total tokens used:", totalTokens);
+  const inputTokens = countTokens(model, messages);
+  if (inputTokens !== undefined) {
+    console.log("Input tokens:", inputTokens);
   }
 
   // TODO: Replace Markdown image tags by image_url messages
@@ -83,14 +83,16 @@ export async function runPrompt(params: PromptParameters): Promise<string> {
 
     await limiter.removeTokens(1); // Wait for rate limit
 
+    // For debugging the hanging request issue
+    console.log(`Calling /chat/completions for ${params.name}`);
+
     const response = await client.path("/chat/completions").post({
       body: {
         ...modelParameters,
         model,
         messages,
       },
-      timeout: 2 * 60 * 1000, // Sometimes the AI never responds
-      // TODO: Catch the error and ask the user to try again
+      timeout: 3 * 60 * 1000, // Sometimes the AI never responds
     });
 
     if (isUnexpected(response)) {
@@ -101,12 +103,19 @@ export async function runPrompt(params: PromptParameters): Promise<string> {
     if (!modelResponse) {
       throw new Error("No response from model.");
     } else if (modelResponse.startsWith("ERROR:")) {
-      // Fail fast. Prevent errors from ending up in the body, or being cached
+      // Prevent Error text from showing up in the body, or being cached
       throw new Error(modelResponse);
     }
 
+    console.log("Model response received.");
+
     return modelResponse;
   } catch (error: unknown) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw new Error(
+        `Request Timeout. Please try again: ${JSON.stringify(error)}`,
+      );
+    }
     throw new Error(`Unexpected Error: ${JSON.stringify(error)}`);
   }
 }
