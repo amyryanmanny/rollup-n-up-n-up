@@ -94909,7 +94909,7 @@ async function listProjectFieldsForIssue(params) {
   return mapProjectFieldValues(project.fieldValues.nodes);
 }
 // src/2_pull/github/graphql/project-fields-for-issue-list.ts
-var BATCH_SIZE = 20;
+var BATCH_SIZE = getConfig("BATCH_SIZE") || 10;
 async function listProjectFieldsForBatch(issues) {
   const octokit = getOctokit();
   const query = `
