@@ -93470,12 +93470,14 @@ async function runPrompt(params) {
     });
     await limiter.removeTokens(1);
     console.log(`Calling /chat/completions for ${params.name}`);
+    const requestBody = {
+      ...modelParameters,
+      model,
+      messages
+    };
+    console.log("Payload:", requestBody);
     const response = await client.path("/chat/completions").post({
-      body: {
-        ...modelParameters,
-        model,
-        messages
-      },
+      body: requestBody,
       timeout: 3 * 60 * 1000
     });
     if (isUnexpected(response)) {
@@ -93523,6 +93525,7 @@ async function generateSummary(params) {
     content: input,
     memory: input
   };
+  console.log("Placeholders:", JSON.stringify(placeholders, null, 2));
   const hydratedPrompt = insertPlaceholders(prompt, placeholders);
   const summary = await runPrompt(hydratedPrompt);
   summaryCache.set(prompt, sources, summary);
