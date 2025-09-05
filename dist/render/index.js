@@ -93475,7 +93475,7 @@ async function runPrompt(params) {
       model,
       messages
     };
-    console.log("Payload:", requestBody);
+    console.log("Payload:", JSON.stringify(requestBody, null, 2));
     const response = await client.path("/chat/completions").post({
       body: requestBody,
       timeout: 3 * 60 * 1000
