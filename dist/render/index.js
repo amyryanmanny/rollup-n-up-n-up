@@ -93470,14 +93470,12 @@ async function runPrompt(params) {
     });
     await limiter.removeTokens(1);
     console.log(`Calling /chat/completions for ${params.name}`);
-    const requestBody = {
-      ...modelParameters,
-      model,
-      messages
-    };
-    console.log("Payload:", JSON.stringify(requestBody, null, 2));
     const response = await client.path("/chat/completions").post({
-      body: requestBody,
+      body: {
+        ...modelParameters,
+        model,
+        messages
+      },
       timeout: 3 * 60 * 1000
     });
     if (isUnexpected(response)) {

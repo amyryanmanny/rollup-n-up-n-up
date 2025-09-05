@@ -86,16 +86,12 @@ export async function runPrompt(params: PromptParameters): Promise<string> {
     // For debugging the hanging request issue
     console.log(`Calling /chat/completions for ${params.name}`);
 
-    const requestBody = {
-      ...modelParameters,
-      model,
-      messages,
-    };
-
-    console.log("Payload:", JSON.stringify(requestBody, null, 2));
-
     const response = await client.path("/chat/completions").post({
-      body: requestBody,
+      body: {
+        ...modelParameters,
+        model,
+        messages,
+      },
       timeout: 3 * 60 * 1000, // Sometimes the AI never responds
     });
 
