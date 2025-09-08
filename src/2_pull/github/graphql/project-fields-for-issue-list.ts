@@ -25,7 +25,7 @@ type ListProjectFieldsForListOfIssuesResponse = Map<
   Map<string, ProjectField>
 >;
 
-const BATCH_SIZE = getConfig("BATCH_SIZE") || 10;
+const BATCH_SIZE = Number(getConfig("BATCH_SIZE")) || 10;
 
 // TODO: https://github.com/RyanMyrvold/Performance-Decorators
 // To warn if a batch gets too close to 11 seconds (GraphQL 504 GatewayTimeout)
