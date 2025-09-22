@@ -1,10 +1,12 @@
 import { context } from "@actions/github";
 
+import { makeRe } from "minimatch";
+
 import { DefaultDict } from "@util/collections";
 import { getOctokit } from "@util/octokit";
 
 import type { IssueWrapper } from "./issue";
-import type { IssueField } from "./project-fields";
+import type { IssueAttribute } from "./project-fields";
 
 export type GetProjectViewParameters = {
   organization: string;
@@ -23,14 +25,14 @@ type ProjectViewParameters = {
 export class ProjectView {
   private params: ProjectViewParameters;
 
-  private filters: DefaultDict<string, string[]>;
-  private excludeFilters: DefaultDict<string, string[]>;
+  private filters = new DefaultDict<string, string[]>(() => []);
+  private excludeFilters = new DefaultDict<string, string[]>(() => []);
+
+  // There is no way to exclude a title
+  private titleFilters: RegExp[] = [];
 
   constructor(params: ProjectViewParameters) {
     this.params = params;
-
-    this.filters = new DefaultDict<string, string[]>(() => []);
-    this.excludeFilters = new DefaultDict<string, string[]>(() => []);
 
     // Parse the filter string
     // Split on spaces unless they're inside quotes
@@ -40,16 +42,33 @@ export class ProjectView {
     }
 
     matches.forEach((f) => {
-      const [key, valueStr] = f.split(":").map((s) => s.trim());
-      if (!key || !valueStr) {
-        // Skip if the key or value is missing
+      const pieces = f.split(":").map((s) => s.trim());
+
+      let key = pieces[0];
+      if (!key) return;
+
+      const valuesCsv = pieces[1];
+
+      if (!valuesCsv || key === "title") {
+        // No colon means it's a title filter
+        const regex = makeRe(key);
+        if (!regex) {
+          throw new Error(`Invalid title filter: ${key}`);
+        }
+        this.titleFilters.push(regex);
         return;
       }
 
-      const values = valueStr
+      let exclude = false;
+      if (key.startsWith("-")) {
+        exclude = true;
+        key = key.slice(1); // Remove leading dash
+      }
+
+      const values = valuesCsv
         .split(",")
         .map((v) => {
-          // Remove quotes from the value
+          // Remove double quotes - single quotes are invalid in GitHub UI
           if (v.startsWith('"') && v.endsWith('"')) {
             v = v.slice(1, -1);
           }
@@ -94,14 +113,12 @@ export class ProjectView {
           return v; // Return as is for other values
         }) as string[];
 
-      if (key.startsWith("-")) {
-        // Exclude filter
-        const eKey = key.slice(1); // Remove the leading dash
-        this.excludeFilters.get(eKey).push(...values);
-      } else {
-        // Regular filter
-        this.filters.get(key).push(...values);
+      // Choose the accumulator to add the values to
+      let acc = this.filters.get(key);
+      if (exclude) {
+        acc = this.excludeFilters.get(key);
       }
+      acc.push(...values);
     });
   }
 
@@ -166,7 +183,7 @@ export class ProjectView {
     return true;
   }
 
-  checkField(fieldName: string, field: IssueField | undefined): boolean {
+  checkField(fieldName: string, field: IssueAttribute | undefined): boolean {
     let values: Array<string> = [];
     if (!field) {
       values = [];
@@ -228,7 +245,14 @@ export class ProjectView {
     return true;
   }
 
-  // TODO: checkTitle with globbing
+  checkTitle(title: string): boolean {
+    for (const filter of this.titleFilters) {
+      if (!filter.test(title)) {
+        return false;
+      }
+    }
+    return true;
+  }
 
   checkCreated(createdAt: Date): boolean {
     return this.checkDateField("created", createdAt);

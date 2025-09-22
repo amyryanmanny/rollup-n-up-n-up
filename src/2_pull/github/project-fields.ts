@@ -1,18 +1,19 @@
-export type ProjectField = IssueField;
-export type IssueField = FieldSingleSelect | FieldMultiSelect | FieldDate;
+export type IssueAttribute = ProjectField;
+export type ProjectField = SingleSelect | MultiSelect | DateField;
 
-export type FieldSingleSelect = {
+type SingleSelect = {
   kind: "SingleSelect";
   value: string | null;
   options?: string[]; // Value options for the field
 };
 
-type FieldMultiSelect = {
+type MultiSelect = {
   kind: "MultiSelect";
   values: string[] | null;
+  options?: string[]; // Value options for the field
 };
 
-type FieldDate = {
+type DateField = {
   kind: "Date";
   value: string | null; // ISO 8601 date string
   date: Date | null;
