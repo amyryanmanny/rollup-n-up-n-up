@@ -1,4 +1,3 @@
-export type IssueAttribute = ProjectField;
 export type ProjectField = SingleSelect | MultiSelect | DateField;
 
 type SingleSelect = {

@@ -2,18 +2,8 @@ import { context } from "@actions/github";
 
 import { makeRe } from "minimatch";
 
-import { DefaultDict } from "@util/collections";
-import { getOctokit } from "@util/octokit";
-
 import type { IssueWrapper } from "./issue";
-import type { IssueAttribute } from "./project-fields";
-
-export type GetProjectViewParameters = {
-  organization: string;
-  projectNumber: number;
-  projectViewNumber?: number;
-  customQuery?: string;
-};
+import type { ProjectField } from "./project-fields";
 
 type ProjectViewParameters = {
   name?: string;
@@ -22,11 +12,16 @@ type ProjectViewParameters = {
   filterQuery: string;
 };
 
+type Filter = {
+  key: string;
+  values: string[];
+  exclude: boolean;
+};
+
 export class ProjectView {
   private params: ProjectViewParameters;
 
-  private filters = new DefaultDict<string, string[]>(() => []);
-  private excludeFilters = new DefaultDict<string, string[]>(() => []);
+  private filters = new Array<Filter>();
 
   // There is no way to exclude a title
   private titleFilters: RegExp[] = [];
@@ -40,6 +35,11 @@ export class ProjectView {
     if (!matches) {
       return;
     }
+
+    // A filter can appear multiple times in the same query
+    // This is distinct from one filter with CSV
+    // e.g. "label:bug,enhancement" is an OR
+    //      "label:bug" "label:enhancement" is an AND
 
     matches.forEach((f) => {
       const pieces = f.split(":").map((s) => s.trim());
@@ -113,12 +113,7 @@ export class ProjectView {
           return v; // Return as is for other values
         }) as string[];
 
-      // Choose the accumulator to add the values to
-      let acc = this.filters.get(key);
-      if (exclude) {
-        acc = this.excludeFilters.get(key);
-      }
-      acc.push(...values);
+      this.filters.push({ key, values, exclude });
     });
   }
 
@@ -139,43 +134,75 @@ export class ProjectView {
     return this.params.filterQuery;
   }
 
-  get customFields(): string[] {
+  get projectFields(): string[] {
     const defaultFields = ProjectView.defaultFields();
-    return Array.from([
-      ...this.filters.keys(),
-      ...this.excludeFilters.keys(),
-    ]).filter((key) => {
-      return !defaultFields.includes(key);
-    });
+    return this.filters
+      .map((f) => f.key)
+      .filter((key) => {
+        return !defaultFields.includes(key);
+      });
+  }
+
+  get needsProjectFields(): boolean {
+    return this.projectFields.length > 0;
   }
 
   // Helpers
-  getFilterType(): string[] | undefined {
-    return this.filters.get("type");
+  filter(issue: IssueWrapper): boolean {
+    // Default Fields
+    if (!this.checkOpen(issue)) {
+      return false;
+    }
+    if (!this.checkTitle(issue)) {
+      return false;
+    }
+    if (!this.checkType(issue)) {
+      return false;
+    }
+    if (!this.checkRepo(issue)) {
+      return false;
+    }
+    if (!this.checkAssignees(issue)) {
+      return false;
+    }
+    if (!this.checkLabels(issue)) {
+      return false;
+    }
+    if (!this.checkUpdated(issue)) {
+      return false;
+    }
+
+    // Custom Fields
+    if (!this.checkProjectFields(issue)) {
+      return false;
+    }
+
+    // TODO: Handle Issue Fields when they are released
+
+    return true;
   }
 
-  filter(issue: IssueWrapper): boolean {
-    // First check against default fields
-    if (!this.checkCreated(issue.createdAt)) {
-      return false;
-    }
-    if (!this.checkUpdated(issue.updatedAt)) {
-      return false;
-    }
-    if (!this.checkType(issue.type)) {
-      return false;
-    }
-    if (!this.checkRepo(issue.repoNameWithOwner)) {
-      return false;
-    }
-    if (!this.checkAssignees(issue.assignees)) {
-      return false;
-    }
+  checkFilters(filterName: string, values: string[]): boolean {
+    const filters = this.filters.filter((f) => f.key === filterName);
 
-    // Next check against all the custom Project Fields
-    for (const field of this.customFields) {
-      const value = issue._projectFields.get(field);
-      if (!this.checkField(field, value)) {
+    for (const filter of filters) {
+      const { values: filterValues, exclude } = filter;
+
+      if (values.length === 0) {
+        continue;
+      }
+
+      // If any value matches (OR), it's a match
+      const filterMatches = filterValues.some((value) =>
+        values.includes(value),
+      );
+
+      if (exclude && filterMatches) {
+        // If any value matches, exclude the issue
+        return false;
+      }
+      if (!exclude && !filterMatches) {
+        // At least one value must match
         return false;
       }
     }
@@ -183,40 +210,11 @@ export class ProjectView {
     return true;
   }
 
-  checkField(fieldName: string, field: IssueAttribute | undefined): boolean {
-    let values: Array<string> = [];
-    if (!field) {
-      values = [];
-    } else if (field.kind === "SingleSelect") {
-      values = field.value ? [field.value] : [];
-    } else if (field.kind === "MultiSelect") {
-      values = field.values ?? [];
-    } else if (field.kind === "Date") {
-      // For Date filters, the format is:
-      //   date:>=2025-06-16 or date:<=2025-06-22
-      return this.checkDateField(fieldName, field.date);
-    }
-
-    const included = this.filters.get(fieldName);
-    const excluded = this.excludeFilters.get(fieldName);
-
-    if (values.some((value) => excluded.some((f) => f === value))) {
-      return false; // At least one value is excluded
-    }
-
-    // If there are no inclusion filters, all values are valid
-    if (included.length === 0) {
-      return true;
-    }
-
-    // Return whether at least one value is included
-    return values.some((value) => included.some((f) => f === value));
-  }
-
-  checkDateField(field: string, date: Date | null): boolean {
+  checkDateFilters(filterName: string, date: Date | null): boolean {
     // Check if the date is within the range specified in the filter
-    const filter = this.filters.get(field);
-    if (!filter) {
+    const filters = this.filters.filter((f) => f.key === filterName);
+
+    if (!filters || filters.length === 0) {
       return true; // No filter means all dates are valid
     } else if (date === null) {
       return false; // Null dates are not valid
@@ -224,7 +222,11 @@ export class ProjectView {
 
     const dateString = date.toISOString().split("T")[0] as string; // Format as YYYY-MM-DD
 
-    for (const condition of filter) {
+    for (const f of filters) {
+      const condition = f.values[0]; // TODO: Support OR date conditions
+      if (!condition) {
+        continue;
+      }
       if (condition.startsWith(">=")) {
         const targetDate = condition.slice(2).trim();
         if (dateString < targetDate) {
@@ -242,10 +244,36 @@ export class ProjectView {
         }
       }
     }
+
     return true;
   }
 
-  checkTitle(title: string): boolean {
+  checkProjectField(
+    fieldName: string,
+    field: ProjectField | undefined,
+  ): boolean {
+    let values: Array<string> = [];
+    if (!field) {
+      values = [];
+    } else if (field.kind === "SingleSelect") {
+      values = field.value ? [field.value] : [];
+    } else if (field.kind === "MultiSelect") {
+      values = field.values ?? [];
+    } else if (field.kind === "Date") {
+      // For Date filters, the format is:
+      //   date:>=2025-06-16 or date:<=2025-06-22
+      return this.checkDateFilters(fieldName, field.date);
+    }
+
+    return this.checkFilters(fieldName, values);
+  }
+
+  checkOpen(issue: IssueWrapper): boolean {
+    return this.checkFilters("is", [issue.isOpen ? "open" : "closed"]);
+  }
+
+  checkTitle(issue: IssueWrapper): boolean {
+    const title = issue.title;
     for (const filter of this.titleFilters) {
       if (!filter.test(title)) {
         return false;
@@ -254,101 +282,57 @@ export class ProjectView {
     return true;
   }
 
-  checkCreated(createdAt: Date): boolean {
-    return this.checkDateField("created", createdAt);
+  checkType(issue: IssueWrapper): boolean {
+    return this.checkFilters("type", [issue.type]);
   }
 
-  checkUpdated(updatedAt: Date): boolean {
-    return this.checkDateField("updated", updatedAt);
+  checkRepo(issue: IssueWrapper): boolean {
+    return this.checkFilters("repo", [issue.repoNameWithOwner]);
   }
 
-  checkType(type: string): boolean {
-    return this.checkField("type", {
-      kind: "SingleSelect",
-      value: type,
-    });
+  checkAssignees(issue: IssueWrapper): boolean {
+    return this.checkFilters("assignee", issue.assignees);
   }
 
-  checkOpen(is: string): boolean {
-    return this.checkField("is", {
-      kind: "SingleSelect",
-      value: is,
-    });
+  checkLabels(issue: IssueWrapper): boolean {
+    return this.checkFilters("label", issue.labels);
   }
 
-  checkRepo(repo: string): boolean {
-    return this.checkField("repo", {
-      kind: "SingleSelect",
-      value: repo ?? null,
-    });
+  checkUpdated(issue: IssueWrapper): boolean {
+    return this.checkDateFilters("updated", issue.updatedAt);
   }
 
-  checkAssignees(assignees: string[]): boolean {
-    return this.checkField("assignee", {
-      kind: "MultiSelect",
-      values: assignees,
-    });
+  checkProjectFields(issue: IssueWrapper): boolean {
+    for (const field of this.projectFields) {
+      const value = issue._projectFields.get(field);
+      if (!this.checkProjectField(field, value)) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   static defaultFields(): string[] {
     return [
-      "created",
-      "updated",
+      // Supported fields
+      "is",
+      "title",
+      "type",
       "repository",
       "assignee",
       "label",
-      "is",
-      "title",
+      "updated",
+
+      // TODO: Add unsupported fields
       "linked-pull-requests",
       "milestone",
-      "type", // DONE
       "reviewers",
-      "parent-issue",
+      "parent-issue", // This one is easy
       "sub-issues-progress",
       // Boolean modifiers which take a field name
       "no",
       "has",
     ];
   }
-}
-
-export async function getProjectView(
-  params: GetProjectViewParameters,
-): Promise<ProjectView> {
-  const octokit = getOctokit();
-
-  const query = `
-    query($organization: String!, $projectNumber: Int!, $projectViewNumber: Int!) {
-      organization(login: $organization) {
-        projectV2(number: $projectNumber) {
-          view(number: $projectViewNumber) {
-            name
-            filter
-          }
-        }
-      }
-    }
-  `;
-
-  const response = await octokit.graphql<{
-    organization: {
-      projectV2: {
-        view: {
-          name: string;
-          filter: string;
-        };
-      };
-    };
-  }>(query, {
-    organization: params.organization,
-    projectNumber: params.projectNumber,
-    projectViewNumber: params.projectViewNumber,
-  });
-
-  return new ProjectView({
-    name: response.organization.projectV2.view.name,
-    number: params.projectViewNumber,
-    projectNumber: params.projectNumber,
-    filterQuery: response.organization.projectV2.view.filter,
-  });
 }

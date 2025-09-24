@@ -14,11 +14,11 @@ import { barChart } from "@transform/charts";
 import { emojiCompare } from "@util/emoji";
 import { title } from "@util/string";
 
+import { ProjectView } from "./project-view";
 import {
   getProjectView,
-  ProjectView,
   type GetProjectViewParameters,
-} from "./project-view";
+} from "./graphql/project-view";
 
 import {
   type GetIssueParameters,
@@ -113,8 +113,10 @@ export class IssueList {
 
   // Issue Filtering / Grouping / Sorting
   private async applyViewFilter(view: ProjectView): Promise<IssueList> {
-    // Make sure the Project Fields are fetched first so we can filter on them
-    await this.fetchProjectFields(view.projectNumber);
+    if (view.needsProjectFields) {
+      // Make sure the Project Fields are fetched so we can filter on them
+      await this.fetchProjectFields(view.projectNumber);
+    }
 
     // Filter the issues by the view's query
     this.filter((issue) => view.filter(issue));
@@ -276,10 +278,7 @@ export class IssueList {
     }
     await project.applyViewFilter(view);
 
-    return await project.fetch({
-      ...fetchParams,
-      projectFields: params.projectNumber,
-    });
+    return await project.fetch(fetchParams);
   }
 
   // Fetching
