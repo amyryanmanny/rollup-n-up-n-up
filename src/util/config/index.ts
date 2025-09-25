@@ -44,5 +44,6 @@ export * from "./issue-render";
 export * from "./models";
 export * from "./prompts";
 export * from "./push";
+export * from "./slack";
 export * from "./truthy";
 export * from "./update";

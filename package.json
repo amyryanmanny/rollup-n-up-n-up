@@ -24,6 +24,7 @@
     "@actions/github": "^6.0.1",
     "@azure-rest/ai-inference": "latest",
     "@azure/core-auth": "latest",
+    "@slack/web-api": "^7.10.0",
     "@octokit/auth-app": "^7.2.2",
     "@octokit/plugin-paginate-graphql": "^6.0.0",
     "@octokit/plugin-throttling": "^11.0.1",
