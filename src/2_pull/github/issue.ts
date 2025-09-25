@@ -171,7 +171,10 @@ export class IssueWrapper {
     return this.issue.labels.map((label) => label.trim());
   }
 
-  get parentTitle(): string | undefined {
+  get parentTitle(): string {
+    if (!this.issue.parent) {
+      return "No Parent Issue";
+    }
     return this.issue.parent?.title;
   }
 
@@ -203,7 +206,7 @@ export class IssueWrapper {
       case fuzzy("parent"):
       case fuzzy("parent_issue"):
       case fuzzy("parent_title"):
-        return this.parentTitle || "";
+        return this.parentTitle;
     }
 
     // Fallback to projectFields
