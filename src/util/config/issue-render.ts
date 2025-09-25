@@ -8,6 +8,8 @@ export type DirtyIssueRenderOptions = {
   body?: string | boolean;
   updates?: string | number | boolean;
   author?: string | boolean;
+  createdAt?: string | boolean;
+  updatedAt?: string | boolean;
   field?: string;
   fields?: string | string[];
   // TODO: Labels
@@ -50,10 +52,19 @@ export function validateRenderOptions(
     author = isTruthy(options.author);
   }
 
+  let createdAt = false;
+  if (options.createdAt) {
+    createdAt = isTruthy(options.createdAt);
+  }
+
+  let updatedAt = false;
+  if (options.updatedAt) {
+    updatedAt = isTruthy(options.updatedAt);
+  }
+
   if (options.field) {
     fields = [options.field];
-  }
-  if (options.fields) {
+  } else if (options.fields) {
     fields = Array.isArray(options.fields) ? options.fields : [options.fields];
   }
 
@@ -72,6 +83,8 @@ export function validateRenderOptions(
     body,
     updates,
     author,
+    createdAt,
+    updatedAt,
     fields,
     subissues,
     skipIfEmpty,

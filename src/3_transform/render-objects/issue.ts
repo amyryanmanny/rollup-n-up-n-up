@@ -6,6 +6,8 @@ export type IssueRenderOptions = {
   body: boolean;
   updates: number;
   author: boolean; // Author of the update, not the issue
+  createdAt: boolean;
+  updatedAt: boolean;
   fields: string[];
   subissues: boolean | undefined;
   skipIfEmpty: boolean; // Skip rendering if no updates or body
@@ -48,6 +50,14 @@ export function renderIssue(
         sources,
       };
     }
+  }
+
+  if (options.createdAt) {
+    markdown += `Issue Opened: ${issue.createdAt.toISOString()}`;
+  }
+
+  if (options.updatedAt) {
+    markdown += `Issue Edited: ${issue.updatedAt.toISOString()}`;
   }
 
   if (options.fields.length > 0) {
