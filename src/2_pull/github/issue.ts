@@ -78,11 +78,11 @@ export class IssueWrapper {
     if (params.comments > 0) {
       await this.fetchComments(params.comments);
     }
-    if (params.projectFields !== undefined) {
-      await this.fetchProjectFields(params.projectFields);
+    if (params.projectFields && this.projectNumber) {
+      await this.fetchProjectFields(this.projectNumber);
     }
     if (params.subissues) {
-      await this.fetchSubissues();
+      await this.fetchSubissues(params);
     }
     return this;
   }
@@ -209,7 +209,14 @@ export class IssueWrapper {
         return this.parentTitle;
     }
 
-    // Fallback to projectFields
+    // Fallback to Project Fields
+    if (this._projectFields === undefined) {
+      throw new Error(
+        `Cannot access "${fieldName}", because Project Fields were not fetched.
+        Double check the field name, or set { projectFields: true } in FetchParams.`,
+      );
+    }
+
     return this.projectFields.get(slugifyProjectFieldName(fieldName)) || "";
   }
 
@@ -221,15 +228,19 @@ export class IssueWrapper {
     return this.issue.project?.number;
   }
 
-  get _projectFields(): Map<string, ProjectField> {
+  get _projectFields(): Map<string, ProjectField> | undefined {
     if (!this.issue.project) {
-      return new Map<string, ProjectField>();
+      return undefined;
     }
     return this.issue.project.fields;
   }
 
   get projectFields(): Map<string, string> {
-    // Return the projectFields of the issue, mapped back to string representation
+    // Project Fields of the issue (mapped to string representation for simple interface)
+    if (!this._projectFields) {
+      return new Map();
+    }
+
     return new Map(
       Array.from(this._projectFields.entries()).map(([name, field]) => {
         switch (field.kind) {
@@ -258,7 +269,7 @@ export class IssueWrapper {
       }
       const emoji = update.emojiStatus(emojiSections);
       if (emoji) {
-        const field = this._projectFields.get(fieldName);
+        const field = this._projectFields?.get(fieldName);
         if (field && field.kind === "SingleSelect") {
           // Try to match to ProjectFieldValue for parity
           for (const option of field?.options || []) {
@@ -309,7 +320,7 @@ export class IssueWrapper {
     };
   }
 
-  private async fetchSubissues() {
+  private async fetchSubissues(params: IssueFetchParameters) {
     this.subissues = await IssueList.forSubissues(
       {
         organization: this.organization,
@@ -317,8 +328,9 @@ export class IssueWrapper {
         issueNumber: this.number,
       },
       validateFetchParameters({
-        projectFields: this.projectNumber, // For Subissues of a Project Issue, fetch their Fields
-        subissues: false, // But don't recursively fetch Subissues, it would spiral out of control
+        ...params, // Inherit fetch params
+        // Don't recursively fetch Subissues automatically
+        subissues: false,
       }),
     );
   }

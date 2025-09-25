@@ -46,6 +46,8 @@ export class IssueList {
   private sourceOfTruth: SourceOfTruth;
   private issues: IssueWrapper[];
 
+  private projectNumber?: number; // If all issues are from the same Project
+
   // State to prevent unnecessary fetching
   private commentsFetched = false;
   private projectFieldsFetched = false;
@@ -247,10 +249,10 @@ export class IssueList {
     const response = await listIssuesForProject(params);
     const { issues, title, url } = response;
 
-    return await new IssueList(issues, { title, url }).fetch({
-      ...fetchParams,
-      projectFields: params.projectNumber,
-    });
+    const list = new IssueList(issues, { title, url });
+    list.projectNumber = params.projectNumber;
+
+    return await list.fetch(fetchParams);
   }
 
   static async forProjectView(
@@ -260,7 +262,8 @@ export class IssueList {
     const response = await listIssuesForProject(params);
     const { issues, title, url } = response;
 
-    const project = new IssueList(issues, { title, url });
+    const list = new IssueList(issues, { title, url });
+    list.projectNumber = params.projectNumber;
 
     let view: ProjectView;
     if (params.projectViewNumber === undefined) {
@@ -276,24 +279,22 @@ export class IssueList {
     } else {
       view = await getProjectView(params);
     }
-    await project.applyViewFilter(view);
+    await list.applyViewFilter(view);
 
-    return await project.fetch(fetchParams);
+    return await list.fetch(fetchParams);
   }
 
   // Fetching
   async fetch(params: IssueFetchParameters): Promise<IssueList> {
     // Batch Fields and Project Fields when constructing IssueList
-    if (params.projectFields !== undefined) {
-      await this.fetchProjectFields(params.projectFields);
+    if (params.projectFields && this.projectNumber) {
+      await this.fetchProjectFields(this.projectNumber);
     }
 
     if (params.comments > 0) {
       await this.fetchComments(params.comments);
     }
 
-    // Unfortunately it's too confusing to filter any earlier
-    // As it would silently break filtering on Comments / Fields
     this.filter(params.filter);
 
     for (const issue of this.issues) {

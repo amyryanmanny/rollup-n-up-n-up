@@ -304,7 +304,7 @@ export class ProjectView {
 
   checkProjectFields(issue: IssueWrapper): boolean {
     for (const field of this.projectFields) {
-      const value = issue._projectFields.get(field);
+      const value = issue._projectFields?.get(field);
       if (!this.checkProjectField(field, value)) {
         return false;
       }
