@@ -69,19 +69,24 @@ export async function summarize(
 
 export async function summarizeToSentence(markdown: string): Promise<string> {
   if (!markdown.trim().includes("\n")) {
-    // If the markdown is already a single sentence, return it as is
+    // If the markdown is already a single sentence, return as is
     return markdown.trim();
   }
 
-  // If the markdown contains multiple lines, summarize it to a single sentence
+  if (markdown.length > 1000) {
+    // 4.1-mini has a context length of 8k tokens, but let's not go crazy
+    return "Content too long to summarize. View the original context instead.";
+  }
+
   return await generateSummary({
     prompt: {
       model: "openai/gpt-4.1-mini", // Use a lighter model for this task
       messages: [
         {
           role: "system",
-          content:
-            "Summarize the following content into a single sentence. Try to sacrifice as little meaning as possible.",
+          content: `Summarize the following content into a single sentence.
+            Try to sacrifice as little meaning as possible.
+            Remove images and other embedded content.`,
         },
         { role: "user", content: markdown },
       ],

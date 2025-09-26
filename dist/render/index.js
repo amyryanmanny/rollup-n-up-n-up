@@ -102196,13 +102196,18 @@ async function summarizeToSentence(markdown) {
 `)) {
     return markdown.trim();
   }
+  if (markdown.length > 1000) {
+    return "Content too long to summarize. View the original context instead.";
+  }
   return await generateSummary({
     prompt: {
       model: "openai/gpt-4.1-mini",
       messages: [
         {
           role: "system",
-          content: "Summarize the following content into a single sentence. Try to sacrifice as little meaning as possible."
+          content: `Summarize the following content into a single sentence.
+            Try to sacrifice as little meaning as possible.
+            Remove images and other embedded content.`
         },
         { role: "user", content: markdown }
       ]
