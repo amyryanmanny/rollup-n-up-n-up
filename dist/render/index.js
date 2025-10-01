@@ -93391,6 +93391,7 @@ function insertPlaceholders(params, placeholders) {
   return params;
 }
 // src/3_transform/ai/tokens.ts
+var import_lodash2 = __toESM(require_lodash(), 1);
 import fs3 from "fs";
 var import_init = __toESM(require_init(), 1);
 async function initWasm() {
@@ -93427,21 +93428,26 @@ function countTokens(githubModelName, messages) {
   }, 0);
   return totalTokens;
 }
-function truncate(githubModelName, messages, maxTokens) {
-  const encoding = getEncoding(githubModelName);
+function truncate(params, maxTokens) {
+  params = import_lodash2.cloneDeep(params);
+  const encoding = getEncoding(params.model);
   if (!encoding)
-    return;
-  const userMessage = messages.find((msg) => msg.role === "user");
-  if (!userMessage)
-    return;
-  const rest = messages.filter((msg) => msg.role !== "user");
-  const usedTokens = countTokens(githubModelName, rest);
+    return params;
+  const userMessages = params.messages.filter((msg) => msg.role === "user");
+  if (userMessages.length === 0)
+    return params;
+  if (userMessages.length > 1) {
+    throw new Error("Multiple user messages not supported for truncation");
+  }
+  const userMessage = userMessages[0];
+  const rest = params.messages.filter((msg) => msg.role !== "user");
+  const usedTokens = countTokens(params.model, rest);
   const remainingTokens = maxTokens - usedTokens;
   const userMessageTokens = encoding.encode(userMessage.content);
-  const userMessageIndex = messages.indexOf(userMessage);
   if (userMessageTokens.length > remainingTokens) {
-    messages[userMessageIndex].content = new TextDecoder().decode(encoding.decode(userMessageTokens.slice(0, remainingTokens)));
+    userMessage.content = new TextDecoder().decode(encoding.decode(userMessageTokens.slice(0, remainingTokens)));
   }
+  return params;
 }
 await initWasm();
 
@@ -93461,10 +93467,6 @@ async function runPrompt(params) {
   }
   if (model.startsWith("xai/")) {
     throw new Error("xai models are not supported");
-  }
-  const truncateTokens = getConfig("TRUNCATE_TOKENS");
-  if (truncateTokens !== undefined) {
-    truncate(model, messages, Number(truncateTokens));
   }
   const inputTokens = countTokens(model, messages);
   if (inputTokens !== undefined) {
@@ -93507,7 +93509,7 @@ async function runPrompt(params) {
   }
 }
 async function generateSummary(params) {
-  let { content, prompt, placeholders } = params;
+  let { content, prompt, placeholders, truncateTokens } = params;
   if (typeof prompt === "string") {
     if (!prompt || prompt.trim() === "") {
       throw new Error("prompt cannot be empty.");
@@ -93533,7 +93535,11 @@ async function generateSummary(params) {
     content: input,
     memory: input
   };
-  const hydratedPrompt = insertPlaceholders(prompt, placeholders);
+  let hydratedPrompt = insertPlaceholders(prompt, placeholders);
+  truncateTokens = Number(truncateTokens || getConfig("TRUNCATE_TOKENS"));
+  if (!isNaN(truncateTokens)) {
+    hydratedPrompt = truncate(hydratedPrompt, truncateTokens);
+  }
   const summary = await runPrompt(hydratedPrompt);
   summaryCache.set(prompt, sources, summary);
   return summary;
@@ -96338,7 +96344,7 @@ function mapProjectFieldValues(nodes) {
   }, new Map);
 }
 
-// src/2_pull/github/graphql/project-fields.ts
+// src/2_pull/github/graphql/project-fields-for-issue.ts
 async function listProjectFieldsForIssue(params) {
   const octokit = getOctokit();
   const query = `
@@ -96373,61 +96379,64 @@ async function listProjectFieldsForIssue(params) {
   }
   return mapProjectFieldValues(project.fieldValues.nodes);
 }
-// src/2_pull/github/graphql/project-fields-for-issue-list.ts
-var BATCH_SIZE = Number(getConfig("BATCH_SIZE")) || 10;
-async function listProjectFieldsForBatch(issues) {
+// src/2_pull/github/graphql/project-fields-for-project.ts
+async function listProjectFieldsForProject(params) {
+  const { organization, projectNumber } = params;
+  const projectFieldsForProject = [];
+  if (!organization || !projectNumber) {
+    return projectFieldsForProject;
+  }
   const octokit = getOctokit();
   const query = `
-    query {
-      ${issues.map(({ organization, repository, issueNumber }, index) => `issue${index + 1}: repository(owner: "${organization}", name: "${repository}") {
-              issue(number: ${issueNumber}) {
-                projectItems(first: 10) {
-                  nodes {
-                    project {
-                      number
+    query paginate($organization: String!, $projectNumber: Int!, $cursor: String) {
+      organization(login: $organization) {
+        projectV2(number: $projectNumber) {
+          items(first: 20, after: $cursor) {
+            nodes {
+              content {
+                ... on Issue {
+                  repository {
+                    owner {
+                      login
                     }
-                    fieldValues(first: 50) {
-                      nodes {
-                        ${projectFieldValueFragment}
-                      }
-                    }
+                    name
                   }
+                  number
+                }
+              }
+              fieldValues(first: 100) {
+                nodes {
+                  ${projectFieldValueFragment}
                 }
               }
             }
-          `).join(`
-`)}
+            ${pageInfoFragment}
+          }
+        }
+      }
       ${rateLimitFragment}
     }
   `;
-  const response = await octokit.graphql(query);
-  debugGraphQLRateLimit("List Project Fields for List of Issues", issues, response);
-  return response;
-}
-async function listProjectFieldsForListOfIssues(params) {
-  if (!params.issues.length) {
-    return new Map;
+  const response = await octokit.graphql.paginate(query, params);
+  debugGraphQLRateLimit("List Project Fields for Project", params, response);
+  const items = response.organization.projectV2?.items.nodes;
+  if (!items) {
+    return [];
   }
-  const projectFieldsMap = new Map;
-  let cursor = 0;
-  while (cursor < params.issues.length) {
-    const batch = params.issues.slice(cursor, cursor + BATCH_SIZE);
-    const response = await listProjectFieldsForBatch(batch);
-    for (let i = 0;i < batch.length; i++) {
-      const issueResponse = response[`issue${i + 1}`];
-      if (issueResponse === undefined) {
-        continue;
-      }
-      const project = issueResponse.issue.projectItems.nodes.find((p) => p.project.number === params.projectNumber);
-      if (project !== undefined) {
-        projectFieldsMap.set(batch[i], mapProjectFieldValues(project.fieldValues.nodes));
-      } else {
-        projectFieldsMap.set(batch[i], new Map);
-      }
+  for (const item of items) {
+    if (item.content === null) {
+      continue;
     }
-    cursor += BATCH_SIZE;
+    projectFieldsForProject.push({
+      issue: {
+        organization: item.content.repository.owner.login,
+        repository: item.content.repository.name,
+        issueNumber: item.content.number
+      },
+      fields: mapProjectFieldValues(item.fieldValues.nodes)
+    });
   }
-  return projectFieldsMap;
+  return projectFieldsForProject;
 }
 // src/2_pull/github/graphql/project.ts
 async function listIssuesForProject(params) {
@@ -96564,6 +96573,7 @@ class IssueList {
   memory = Memory.getInstance();
   sourceOfTruth;
   issues;
+  organization;
   projectNumber;
   commentsFetched = false;
   projectFieldsFetched = false;
@@ -96673,17 +96683,22 @@ class IssueList {
   static async forRepo(params, fetchParams) {
     const response = await listIssuesForRepo(params);
     const { issues, title: title2, url } = response;
-    return await new IssueList(issues, { title: title2, url }).fetch(fetchParams);
+    const list = new IssueList(issues, { title: title2, url });
+    list.organization = params.organization;
+    return await list.fetch(fetchParams);
   }
   static async forSubissues(params, fetchParams) {
     const response = await listSubissuesForIssue(params);
     const { subissues: subissues2, title: title2, url } = response;
-    return await new IssueList(subissues2, { title: title2, url }).fetch(fetchParams);
+    const list = new IssueList(subissues2, { title: title2, url });
+    list.organization = params.organization;
+    return await list.fetch(fetchParams);
   }
   static async forProject(params, fetchParams) {
     const response = await listIssuesForProject(params);
     const { issues, title: title2, url } = response;
     const list = new IssueList(issues, { title: title2, url });
+    list.organization = params.organization;
     list.projectNumber = params.projectNumber;
     return await list.fetch(fetchParams);
   }
@@ -96691,6 +96706,7 @@ class IssueList {
     const response = await listIssuesForProject(params);
     const { issues, title: title2, url } = response;
     const list = new IssueList(issues, { title: title2, url });
+    list.organization = params.organization;
     list.projectNumber = params.projectNumber;
     let view;
     if (params.projectViewNumber === undefined) {
@@ -96746,23 +96762,31 @@ class IssueList {
   async fetchProjectFields(projectNumber) {
     if (this.projectFieldsFetched)
       return;
-    const projectFields = await listProjectFieldsForListOfIssues({
-      issues: this.issues.map((issue3) => ({
-        organization: issue3.organization,
-        repository: issue3.repository,
-        issueNumber: issue3.number
-      })),
-      projectNumber
+    if (!this.projectNumber && projectNumber) {
+      this.projectNumber = projectNumber;
+    }
+    if (!this.organization || !this.projectNumber) {
+      throw new Error("Cannot fetch Project Fields without a common organization and projectNumber.");
+    }
+    const projectFieldItems = await listProjectFieldsForProject({
+      organization: this.organization,
+      projectNumber: this.projectNumber
     });
-    for (const [params, fields] of projectFields) {
-      const issue3 = this.find(params);
+    for (const issue3 of this.issues) {
+      issue3.project = {
+        organization: this.organization,
+        number: this.projectNumber,
+        fields: new Map
+      };
+    }
+    for (const item of projectFieldItems) {
+      const issue3 = this.find(item.issue);
       if (issue3 !== undefined) {
         issue3.project = {
-          number: projectNumber,
-          fields
+          organization: this.organization,
+          number: this.projectNumber,
+          fields: item.fields
         };
-      } else {
-        throw new Error(`Fetching Project Fields for nonexistent Issue ${JSON.stringify(params)}`);
       }
     }
     this.projectFieldsFetched = true;
@@ -96921,7 +96945,7 @@ class IssueWrapper {
     return this.issue.project?.number;
   }
   get _projectFields() {
-    if (!this.issue.project) {
+    if (this.issue.project === undefined) {
       return;
     }
     return this.issue.project.fields;
@@ -96982,10 +97006,15 @@ class IssueWrapper {
     });
   }
   async fetchProjectFields(projectNumber) {
-    if (this.issue.project?.number === projectNumber) {
-      return;
+    if (this.issue.project) {
+      if (this.issue.project.number === projectNumber) {
+        return;
+      } else {
+        throw new Error(`Issue is already associated with Project #${this.issue.project.number}, cannot fetch fields for Project #${projectNumber}.`);
+      }
     }
     this.issue.project = {
+      organization: this.organization,
       number: projectNumber,
       fields: await listProjectFieldsForIssue({
         organization: this.organization,
@@ -96996,7 +97025,7 @@ class IssueWrapper {
     };
   }
   async fetchSubissues(params) {
-    this.subissues = await IssueList.forSubissues({
+    const subissues2 = await IssueList.forSubissues({
       organization: this.organization,
       repository: this.repository,
       issueNumber: this.number
@@ -97004,6 +97033,10 @@ class IssueWrapper {
       ...params,
       subissues: false
     }));
+    if (this.projectNumber) {
+      await subissues2.fetchProjectFields(this.projectNumber);
+    }
+    this.subissues = subissues2;
   }
   get comments() {
     const sortCommentsByDateDesc = (a, b) => {
@@ -102196,11 +102229,9 @@ async function summarizeToSentence(markdown) {
 `)) {
     return markdown.trim();
   }
-  if (markdown.length > 1000) {
-    return "Content too long to summarize. View the original context instead.";
-  }
   return await generateSummary({
     prompt: {
+      name: "Summarize to Sentence",
       model: "openai/gpt-4.1-mini",
       messages: [
         {
@@ -102212,7 +102243,8 @@ async function summarizeToSentence(markdown) {
         { role: "user", content: markdown }
       ]
     },
-    content: markdown
+    content: markdown,
+    truncateTokens: 2000
   });
 }
 
