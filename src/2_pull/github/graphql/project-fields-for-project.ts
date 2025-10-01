@@ -41,7 +41,7 @@ export async function listProjectFieldsForProject(
     query paginate($organization: String!, $projectNumber: Int!, $cursor: String) {
       organization(login: $organization) {
         projectV2(number: $projectNumber) {
-          items(first: 20, after: $cursor) {
+          items(first: 10, after: $cursor) {
             nodes {
               content {
                 ... on Issue {
@@ -54,7 +54,7 @@ export async function listProjectFieldsForProject(
                   number
                 }
               }
-              fieldValues(first: 100) {
+              fieldValues(first: 50) {
                 nodes {
                   ${projectFieldValueFragment}
                 }
