@@ -9,7 +9,7 @@ import * as plugins from "./plugins";
 import { getActionPath, isGitHubAction } from "@config";
 
 const TEMPLATE_DIR = "templates";
-const DEFAULT_TEMPLATE = "summary";
+const DEFAULT_TEMPLATE = "summary.md.vto";
 
 const env = vento({
   dataVarname: "global",
@@ -29,6 +29,11 @@ for (const plugin of Object.values(plugins)) {
 }
 
 export async function loadTemplate(templatePath: string | undefined) {
+  if (templatePath && !path.basename(templatePath).includes(".")) {
+    // If no file extension, assume it's a .md.vto file
+    templatePath += ".md.vto";
+  }
+
   const defaultTemplate = checkDefaultTemplates(templatePath);
   if (defaultTemplate) {
     console.log("Using default template:", defaultTemplate);
@@ -37,11 +42,6 @@ export async function loadTemplate(templatePath: string | undefined) {
 
   if (!templatePath) {
     throw new Error("Template path is required");
-  }
-
-  if (!path.basename(templatePath).includes(".")) {
-    // If no file extension, assume it's a .md.vto file
-    templatePath += ".md.vto";
   }
 
   let from: string | undefined;
@@ -58,7 +58,7 @@ export async function loadTemplate(templatePath: string | undefined) {
 export function checkDefaultTemplates(
   template: string | undefined,
 ): string | undefined {
-  if (!template || template === "default") {
+  if (!template) {
     template = DEFAULT_TEMPLATE;
   }
 
@@ -66,6 +66,8 @@ export function checkDefaultTemplates(
   let defaultDir = path.join(TEMPLATE_DIR, "default");
   if (isGitHubAction()) {
     defaultDir = getActionPath(defaultDir);
+  } else {
+    defaultDir = path.join(process.cwd(), defaultDir);
   }
 
   const templatePath = path.join(defaultDir, template);
