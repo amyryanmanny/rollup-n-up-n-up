@@ -5,15 +5,11 @@
 
 {{- overrideUpdateDetection(`${timeframe}\nskip()`) -}}
 
-{{- set issues = await github.url(url, {
-  subissues: true,
-  updates: numUpdates,
-  fields: ['Status', 'Trending'],
-}) -}}
+{{- set issues = await github.url(url, { subissues: true }) -}}
 
 # [{{ title }} {{ today }}]({{ issues.url }})
 
-{{ issues.remember() }}
+{{ issues.remember({ updates: numUpdates, fields: ['Status', 'Trending'] }) }}
 {{ await memory.summarize("tldr") }}
 
 {{ debugMemory() |> safe }}
