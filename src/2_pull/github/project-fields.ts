@@ -25,6 +25,7 @@ export const slugifyProjectFieldName = (field: string): string => {
 };
 
 export type Project = {
+  organization: string;
   number: number;
   fields: Map<string, ProjectField>;
 };

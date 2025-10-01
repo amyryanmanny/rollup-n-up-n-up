@@ -51,7 +51,7 @@ export type Issue = {
     url: string;
     number: number;
   };
-  project?: Project; // TODO: Support multiple projects
+  project?: Project;
   isSubissue?: boolean;
 };
 
@@ -229,7 +229,7 @@ export class IssueWrapper {
   }
 
   get _projectFields(): Map<string, ProjectField> | undefined {
-    if (!this.issue.project) {
+    if (this.issue.project === undefined) {
       return undefined;
     }
     return this.issue.project.fields;
@@ -305,11 +305,18 @@ export class IssueWrapper {
   }
 
   private async fetchProjectFields(projectNumber: number) {
-    if (this.issue.project?.number === projectNumber) {
-      return; // Already fetched
+    if (this.issue.project) {
+      if (this.issue.project.number === projectNumber) {
+        return; // Already fetched
+      } else {
+        throw new Error(
+          `Issue is already associated with Project #${this.issue.project.number}, cannot fetch fields for Project #${projectNumber}.`,
+        );
+      }
     }
 
     this.issue.project = {
+      organization: this.organization,
       number: projectNumber,
       fields: await listProjectFieldsForIssue({
         organization: this.organization,
@@ -321,7 +328,7 @@ export class IssueWrapper {
   }
 
   private async fetchSubissues(params: IssueFetchParameters) {
-    this.subissues = await IssueList.forSubissues(
+    const subissues = await IssueList.forSubissues(
       {
         organization: this.organization,
         repository: this.repository,
@@ -333,6 +340,10 @@ export class IssueWrapper {
         subissues: false,
       }),
     );
+    if (this.projectNumber) {
+      await subissues.fetchProjectFields(this.projectNumber);
+    }
+    this.subissues = subissues;
   }
 
   // Comment

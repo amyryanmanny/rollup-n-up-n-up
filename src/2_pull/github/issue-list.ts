@@ -29,7 +29,7 @@ import {
   listSubissuesForIssue,
   type ListSubissuesForIssueParameters,
   listCommentsForListOfIssues,
-  listProjectFieldsForListOfIssues,
+  listProjectFieldsForProject,
 } from "./graphql";
 
 import { IssueWrapper, type Issue } from "./issue";
@@ -46,7 +46,8 @@ export class IssueList {
   private sourceOfTruth: SourceOfTruth;
   private issues: IssueWrapper[];
 
-  private projectNumber?: number; // If all issues are from the same Project
+  public organization?: string; // All issues from the same Org
+  public projectNumber?: number; // All issues from the same Project
 
   // State to prevent unnecessary fetching
   private commentsFetched = false;
@@ -229,7 +230,10 @@ export class IssueList {
     const response = await listIssuesForRepo(params);
     const { issues, title, url } = response;
 
-    return await new IssueList(issues, { title, url }).fetch(fetchParams);
+    const list = new IssueList(issues, { title, url });
+    list.organization = params.organization;
+
+    return await list.fetch(fetchParams);
   }
 
   static async forSubissues(
@@ -239,7 +243,10 @@ export class IssueList {
     const response = await listSubissuesForIssue(params);
     const { subissues, title, url } = response;
 
-    return await new IssueList(subissues, { title, url }).fetch(fetchParams);
+    const list = new IssueList(subissues, { title, url });
+    list.organization = params.organization;
+
+    return await list.fetch(fetchParams);
   }
 
   static async forProject(
@@ -250,6 +257,7 @@ export class IssueList {
     const { issues, title, url } = response;
 
     const list = new IssueList(issues, { title, url });
+    list.organization = params.organization;
     list.projectNumber = params.projectNumber;
 
     return await list.fetch(fetchParams);
@@ -263,6 +271,7 @@ export class IssueList {
     const { issues, title, url } = response;
 
     const list = new IssueList(issues, { title, url });
+    list.organization = params.organization;
     list.projectNumber = params.projectNumber;
 
     let view: ProjectView;
@@ -334,29 +343,42 @@ export class IssueList {
     this.commentsFetched = true;
   }
 
-  private async fetchProjectFields(projectNumber: number) {
+  async fetchProjectFields(projectNumber?: number) {
     if (this.projectFieldsFetched) return;
 
-    const projectFields = await listProjectFieldsForListOfIssues({
-      issues: this.issues.map((issue) => ({
-        organization: issue.organization,
-        repository: issue.repository,
-        issueNumber: issue.number,
-      })),
-      projectNumber,
+    if (!this.projectNumber && projectNumber) {
+      // Default to the common Project Number
+      this.projectNumber = projectNumber;
+    }
+
+    if (!this.organization || !this.projectNumber) {
+      throw new Error(
+        "Cannot fetch Project Fields without a common organization and projectNumber.",
+      );
+    }
+
+    const projectFieldItems = await listProjectFieldsForProject({
+      organization: this.organization,
+      projectNumber: this.projectNumber,
     });
 
-    for (const [params, fields] of projectFields) {
-      const issue = this.find(params);
+    // Initialize Issues with empty ProjectFields first
+    for (const issue of this.issues) {
+      issue.project = {
+        organization: this.organization,
+        number: this.projectNumber,
+        fields: new Map(),
+      };
+    }
+
+    for (const item of projectFieldItems) {
+      const issue = this.find(item.issue);
       if (issue !== undefined) {
         issue.project = {
-          number: projectNumber,
-          fields,
+          organization: this.organization,
+          number: this.projectNumber,
+          fields: item.fields,
         };
-      } else {
-        throw new Error(
-          `Fetching Project Fields for nonexistent Issue ${JSON.stringify(params)}`,
-        );
       }
     }
 
