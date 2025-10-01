@@ -96391,7 +96391,7 @@ async function listProjectFieldsForProject(params) {
     query paginate($organization: String!, $projectNumber: Int!, $cursor: String) {
       organization(login: $organization) {
         projectV2(number: $projectNumber) {
-          items(first: 20, after: $cursor) {
+          items(first: 10, after: $cursor) {
             nodes {
               content {
                 ... on Issue {
@@ -96404,7 +96404,7 @@ async function listProjectFieldsForProject(params) {
                   number
                 }
               }
-              fieldValues(first: 100) {
+              fieldValues(first: 50) {
                 nodes {
                   ${projectFieldValueFragment}
                 }
@@ -102288,7 +102288,7 @@ function hoist(env, code, outputVar, tokens) {
 
 // src/4_template/load.ts
 var TEMPLATE_DIR = "templates";
-var DEFAULT_TEMPLATE = "summary";
+var DEFAULT_TEMPLATE = "summary.md.vto";
 var env = mod_default({
   dataVarname: "global",
   autoDataVarname: true,
@@ -102302,6 +102302,9 @@ for (const plugin of Object.values(exports_plugins)) {
   env.use(plugin());
 }
 async function loadTemplate(templatePath) {
+  if (templatePath && !path7.basename(templatePath).includes(".")) {
+    templatePath += ".md.vto";
+  }
   const defaultTemplate = checkDefaultTemplates(templatePath);
   if (defaultTemplate) {
     console.log("Using default template:", defaultTemplate);
@@ -102309,9 +102312,6 @@ async function loadTemplate(templatePath) {
   }
   if (!templatePath) {
     throw new Error("Template path is required");
-  }
-  if (!path7.basename(templatePath).includes(".")) {
-    templatePath += ".md.vto";
   }
   let from;
   if (path7.isAbsolute(templatePath)) {
@@ -102321,12 +102321,14 @@ async function loadTemplate(templatePath) {
   return await env.load(templatePath, from);
 }
 function checkDefaultTemplates(template) {
-  if (!template || template === "default") {
+  if (!template) {
     template = DEFAULT_TEMPLATE;
   }
   let defaultDir = path7.join(TEMPLATE_DIR, "default");
   if (isGitHubAction()) {
     defaultDir = getActionPath(defaultDir);
+  } else {
+    defaultDir = path7.join(process.cwd(), defaultDir);
   }
   const templatePath = path7.join(defaultDir, template);
   if (fs5.existsSync(templatePath) && fs5.lstatSync(templatePath).isFile()) {
