@@ -2,6 +2,7 @@ import "tiktoken/tiktoken_bg.wasm"; // So Bun knows to bundle it as an asset
 // TODO: There is a way to use the path directly from the import, but Typescript rejects it
 
 import fs from "fs";
+import { cloneDeep } from "lodash";
 
 import { getAssetPath, isGitHubAction } from "@config";
 
@@ -11,7 +12,8 @@ import {
   Tiktoken,
   type TiktokenModel,
 } from "tiktoken/init";
-import type { Message } from "./summarize";
+
+import type { Message, PromptParameters } from "./summarize";
 
 async function initWasm() {
   // Because of this bug https://github.com/oven-sh/bun/issues/4216
@@ -59,31 +61,38 @@ export function countTokens(
 }
 
 export function truncate(
-  githubModelName: string,
-  messages: Array<Message>,
+  params: PromptParameters,
   maxTokens: number,
-) {
-  const encoding = getEncoding(githubModelName);
-  if (!encoding) return;
+): PromptParameters {
+  params = cloneDeep(params); // Avoid mutating the original params
+
+  const encoding = getEncoding(params.model);
+  if (!encoding) return params;
 
   // Only truncate the user message
-  const userMessage = messages.find((msg) => msg.role === "user");
-  if (!userMessage) return;
+  const userMessages = params.messages.filter((msg) => msg.role === "user");
 
-  const rest = messages.filter((msg) => msg.role !== "user");
+  if (userMessages.length === 0) return params;
+  if (userMessages.length > 1) {
+    // TODO: Handle multiple user messages
+    throw new Error("Multiple user messages not supported for truncation");
+  }
 
-  const usedTokens = countTokens(githubModelName, rest)!;
+  const userMessage = userMessages[0]!;
+
+  const rest = params.messages.filter((msg) => msg.role !== "user");
+  const usedTokens = countTokens(params.model, rest)!;
   const remainingTokens = maxTokens - usedTokens;
 
   const userMessageTokens = encoding.encode(userMessage.content);
-  const userMessageIndex = messages.indexOf(userMessage);
 
   if (userMessageTokens.length > remainingTokens) {
-    // Replace the user message content with truncated content
-    messages[userMessageIndex]!.content = new TextDecoder().decode(
+    userMessage.content = new TextDecoder().decode(
       encoding.decode(userMessageTokens.slice(0, remainingTokens)),
     );
   }
+
+  return params;
 }
 
 await initWasm();

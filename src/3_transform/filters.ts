@@ -73,13 +73,9 @@ export async function summarizeToSentence(markdown: string): Promise<string> {
     return markdown.trim();
   }
 
-  if (markdown.length > 1000) {
-    // 4.1-mini has a context length of 8k tokens, but let's not go crazy
-    return "Content too long to summarize. View the original context instead.";
-  }
-
   return await generateSummary({
     prompt: {
+      name: "Summarize to Sentence",
       model: "openai/gpt-4.1-mini", // Use a lighter model for this task
       messages: [
         {
@@ -92,5 +88,6 @@ export async function summarizeToSentence(markdown: string): Promise<string> {
       ],
     },
     content: markdown,
+    truncateTokens: 2000,
   });
 }

@@ -58,11 +58,6 @@ export async function runPrompt(params: PromptParameters): Promise<string> {
     throw new Error("xai models are not supported");
   }
 
-  const truncateTokens = getConfig("TRUNCATE_TOKENS");
-  if (truncateTokens !== undefined) {
-    truncate(model, messages, Number(truncateTokens));
-  }
-
   const inputTokens = countTokens(model, messages);
   if (inputTokens !== undefined) {
     console.log("Input tokens:", inputTokens);
@@ -84,7 +79,7 @@ export async function runPrompt(params: PromptParameters): Promise<string> {
 
     await limiter.removeTokens(1); // Wait for rate limit
 
-    // For debugging the hanging request issue
+    // For debugging hanging request issues
     console.log(`Calling /chat/completions for ${params.name}`);
 
     const response = await client.path("/chat/completions").post({
@@ -125,12 +120,13 @@ export type SummaryParameters = {
   content: string | MemoryBank;
   prompt: string | PromptParameters;
   placeholders?: Record<string, string>;
+  truncateTokens?: number;
 };
 
 export async function generateSummary(
   params: SummaryParameters,
 ): Promise<string> {
-  let { content, prompt, placeholders } = params;
+  let { content, prompt, placeholders, truncateTokens } = params;
 
   if (typeof prompt === "string") {
     // Try to load the prompt file if a string is provided
@@ -157,7 +153,7 @@ export async function generateSummary(
   }
 
   const input = content.map((item) => item.content).join("\n\n");
-  // Insert content to summarize into a few sensible placeholders
+  // Insert summary content into a few sensible placeholders
   placeholders = {
     ...placeholders,
     input,
@@ -165,7 +161,13 @@ export async function generateSummary(
     memory: input,
   };
 
-  const hydratedPrompt = insertPlaceholders(prompt, placeholders);
+  let hydratedPrompt = insertPlaceholders(prompt, placeholders);
+
+  truncateTokens = Number(truncateTokens || getConfig("TRUNCATE_TOKENS"));
+  if (!isNaN(truncateTokens)) {
+    hydratedPrompt = truncate(hydratedPrompt, truncateTokens);
+  }
+
   const summary = await runPrompt(hydratedPrompt);
 
   // Save the summary in the cache
