@@ -39090,11 +39090,102 @@ function paginateGraphQL(octokit) {
   };
 }
 
-// node_modules/@octokit/plugin-throttling/dist-bundle/index.js
+// node_modules/@octokit/plugin-retry/dist-bundle/index.js
 var import_light = __toESM(require_light(), 1);
+
+// node_modules/@octokit/plugin-retry/node_modules/@octokit/request-error/dist-src/index.js
+class RequestError7 extends Error {
+  name;
+  status;
+  request;
+  response;
+  constructor(message, statusCode, options) {
+    super(message);
+    this.name = "HttpError";
+    this.status = Number.parseInt(statusCode);
+    if (Number.isNaN(this.status)) {
+      this.status = 0;
+    }
+    if ("response" in options) {
+      this.response = options.response;
+    }
+    const requestCopy = Object.assign({}, options.request);
+    if (options.request.headers.authorization) {
+      requestCopy.headers = Object.assign({}, options.request.headers, {
+        authorization: options.request.headers.authorization.replace(/(?<! ) .*$/, " [REDACTED]")
+      });
+    }
+    requestCopy.url = requestCopy.url.replace(/\bclient_secret=\w+/g, "client_secret=[REDACTED]").replace(/\baccess_token=\w+/g, "access_token=[REDACTED]");
+    this.request = requestCopy;
+  }
+}
+
+// node_modules/@octokit/plugin-retry/dist-bundle/index.js
 var VERSION23 = "0.0.0-development";
+async function errorRequest(state, octokit, error, options) {
+  if (!error.request || !error.request.request) {
+    throw error;
+  }
+  if (error.status >= 400 && !state.doNotRetry.includes(error.status)) {
+    const retries = options.request.retries != null ? options.request.retries : state.retries;
+    const retryAfter = Math.pow((options.request.retryCount || 0) + 1, 2);
+    throw octokit.retry.retryRequest(error, retries, retryAfter);
+  }
+  throw error;
+}
+async function wrapRequest(state, octokit, request7, options) {
+  const limiter = new import_light.default;
+  limiter.on("failed", function(error, info) {
+    const maxRetries = ~~error.request.request.retries;
+    const after = ~~error.request.request.retryAfter;
+    options.request.retryCount = info.retryCount + 1;
+    if (maxRetries > info.retryCount) {
+      return after * state.retryAfterBaseValue;
+    }
+  });
+  return limiter.schedule(requestWithGraphqlErrorHandling.bind(null, state, octokit, request7), options);
+}
+async function requestWithGraphqlErrorHandling(state, octokit, request7, options) {
+  const response = await request7(request7, options);
+  if (response.data && response.data.errors && response.data.errors.length > 0 && /Something went wrong while executing your query/.test(response.data.errors[0].message)) {
+    const error = new RequestError7(response.data.errors[0].message, 500, {
+      request: options,
+      response
+    });
+    return errorRequest(state, octokit, error, options);
+  }
+  return response;
+}
+function retry(octokit, octokitOptions) {
+  const state = Object.assign({
+    enabled: true,
+    retryAfterBaseValue: 1000,
+    doNotRetry: [400, 401, 403, 404, 410, 422, 451],
+    retries: 3
+  }, octokitOptions.retry);
+  if (state.enabled) {
+    octokit.hook.error("request", errorRequest.bind(null, state, octokit));
+    octokit.hook.wrap("request", wrapRequest.bind(null, state, octokit));
+  }
+  return {
+    retry: {
+      retryRequest: (error, retries, retryAfter) => {
+        error.request.request = Object.assign({}, error.request.request, {
+          retries,
+          retryAfter
+        });
+        return error;
+      }
+    }
+  };
+}
+retry.VERSION = VERSION23;
+
+// node_modules/@octokit/plugin-throttling/dist-bundle/index.js
+var import_light2 = __toESM(require_light(), 1);
+var VERSION24 = "0.0.0-development";
 var noop2 = () => Promise.resolve();
-function wrapRequest(state, request7, options) {
+function wrapRequest2(state, request7, options) {
   return state.retryLimiter.schedule(doRequest, state, request7, options);
 }
 async function doRequest(state, request7, options) {
@@ -39162,30 +39253,30 @@ function routeMatcher2(paths) {
 var regex = routeMatcher2(triggers_notification_paths_default);
 var triggersNotification = regex.test.bind(regex);
 var groups = {};
-var createGroups = function(Bottleneck, common) {
-  groups.global = new Bottleneck.Group({
+var createGroups = function(Bottleneck2, common) {
+  groups.global = new Bottleneck2.Group({
     id: "octokit-global",
     maxConcurrent: 10,
     ...common
   });
-  groups.auth = new Bottleneck.Group({
+  groups.auth = new Bottleneck2.Group({
     id: "octokit-auth",
     maxConcurrent: 1,
     ...common
   });
-  groups.search = new Bottleneck.Group({
+  groups.search = new Bottleneck2.Group({
     id: "octokit-search",
     maxConcurrent: 1,
     minTime: 2000,
     ...common
   });
-  groups.write = new Bottleneck.Group({
+  groups.write = new Bottleneck2.Group({
     id: "octokit-write",
     maxConcurrent: 1,
     minTime: 1000,
     ...common
   });
-  groups.notifications = new Bottleneck.Group({
+  groups.notifications = new Bottleneck2.Group({
     id: "octokit-notifications",
     maxConcurrent: 1,
     minTime: 3000,
@@ -39195,7 +39286,7 @@ var createGroups = function(Bottleneck, common) {
 function throttling(octokit, octokitOptions) {
   const {
     enabled = true,
-    Bottleneck = import_light.default,
+    Bottleneck: Bottleneck2 = import_light2.default,
     id = "no-id",
     timeout = 1000 * 60 * 2,
     connection
@@ -39208,14 +39299,14 @@ function throttling(octokit, octokitOptions) {
     common.connection = connection;
   }
   if (groups.global == null) {
-    createGroups(Bottleneck, common);
+    createGroups(Bottleneck2, common);
   }
   const state = Object.assign({
     clustering: connection != null,
     triggersNotification,
     fallbackSecondaryRateRetryAfter: 60,
     retryAfterBaseValue: 1000,
-    retryLimiter: new Bottleneck,
+    retryLimiter: new Bottleneck2,
     id,
     ...groups
   }, octokitOptions.throttle);
@@ -39233,7 +39324,7 @@ function throttling(octokit, octokitOptions) {
     `);
   }
   const events = {};
-  const emitter = new Bottleneck.Events(events);
+  const emitter = new Bottleneck2.Events(events);
   events.on("secondary-limit", state.onSecondaryRateLimit);
   events.on("rate-limit", state.onRateLimit);
   events.on("error", (e) => octokit.log.warn("Error in throttling-plugin limit handler", e));
@@ -39266,10 +39357,10 @@ function throttling(octokit, octokitOptions) {
       return retryAfter * state2.retryAfterBaseValue;
     }
   });
-  octokit.hook.wrap("request", wrapRequest.bind(null, state));
+  octokit.hook.wrap("request", wrapRequest2.bind(null, state));
   return {};
 }
-throttling.VERSION = VERSION23;
+throttling.VERSION = VERSION24;
 throttling.triggersNotification = triggersNotification;
 
 // src/util/config/index.ts
@@ -39448,9 +39539,10 @@ function getGitHubDefaultSecrets() {
   };
 }
 // src/util/octokit.ts
-var OctokitWithPlugins = Octokit2.plugin(paginateGraphQL, throttling);
+var OctokitWithPlugins = Octokit2.plugin(paginateGraphQL, retry, throttling);
 var octokitInstance;
 var throttle = {
+  retryAfterBaseValue: 3 * 1000,
   onRateLimit: (retryAfter, options, octokit, retryCount) => {
     octokit.log.warn(`Request quota exhausted for request ${options.method} ${options.url}`);
     if (retryCount < 3) {
@@ -39493,7 +39585,7 @@ function getOctokit() {
 }
 
 // node_modules/@octokit/request-error/dist-src/index.js
-class RequestError7 extends Error {
+class RequestError8 extends Error {
   name;
   status;
   request;
@@ -39521,7 +39613,7 @@ class RequestError7 extends Error {
 
 // src/util/error.ts
 function isOctokitRequestError(error) {
-  return error instanceof RequestError7 || error.name === "HttpError";
+  return error instanceof RequestError8 || error.name === "HttpError";
 }
 
 // src/5_push/github/repo-file.ts

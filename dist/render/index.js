@@ -66342,7 +66342,7 @@ var require_requestUtils = __commonJS((exports) => {
       return new Promise((resolve) => setTimeout(resolve, milliseconds));
     });
   }
-  function retry(name, method, getStatusCode, maxAttempts = constants_1.DefaultRetryAttempts, delay3 = constants_1.DefaultRetryDelay, onError = undefined) {
+  function retry2(name, method, getStatusCode, maxAttempts = constants_1.DefaultRetryAttempts, delay3 = constants_1.DefaultRetryDelay, onError = undefined) {
     return __awaiter2(this, undefined, undefined, function* () {
       let errorMessage = "";
       let attempt = 1;
@@ -66380,10 +66380,10 @@ var require_requestUtils = __commonJS((exports) => {
       throw Error(`${name} failed: ${errorMessage}`);
     });
   }
-  exports.retry = retry;
+  exports.retry = retry2;
   function retryTypedResponse(name, method, maxAttempts = constants_1.DefaultRetryAttempts, delay3 = constants_1.DefaultRetryDelay) {
     return __awaiter2(this, undefined, undefined, function* () {
-      return yield retry(name, method, (response) => response.statusCode, maxAttempts, delay3, (error) => {
+      return yield retry2(name, method, (response) => response.statusCode, maxAttempts, delay3, (error) => {
         if (error instanceof http_client_1.HttpClientError) {
           return {
             statusCode: error.statusCode,
@@ -66400,7 +66400,7 @@ var require_requestUtils = __commonJS((exports) => {
   exports.retryTypedResponse = retryTypedResponse;
   function retryHttpClientResponse(name, method, maxAttempts = constants_1.DefaultRetryAttempts, delay3 = constants_1.DefaultRetryDelay) {
     return __awaiter2(this, undefined, undefined, function* () {
-      return yield retry(name, method, (response) => response.message.statusCode, maxAttempts, delay3);
+      return yield retry2(name, method, (response) => response.message.statusCode, maxAttempts, delay3);
     });
   }
   exports.retryHttpClientResponse = retryHttpClientResponse;
@@ -72384,7 +72384,7 @@ var require_cache3 = __commonJS((exports) => {
 var require_lodash = __commonJS((exports, module) => {
   (function() {
     var undefined2;
-    var VERSION24 = "4.17.21";
+    var VERSION25 = "4.17.21";
     var LARGE_ARRAY_SIZE = 200;
     var CORE_ERROR_TEXT = "Unsupported core-js use. Try https://npms.io/search?q=ponyfill.", FUNC_ERROR_TEXT = "Expected a function", INVALID_TEMPL_VAR_ERROR_TEXT = "Invalid `variable` option passed into `_.template`";
     var HASH_UNDEFINED = "__lodash_hash_undefined__";
@@ -77621,7 +77621,7 @@ __p += '`;
         });
         return source;
       }(), { chain: false });
-      lodash.VERSION = VERSION24;
+      lodash.VERSION = VERSION25;
       arrayEach(["bind", "bindKey", "curry", "curryRight", "partial", "partialRight"], function(methodName) {
         lodash[methodName].placeholder = lodash;
       });
@@ -81802,9 +81802,13 @@ function getModelEndpoint(tokenKind) {
   if (customEndpoint) {
     return customEndpoint;
   }
+  let owner = "github";
+  if (isGitHubAction()) {
+    owner = import_github2.context.repo.owner;
+  }
   switch (tokenKind) {
     case "app":
-      return `https://models.github.ai/orgs/${import_github2.context.repo.owner}/inference`;
+      return `https://models.github.ai/orgs/${owner}/inference`;
     case "pat":
     case "default":
       return "https://models.github.ai/inference";
@@ -93028,11 +93032,102 @@ function paginateGraphQL(octokit) {
   };
 }
 
-// node_modules/@octokit/plugin-throttling/dist-bundle/index.js
+// node_modules/@octokit/plugin-retry/dist-bundle/index.js
 var import_light = __toESM(require_light(), 1);
+
+// node_modules/@octokit/plugin-retry/node_modules/@octokit/request-error/dist-src/index.js
+class RequestError7 extends Error {
+  name;
+  status;
+  request;
+  response;
+  constructor(message, statusCode, options) {
+    super(message);
+    this.name = "HttpError";
+    this.status = Number.parseInt(statusCode);
+    if (Number.isNaN(this.status)) {
+      this.status = 0;
+    }
+    if ("response" in options) {
+      this.response = options.response;
+    }
+    const requestCopy = Object.assign({}, options.request);
+    if (options.request.headers.authorization) {
+      requestCopy.headers = Object.assign({}, options.request.headers, {
+        authorization: options.request.headers.authorization.replace(/(?<! ) .*$/, " [REDACTED]")
+      });
+    }
+    requestCopy.url = requestCopy.url.replace(/\bclient_secret=\w+/g, "client_secret=[REDACTED]").replace(/\baccess_token=\w+/g, "access_token=[REDACTED]");
+    this.request = requestCopy;
+  }
+}
+
+// node_modules/@octokit/plugin-retry/dist-bundle/index.js
 var VERSION23 = "0.0.0-development";
+async function errorRequest(state2, octokit, error, options) {
+  if (!error.request || !error.request.request) {
+    throw error;
+  }
+  if (error.status >= 400 && !state2.doNotRetry.includes(error.status)) {
+    const retries = options.request.retries != null ? options.request.retries : state2.retries;
+    const retryAfter = Math.pow((options.request.retryCount || 0) + 1, 2);
+    throw octokit.retry.retryRequest(error, retries, retryAfter);
+  }
+  throw error;
+}
+async function wrapRequest(state2, octokit, request9, options) {
+  const limiter = new import_light.default;
+  limiter.on("failed", function(error, info) {
+    const maxRetries = ~~error.request.request.retries;
+    const after = ~~error.request.request.retryAfter;
+    options.request.retryCount = info.retryCount + 1;
+    if (maxRetries > info.retryCount) {
+      return after * state2.retryAfterBaseValue;
+    }
+  });
+  return limiter.schedule(requestWithGraphqlErrorHandling.bind(null, state2, octokit, request9), options);
+}
+async function requestWithGraphqlErrorHandling(state2, octokit, request9, options) {
+  const response = await request9(request9, options);
+  if (response.data && response.data.errors && response.data.errors.length > 0 && /Something went wrong while executing your query/.test(response.data.errors[0].message)) {
+    const error = new RequestError7(response.data.errors[0].message, 500, {
+      request: options,
+      response
+    });
+    return errorRequest(state2, octokit, error, options);
+  }
+  return response;
+}
+function retry(octokit, octokitOptions) {
+  const state2 = Object.assign({
+    enabled: true,
+    retryAfterBaseValue: 1000,
+    doNotRetry: [400, 401, 403, 404, 410, 422, 451],
+    retries: 3
+  }, octokitOptions.retry);
+  if (state2.enabled) {
+    octokit.hook.error("request", errorRequest.bind(null, state2, octokit));
+    octokit.hook.wrap("request", wrapRequest.bind(null, state2, octokit));
+  }
+  return {
+    retry: {
+      retryRequest: (error, retries, retryAfter) => {
+        error.request.request = Object.assign({}, error.request.request, {
+          retries,
+          retryAfter
+        });
+        return error;
+      }
+    }
+  };
+}
+retry.VERSION = VERSION23;
+
+// node_modules/@octokit/plugin-throttling/dist-bundle/index.js
+var import_light2 = __toESM(require_light(), 1);
+var VERSION24 = "0.0.0-development";
 var noop2 = () => Promise.resolve();
-function wrapRequest(state2, request9, options) {
+function wrapRequest2(state2, request9, options) {
   return state2.retryLimiter.schedule(doRequest, state2, request9, options);
 }
 async function doRequest(state2, request9, options) {
@@ -93100,30 +93195,30 @@ function routeMatcher2(paths) {
 var regex = routeMatcher2(triggers_notification_paths_default);
 var triggersNotification = regex.test.bind(regex);
 var groups = {};
-var createGroups = function(Bottleneck, common) {
-  groups.global = new Bottleneck.Group({
+var createGroups = function(Bottleneck2, common) {
+  groups.global = new Bottleneck2.Group({
     id: "octokit-global",
     maxConcurrent: 10,
     ...common
   });
-  groups.auth = new Bottleneck.Group({
+  groups.auth = new Bottleneck2.Group({
     id: "octokit-auth",
     maxConcurrent: 1,
     ...common
   });
-  groups.search = new Bottleneck.Group({
+  groups.search = new Bottleneck2.Group({
     id: "octokit-search",
     maxConcurrent: 1,
     minTime: 2000,
     ...common
   });
-  groups.write = new Bottleneck.Group({
+  groups.write = new Bottleneck2.Group({
     id: "octokit-write",
     maxConcurrent: 1,
     minTime: 1000,
     ...common
   });
-  groups.notifications = new Bottleneck.Group({
+  groups.notifications = new Bottleneck2.Group({
     id: "octokit-notifications",
     maxConcurrent: 1,
     minTime: 3000,
@@ -93133,7 +93228,7 @@ var createGroups = function(Bottleneck, common) {
 function throttling(octokit, octokitOptions) {
   const {
     enabled: enabled2 = true,
-    Bottleneck = import_light.default,
+    Bottleneck: Bottleneck2 = import_light2.default,
     id = "no-id",
     timeout = 1000 * 60 * 2,
     connection
@@ -93146,14 +93241,14 @@ function throttling(octokit, octokitOptions) {
     common.connection = connection;
   }
   if (groups.global == null) {
-    createGroups(Bottleneck, common);
+    createGroups(Bottleneck2, common);
   }
   const state2 = Object.assign({
     clustering: connection != null,
     triggersNotification,
     fallbackSecondaryRateRetryAfter: 60,
     retryAfterBaseValue: 1000,
-    retryLimiter: new Bottleneck,
+    retryLimiter: new Bottleneck2,
     id,
     ...groups
   }, octokitOptions.throttle);
@@ -93171,7 +93266,7 @@ function throttling(octokit, octokitOptions) {
     `);
   }
   const events = {};
-  const emitter = new Bottleneck.Events(events);
+  const emitter = new Bottleneck2.Events(events);
   events.on("secondary-limit", state2.onSecondaryRateLimit);
   events.on("rate-limit", state2.onRateLimit);
   events.on("error", (e) => octokit.log.warn("Error in throttling-plugin limit handler", e));
@@ -93204,16 +93299,17 @@ function throttling(octokit, octokitOptions) {
       return retryAfter * state22.retryAfterBaseValue;
     }
   });
-  octokit.hook.wrap("request", wrapRequest.bind(null, state2));
+  octokit.hook.wrap("request", wrapRequest2.bind(null, state2));
   return {};
 }
-throttling.VERSION = VERSION23;
+throttling.VERSION = VERSION24;
 throttling.triggersNotification = triggersNotification;
 
 // src/util/octokit.ts
-var OctokitWithPlugins = Octokit2.plugin(paginateGraphQL, throttling);
+var OctokitWithPlugins = Octokit2.plugin(paginateGraphQL, retry, throttling);
 var octokitInstance;
 var throttle = {
+  retryAfterBaseValue: 3 * 1000,
   onRateLimit: (retryAfter, options, octokit, retryCount) => {
     octokit.log.warn(`Request quota exhausted for request ${options.method} ${options.url}`);
     if (retryCount < 3) {
@@ -96171,7 +96267,8 @@ async function listCommentsForIssue(params) {
   return response.repositoryOwner.repository.issue.comments.nodes.map(mapCommentNode);
 }
 // src/2_pull/github/graphql/comments-for-issue-list.ts
-async function listCommentsForListOfIssues(params) {
+var BATCH_SIZE = 10;
+async function listCommentsForBatchOfIssues(params) {
   if (!params.issues.length) {
     return new Map;
   }
@@ -96193,6 +96290,9 @@ async function listCommentsForListOfIssues(params) {
     }
   `;
   const response = await octokit.graphql(query);
+  if (response === undefined) {
+    throw new Error("No response from GitHub, please try again.");
+  }
   debugGraphQLRateLimit("List Comments for List of Issues", `Num Issues: ${params.issues.length}`, response);
   const issues = new Map;
   for (let i = 0;i < params.issues.length; i++) {
@@ -96202,6 +96302,22 @@ async function listCommentsForListOfIssues(params) {
     }
     const comments = issueResponse.issue.comments.nodes.map(mapCommentNode);
     issues.set(params.issues[i], comments);
+  }
+  return issues;
+}
+async function listCommentsForListOfIssues(params) {
+  const issues = new Map;
+  let cursor = 0;
+  while (cursor < params.issues.length) {
+    const batch = params.issues.slice(cursor, cursor + BATCH_SIZE);
+    const batchIssues = await listCommentsForBatchOfIssues({
+      issues: batch,
+      numComments: params.numComments
+    });
+    batchIssues.forEach((comments, issue2) => {
+      issues.set(issue2, comments);
+    });
+    cursor += BATCH_SIZE;
   }
   return issues;
 }
@@ -96391,7 +96507,7 @@ async function listProjectFieldsForProject(params) {
     query paginate($organization: String!, $projectNumber: Int!, $cursor: String) {
       organization(login: $organization) {
         projectV2(number: $projectNumber) {
-          items(first: 10, after: $cursor) {
+          items(first: 3, after: $cursor) {
             nodes {
               content {
                 ... on Issue {
@@ -96404,7 +96520,7 @@ async function listProjectFieldsForProject(params) {
                   number
                 }
               }
-              fieldValues(first: 50) {
+              fieldValues(first: 100) {
                 nodes {
                   ${projectFieldValueFragment}
                 }
