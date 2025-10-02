@@ -67,6 +67,10 @@ export async function listCommentsForListOfIssues(
     } & RateLimit
   >(query);
 
+  if (response === undefined) {
+    throw new Error("No response from GitHub, please try again.");
+  }
+
   debugGraphQLRateLimit(
     "List Comments for List of Issues",
     `Num Issues: ${params.issues.length}`,
