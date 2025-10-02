@@ -1,14 +1,17 @@
 import { context } from "@actions/github";
 
+// Octokit
 import { Octokit } from "@octokit/rest";
 import { createAppAuth } from "@octokit/auth-app";
 
+// Plugins
 import { paginateGraphQL } from "@octokit/plugin-paginate-graphql";
+import { retry } from "@octokit/plugin-retry";
 import { throttling, type ThrottlingOptions } from "@octokit/plugin-throttling";
 
 import { getGitHubSecrets, type GitHubSecretKind } from "./config/github";
 
-const OctokitWithPlugins = Octokit.plugin(paginateGraphQL, throttling);
+const OctokitWithPlugins = Octokit.plugin(paginateGraphQL, retry, throttling);
 type OctokitType = InstanceType<typeof OctokitWithPlugins>;
 
 type Token = {
@@ -22,6 +25,7 @@ let octokitInstance: OctokitType;
 // ThrottlingOptions
 // TODO: Clustering: https://github.com/octokit/plugin-throttling.js/?tab=readme-ov-file#clustering
 const throttle: ThrottlingOptions = {
+  retryAfterBaseValue: 3 * 1000, // 3 seconds
   onRateLimit: (retryAfter, options, octokit, retryCount) => {
     octokit.log.warn(
       `Request quota exhausted for request ${options.method} ${options.url}`,
