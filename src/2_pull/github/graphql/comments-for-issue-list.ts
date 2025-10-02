@@ -24,7 +24,9 @@ type ListCommentsForListOfIssuesResponse = Map<
   Array<Comment>
 >;
 
-export async function listCommentsForListOfIssues(
+const BATCH_SIZE = 10;
+
+async function listCommentsForBatchOfIssues(
   params: ListCommentsForListOfIssuesParams,
 ): Promise<ListCommentsForListOfIssuesResponse> {
   if (!params.issues.length) {
@@ -32,7 +34,6 @@ export async function listCommentsForListOfIssues(
   }
 
   const octokit = getOctokit();
-
   const query = `
     query {
       ${params.issues
@@ -86,6 +87,28 @@ export async function listCommentsForListOfIssues(
 
     const comments = issueResponse.issue.comments.nodes.map(mapCommentNode);
     issues.set(params.issues[i] as GetIssueParameters, comments);
+  }
+
+  return issues;
+}
+
+export async function listCommentsForListOfIssues(
+  params: ListCommentsForListOfIssuesParams,
+): Promise<ListCommentsForListOfIssuesResponse> {
+  const issues = new Map<GetIssueParameters, Array<Comment>>();
+
+  let cursor = 0;
+
+  while (cursor < params.issues.length) {
+    const batch = params.issues.slice(cursor, cursor + BATCH_SIZE);
+    const batchIssues = await listCommentsForBatchOfIssues({
+      issues: batch,
+      numComments: params.numComments,
+    });
+    batchIssues.forEach((comments, issue) => {
+      issues.set(issue, comments);
+    });
+    cursor += BATCH_SIZE;
   }
 
   return issues;

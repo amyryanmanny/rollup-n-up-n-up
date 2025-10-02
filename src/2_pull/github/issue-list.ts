@@ -316,7 +316,6 @@ export class IssueList {
   private async fetchComments(numComments: number) {
     if (this.commentsFetched) return;
 
-    // Fetching all issues at once is much faster, especially with throttling
     const commentsMap = await listCommentsForListOfIssues({
       issues: this.issues.map((issue) => {
         return {
