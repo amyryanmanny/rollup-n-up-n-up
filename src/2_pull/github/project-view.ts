@@ -134,8 +134,11 @@ export class ProjectView {
     return this.params.filterQuery;
   }
 
+  // Filter Introspection
   get projectFields(): string[] {
-    const defaultFields = ProjectView.defaultFields();
+    // Currently any non-default field is a Project Field
+    // But when implementing Issue Fields, they will need to be distinguished
+    const defaultFields = ProjectView.defaultFields;
     return this.filters
       .map((f) => f.key)
       .filter((key) => {
@@ -143,12 +146,23 @@ export class ProjectView {
       });
   }
 
-  get needsProjectFields(): boolean {
+  get usesProjectFields(): boolean {
     return this.projectFields.length > 0;
   }
 
-  // Helpers
-  filter(issue: IssueWrapper): boolean {
+  get unsupportedFields(): string[] {
+    const unsupported = ProjectView.unsupportedDefaultFields;
+    return this.filters
+      .map((f) => f.key)
+      .filter((key) => unsupported.includes(key));
+  }
+
+  get usesUnsupportedFields(): boolean {
+    return this.unsupportedFields.length > 0;
+  }
+
+  // Apply the View's filters to an Issue
+  filterIssue(issue: IssueWrapper): boolean {
     // Default Fields
     if (!this.checkOpen(issue)) {
       return false;
@@ -177,11 +191,13 @@ export class ProjectView {
       return false;
     }
 
-    // TODO: Handle Issue Fields when they are released
+    // TODO: Handle Issue Fields
+    // https://github.com/github/core-productivity/discussions/821
 
     return true;
   }
 
+  // Filtering
   checkFilters(filterName: string, values: string[]): boolean {
     const filters = this.filters.filter((f) => f.key === filterName);
 
@@ -313,7 +329,8 @@ export class ProjectView {
     return true;
   }
 
-  static defaultFields(): string[] {
+  // Static
+  static get defaultFields(): string[] {
     return [
       // Supported fields
       "is",
@@ -323,12 +340,16 @@ export class ProjectView {
       "assignee",
       "label",
       "updated",
+      ...this.unsupportedDefaultFields,
+    ];
+  }
 
-      // TODO: Add unsupported fields
+  static get unsupportedDefaultFields(): string[] {
+    return [
       "linked-pull-requests",
       "milestone",
       "reviewers",
-      "parent-issue", // This one is easy
+      "parent-issue", // TODO: This one is easy
       "sub-issues-progress",
       // Boolean modifiers which take a field name
       "no",

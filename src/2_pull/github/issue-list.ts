@@ -1,3 +1,5 @@
+import { warning } from "@actions/core";
+
 import {
   validateRenderOptions,
   type IssueFetchParameters,
@@ -80,6 +82,7 @@ export class IssueList {
     // A bit naughty, but it mutates the original list
     // More like an ORM QuerySet than a JavaScript array
     this.issues = this.issues.filter(predicate);
+
     return this;
   }
 
@@ -114,17 +117,14 @@ export class IssueList {
     return this.sourceOfTruth.groupKey;
   }
 
-  // Issue Filtering / Grouping / Sorting
+  // Issue Transformations
   private async applyViewFilter(view: ProjectView): Promise<IssueList> {
-    if (view.needsProjectFields) {
+    if (view.usesProjectFields) {
       // Make sure the Project Fields are fetched so we can filter on them
       await this.fetchProjectFields(view.projectNumber);
     }
 
-    // Filter the issues by the view's query
-    this.filter((issue) => view.filter(issue));
-
-    // Scope the Source of Truth to the view
+    // Scope the Source of Truth to the View
     if (view.number) {
       this.sourceOfTruth.url += `/views/${view.number}`;
     } else {
@@ -135,7 +135,16 @@ export class IssueList {
     if (view.name) {
       this.sourceOfTruth.title += ` (${view.name})`;
     }
-    return this;
+
+    if (view.unsupportedFields.length > 0) {
+      warning(
+        `View "${this.sourceOfTruth.url}" uses unsupported filters: ${view.unsupportedFields.join(", ")}.
+        These fields will be ignored. Please contact the maintainer or open a "rollup-n-up-n-up" Issue to request for them to be implemented.`,
+      );
+    }
+
+    // Filter the issues by the View's query
+    return this.filter((issue) => view.filterIssue(issue));
   }
 
   sort(fieldName: string, direction: "asc" | "desc" = "asc"): IssueList {
