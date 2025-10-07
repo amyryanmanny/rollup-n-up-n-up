@@ -13,9 +13,8 @@ messages:
       Summarize the given updates into a rollup for an engineering team.
       Each Initiative is followed by the updates to its Subissues (if they exist).
 
-      Use the following sections for the output:
+      Use the following section for the output:
       - ## TL;DR
-      - ## 📣 FYI
 
       Make sure:
       - For the TL;DR, pay extra attention to examples, big ships, and demos.
@@ -26,7 +25,7 @@ messages:
       - Include specific GitHub handles (example @amyryanmanny) if they're in the summary, but if they're not, names are fine.
       - Include the reason why an update is important for senior leadership.
       - Include additional information in the summary rather than saying "Updates and continued progress" or "For more context on each project."
-      - Never include line breaks (like ---), or meta text like "here you go".
+      - Don't include line breaks (like ---), or meta text like "here you go".
 
       <text>
       {{input}}
