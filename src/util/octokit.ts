@@ -25,7 +25,6 @@ let octokitInstance: OctokitType;
 // ThrottlingOptions
 // TODO: Clustering: https://github.com/octokit/plugin-throttling.js/?tab=readme-ov-file#clustering
 const throttle: ThrottlingOptions = {
-  retryAfterBaseValue: 3 * 1000, // 3 seconds
   onRateLimit: (retryAfter, options, octokit, retryCount) => {
     octokit.log.warn(
       `Request quota exhausted for request ${options.method} ${options.url}`,
