@@ -88,11 +88,7 @@ export class IssueList {
 
   copy(): IssueList {
     // Useful to perform multiple inline filters in templates
-    const copy = new IssueList([], {
-      title: this.sourceOfTruth.title,
-      url: this.sourceOfTruth.url,
-      groupKey: this.sourceOfTruth.groupKey,
-    });
+    const copy = new IssueList([], { ...this.sourceOfTruth });
     copy.issues = [...this.issues]; // Shallow copy the issues
     return copy;
   }
