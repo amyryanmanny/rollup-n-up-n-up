@@ -135,7 +135,8 @@ out
 .pnp.*
 
 # dotenv / secrets
-.env
+.env*
+!.env.example
 *.pem
 
 # templates
