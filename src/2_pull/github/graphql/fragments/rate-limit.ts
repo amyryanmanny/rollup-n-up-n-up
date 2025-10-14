@@ -22,8 +22,8 @@ export function debugGraphQLRateLimit(
   try {
     runningTotal += response.rateLimit.cost;
     if (getConfig("DEBUG_RATE_LIMIT_QUERY_COST")) {
-      console.log(`Query: "${caller}"`);
-      console.log(`  ${JSON.stringify(params, null, 2)}`);
+      console.log(`- Query: "${caller}"`);
+      console.log(`${JSON.stringify(params, null, 2)}`);
       console.log(`  Rate limit cost: ${response.rateLimit.cost}`);
     }
   } catch (error: unknown) {
