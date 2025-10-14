@@ -81612,7 +81612,7 @@ var require_dist7 = __commonJS((exports) => {
 });
 
 // src/1_trigger/action-render.ts
-var import_core4 = __toESM(require_core(), 1);
+var import_core5 = __toESM(require_core(), 1);
 
 // src/util/config/index.ts
 var import_dotenv = __toESM(require_main2(), 1);
@@ -93309,7 +93309,6 @@ throttling.triggersNotification = triggersNotification;
 var OctokitWithPlugins = Octokit2.plugin(paginateGraphQL, retry, throttling);
 var octokitInstance;
 var throttle = {
-  retryAfterBaseValue: 3 * 1000,
   onRateLimit: (retryAfter, options, octokit, retryCount) => {
     octokit.log.warn(`Request quota exhausted for request ${options.method} ${options.url}`);
     if (retryCount < 3) {
@@ -94260,6 +94259,9 @@ function renderIssueList(issueList, options, headerLevel = 2) {
     sources
   };
 }
+// src/2_pull/github/issue-list.ts
+var import_core4 = __toESM(require_core(), 1);
+
 // node_modules/quickchart-js/build/quickchart.mjs
 var import_cross_fetch = __toESM(require_node_ponyfill(), 1);
 var import_javascript_stringify = __toESM(require_dist7(), 1);
@@ -96005,15 +96007,22 @@ class ProjectView {
     return this.params.filterQuery;
   }
   get projectFields() {
-    const defaultFields = ProjectView.defaultFields();
+    const defaultFields = ProjectView.defaultFields;
     return this.filters.map((f) => f.key).filter((key) => {
       return !defaultFields.includes(key);
     });
   }
-  get needsProjectFields() {
+  get usesProjectFields() {
     return this.projectFields.length > 0;
   }
-  filter(issue2) {
+  get unsupportedFields() {
+    const unsupported = ProjectView.unsupportedDefaultFields;
+    return this.filters.map((f) => f.key).filter((key) => unsupported.includes(key));
+  }
+  get usesUnsupportedFields() {
+    return this.unsupportedFields.length > 0;
+  }
+  filterIssue(issue2) {
     if (!this.checkOpen(issue2)) {
       return false;
     }
@@ -96138,7 +96147,7 @@ class ProjectView {
     }
     return true;
   }
-  static defaultFields() {
+  static get defaultFields() {
     return [
       "is",
       "title",
@@ -96147,6 +96156,11 @@ class ProjectView {
       "assignee",
       "label",
       "updated",
+      ...this.unsupportedDefaultFields
+    ];
+  }
+  static get unsupportedDefaultFields() {
+    return [
       "linked-pull-requests",
       "milestone",
       "reviewers",
@@ -96225,8 +96239,8 @@ function debugGraphQLRateLimit(caller, params, response) {
   try {
     runningTotal += response.rateLimit.cost;
     if (getConfig("DEBUG_RATE_LIMIT_QUERY_COST")) {
-      console.log(`Query: "${caller}"`);
-      console.log(`  ${JSON.stringify(params, null, 2)}`);
+      console.log(`- Query: "${caller}"`);
+      console.log(`${JSON.stringify(params, null, 2)}`);
       console.log(`  Rate limit cost: ${response.rateLimit.cost}`);
     }
   } catch (error) {
@@ -96498,9 +96512,8 @@ async function listProjectFieldsForIssue(params) {
 // src/2_pull/github/graphql/project-fields-for-project.ts
 async function listProjectFieldsForProject(params) {
   const { organization, projectNumber } = params;
-  const projectFieldsForProject = [];
   if (!organization || !projectNumber) {
-    return projectFieldsForProject;
+    throw new Error("Organization and projectNumber are required to listProjectFieldsForProject");
   }
   const octokit = getOctokit();
   const query = `
@@ -96535,23 +96548,19 @@ async function listProjectFieldsForProject(params) {
   `;
   const response = await octokit.graphql.paginate(query, params);
   debugGraphQLRateLimit("List Project Fields for Project", params, response);
-  const items = response.organization.projectV2?.items.nodes;
-  if (!items) {
-    return [];
-  }
-  for (const item of items) {
-    if (item.content === null) {
-      continue;
-    }
-    projectFieldsForProject.push({
+  const projectFieldsForProject = response.organization.projectV2.items.nodes.filter((projectItem) => {
+    const content = projectItem.content;
+    return content && content.__typename === "Issue";
+  }).map((projectItem) => {
+    return {
       issue: {
-        organization: item.content.repository.owner.login,
-        repository: item.content.repository.name,
-        issueNumber: item.content.number
+        organization: projectItem.content.repository.owner.login,
+        repository: projectItem.content.repository.name,
+        issueNumber: projectItem.content.number
       },
-      fields: mapProjectFieldValues(item.fieldValues.nodes)
-    });
-  }
+      fields: mapProjectFieldValues(projectItem.fieldValues.nodes)
+    };
+  });
   return projectFieldsForProject;
 }
 // src/2_pull/github/graphql/project.ts
@@ -96562,15 +96571,17 @@ async function listIssuesForProject(params) {
       organization(login: $organization) {
         projectV2(number: $projectNumber) {
           title
-          items(first: 50, after: $cursor) {
-            edges {
-              node {
-                id
-                content {
-                  __typename
-                  ... on Issue {
-                    ${issueNodeFragment}
-                  }
+          items(first: 5, after: $cursor) {
+            nodes {
+              content {
+                __typename
+                ... on Issue {
+                  ${issueNodeFragment}
+                }
+              }
+              fieldValues(first: 100) {
+                nodes {
+                  ${projectFieldValueFragment}
                 }
               }
             }
@@ -96583,12 +96594,17 @@ async function listIssuesForProject(params) {
   `;
   const response = await octokit.graphql.paginate(query, params);
   debugGraphQLRateLimit("List Issues for Project", params, response);
-  const issues = response.organization.projectV2.items.edges.filter((projectItem) => {
-    const content = projectItem.node.content;
+  const issues = response.organization.projectV2.items.nodes.filter((projectItem) => {
+    const content = projectItem.content;
     return content && content.__typename === "Issue";
   }).map((projectItem) => {
     return {
-      ...mapIssueNode(projectItem.node.content),
+      ...mapIssueNode(projectItem.content),
+      project: {
+        organization: params.organization,
+        number: params.projectNumber,
+        fields: mapProjectFieldValues(projectItem.fieldValues.nodes)
+      },
       isSubissue: false
     };
   });
@@ -96598,6 +96614,9 @@ async function listIssuesForProject(params) {
     url: `https://github.com/orgs/${params.organization}/projects/${params.projectNumber}`
   };
 }
+var memoizedListIssuesForProject = memoize(listIssuesForProject, {
+  cacheKey: ([params]) => JSON.stringify(params)
+});
 // src/2_pull/github/graphql/repo.ts
 async function listIssuesForRepo(params) {
   const octokit = getOctokit();
@@ -96710,11 +96729,7 @@ class IssueList {
     return this;
   }
   copy() {
-    const copy = new IssueList([], {
-      title: this.sourceOfTruth.title,
-      url: this.sourceOfTruth.url,
-      groupKey: this.sourceOfTruth.groupKey
-    });
+    const copy = new IssueList([], { ...this.sourceOfTruth });
     copy.issues = [...this.issues];
     return copy;
   }
@@ -96734,10 +96749,9 @@ class IssueList {
     return this.sourceOfTruth.groupKey;
   }
   async applyViewFilter(view) {
-    if (view.needsProjectFields) {
+    if (view.usesProjectFields) {
       await this.fetchProjectFields(view.projectNumber);
     }
-    this.filter((issue3) => view.filter(issue3));
     if (view.number) {
       this.sourceOfTruth.url += `/views/${view.number}`;
     } else {
@@ -96746,7 +96760,11 @@ class IssueList {
     if (view.name) {
       this.sourceOfTruth.title += ` (${view.name})`;
     }
-    return this;
+    if (view.unsupportedFields.length > 0) {
+      import_core4.warning(`View "${this.sourceOfTruth.url}" uses unsupported filters: ${view.unsupportedFields.join(", ")}.
+        These fields will be ignored. Please contact the maintainer or open a "rollup-n-up-n-up" Issue to request for them to be implemented.`);
+    }
+    return this.filter((issue3) => view.filterIssue(issue3));
   }
   sort(fieldName, direction = "asc") {
     this.issues.sort((a, b) => {
@@ -96811,19 +96829,21 @@ class IssueList {
     return await list.fetch(fetchParams);
   }
   static async forProject(params, fetchParams) {
-    const response = await listIssuesForProject(params);
+    const response = await memoizedListIssuesForProject(params);
     const { issues, title: title2, url } = response;
     const list = new IssueList(issues, { title: title2, url });
     list.organization = params.organization;
     list.projectNumber = params.projectNumber;
+    list.projectFieldsFetched = true;
     return await list.fetch(fetchParams);
   }
   static async forProjectView(params, fetchParams) {
-    const response = await listIssuesForProject(params);
+    const response = await memoizedListIssuesForProject(params);
     const { issues, title: title2, url } = response;
     const list = new IssueList(issues, { title: title2, url });
     list.organization = params.organization;
     list.projectNumber = params.projectNumber;
+    list.projectFieldsFetched = true;
     let view;
     if (params.projectViewNumber === undefined) {
       if (params.customQuery === undefined) {
@@ -102514,6 +102534,6 @@ async function renderTemplate(templatePath) {
 // src/1_trigger/action-render.ts
 var template = getConfig("TEMPLATE");
 var md = await renderTemplate(template);
-import_core4.setOutput("md", md);
-import_core4.summary.addRaw(`
+import_core5.setOutput("md", md);
+import_core5.summary.addRaw(`
 ${md}`, true).write();

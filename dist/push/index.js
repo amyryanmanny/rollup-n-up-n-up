@@ -39542,7 +39542,6 @@ function getGitHubDefaultSecrets() {
 var OctokitWithPlugins = Octokit2.plugin(paginateGraphQL, retry, throttling);
 var octokitInstance;
 var throttle = {
-  retryAfterBaseValue: 3 * 1000,
   onRateLimit: (retryAfter, options, octokit, retryCount) => {
     octokit.log.warn(`Request quota exhausted for request ${options.method} ${options.url}`);
     if (retryCount < 3) {
