@@ -24,6 +24,19 @@ type ListSubissuesForIssueResponse = {
   url: string;
 };
 
+// TODO: Subissues short circuit to improve performance
+// query {
+//   node(id: "I_123") {
+//     ... on Issue {
+//       subIssuesSummary {
+//         total
+//         completed
+//         percentCompleted
+//       }
+//     }
+//   }
+// }
+
 export async function listSubissuesForIssue(
   params: ListSubissuesForIssueParameters,
 ): Promise<ListSubissuesForIssueResponse> {

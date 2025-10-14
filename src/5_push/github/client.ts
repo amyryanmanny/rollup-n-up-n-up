@@ -36,6 +36,8 @@ export type PushTarget = {
   url: string;
 };
 
+// TODO: Replace with an iterable enum
+// Check which targets are supported for each client
 export type PushType =
   | "repo-file"
   | "issue"
@@ -92,6 +94,8 @@ export class GitHubPushClient {
         return this.appendToDiscussion(url, title, body);
       case "discussion-comment":
         return this.pushToDiscussionComment(url, body);
+      // TODO: Reply in Discussion Comment thread
+      // case "discussion-reply": https://github.com/github/synapse/discussions/101#discussioncomment-13500088
       default:
         throw new Error(
           `Unsupported push type: ${type}. Supported types are: repo-file, issue, issue-comment, discussion, discussion-append, discussion-comment.`,

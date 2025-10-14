@@ -133,6 +133,7 @@ export class IssueList {
     }
 
     if (view.unsupportedFields.length > 0) {
+      // TODO: Wrapper around warning and logging module
       warning(
         `View "${this.sourceOfTruth.url}" uses unsupported filters: ${view.unsupportedFields.join(", ")}.
         These fields will be ignored. Please contact the maintainer or open a "rollup-n-up-n-up" Issue to request for them to be implemented.`,
