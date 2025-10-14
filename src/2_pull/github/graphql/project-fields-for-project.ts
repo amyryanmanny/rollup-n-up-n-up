@@ -4,16 +4,16 @@ import type { GetIssueParameters } from "./issue";
 import type { ProjectField } from "../project-fields";
 
 import {
-  debugGraphQLRateLimit,
-  rateLimitFragment,
-  type RateLimit,
-} from "./fragments/rate-limit";
-import {
   mapProjectFieldValues,
   projectFieldValueFragment,
   type ProjectFieldValueNode,
 } from "./fragments/project-fields";
 import { pageInfoFragment } from "./fragments/page-info";
+import {
+  debugGraphQLRateLimit,
+  rateLimitFragment,
+  type RateLimit,
+} from "./fragments/rate-limit";
 
 type ListProjectFieldsForProjectParams = {
   organization: string;
@@ -29,10 +29,11 @@ export async function listProjectFieldsForProject(
   params: ListProjectFieldsForProjectParams,
 ): Promise<ListProjectFieldsForProjectResponse> {
   const { organization, projectNumber } = params;
-  const projectFieldsForProject: ListProjectFieldsForProjectResponse = [];
 
   if (!organization || !projectNumber) {
-    return projectFieldsForProject;
+    throw new Error(
+      "Organization and projectNumber are required to listProjectFieldsForProject",
+    );
   }
 
   const octokit = getOctokit();
@@ -75,6 +76,7 @@ export async function listProjectFieldsForProject(
           items: {
             nodes: Array<{
               content: {
+                __typename: string;
                 repository: {
                   owner: {
                     login: string;
@@ -88,33 +90,28 @@ export async function listProjectFieldsForProject(
               };
             }>;
           };
-        } | null;
+        };
       };
     } & RateLimit
   >(query, params);
 
   debugGraphQLRateLimit("List Project Fields for Project", params, response);
 
-  const items = response.organization.projectV2?.items.nodes;
-  if (!items) {
-    return [];
-  }
-
-  for (const item of items) {
-    if (item.content === null) {
-      // If it's not an Issue, skip it
-      continue;
-    }
-
-    projectFieldsForProject.push({
-      issue: {
-        organization: item.content.repository.owner.login,
-        repository: item.content.repository.name,
-        issueNumber: item.content.number,
-      },
-      fields: mapProjectFieldValues(item.fieldValues.nodes),
+  const projectFieldsForProject = response.organization.projectV2.items.nodes
+    .filter((projectItem) => {
+      const content = projectItem.content;
+      return content && content.__typename === "Issue";
+    })
+    .map((projectItem) => {
+      return {
+        issue: {
+          organization: projectItem.content!.repository.owner.login,
+          repository: projectItem.content!.repository.name,
+          issueNumber: projectItem.content!.number,
+        },
+        fields: mapProjectFieldValues(projectItem.fieldValues.nodes),
+      };
     });
-  }
 
   return projectFieldsForProject;
 }
