@@ -1,13 +1,21 @@
+import memoize from "memoize";
+
 import { getOctokit } from "@util/octokit";
 import type { PageInfoForward } from "@octokit/plugin-paginate-graphql";
 
 import type { Issue } from "../issue";
+import type { Project } from "../project-fields";
 
 import {
   issueNodeFragment,
   mapIssueNode,
   type IssueNode,
 } from "./fragments/issue";
+import {
+  mapProjectFieldValues,
+  projectFieldValueFragment,
+  type ProjectFieldValueNode,
+} from "./fragments/project-fields";
 import { pageInfoFragment } from "./fragments/page-info";
 import {
   debugGraphQLRateLimit,
@@ -26,7 +34,7 @@ type ListIssuesForProjectResponse = {
   url: string;
 };
 
-export async function listIssuesForProject(
+async function listIssuesForProject(
   params: ListIssuesForProjectParameters,
 ): Promise<ListIssuesForProjectResponse> {
   const octokit = getOctokit();
@@ -36,15 +44,17 @@ export async function listIssuesForProject(
       organization(login: $organization) {
         projectV2(number: $projectNumber) {
           title
-          items(first: 50, after: $cursor) {
-            edges {
-              node {
-                id
-                content {
-                  __typename
-                  ... on Issue {
-                    ${issueNodeFragment}
-                  }
+          items(first: 5, after: $cursor) {
+            nodes {
+              content {
+                __typename
+                ... on Issue {
+                  ${issueNodeFragment}
+                }
+              }
+              fieldValues(first: 100) {
+                nodes {
+                  ${projectFieldValueFragment}
                 }
               }
             }
@@ -62,10 +72,10 @@ export async function listIssuesForProject(
         projectV2: {
           title: string;
           items: {
-            edges: Array<{
-              node: {
-                id: string;
-                content: IssueNode | null;
+            nodes: Array<{
+              content: IssueNode | null;
+              fieldValues: {
+                nodes: Array<ProjectFieldValueNode>;
               };
             }>;
             pageInfo: PageInfoForward;
@@ -77,14 +87,19 @@ export async function listIssuesForProject(
 
   debugGraphQLRateLimit("List Issues for Project", params, response);
 
-  const issues = response.organization.projectV2.items.edges
+  const issues = response.organization.projectV2.items.nodes
     .filter((projectItem) => {
-      const content = projectItem.node.content;
+      const content = projectItem.content;
       return content && content.__typename === "Issue";
     })
     .map((projectItem) => {
       return {
-        ...mapIssueNode(projectItem.node.content!),
+        ...mapIssueNode(projectItem.content!),
+        project: {
+          organization: params.organization,
+          number: params.projectNumber,
+          fields: mapProjectFieldValues(projectItem.fieldValues.nodes),
+        } as Project,
         isSubissue: false,
       };
     });
@@ -95,3 +110,10 @@ export async function listIssuesForProject(
     url: `https://github.com/orgs/${params.organization}/projects/${params.projectNumber}`,
   };
 }
+
+const memoizedListIssuesForProject = memoize(listIssuesForProject, {
+  cacheKey: ([params]: [ListIssuesForProjectParameters]) =>
+    JSON.stringify(params),
+});
+
+export { memoizedListIssuesForProject as listIssuesForProject };

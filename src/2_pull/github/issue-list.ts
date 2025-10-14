@@ -262,8 +262,11 @@ export class IssueList {
     const { issues, title, url } = response;
 
     const list = new IssueList(issues, { title, url });
+
+    // Set Project metavariables
     list.organization = params.organization;
     list.projectNumber = params.projectNumber;
+    list.projectFieldsFetched = true;
 
     return await list.fetch(fetchParams);
   }
@@ -276,8 +279,11 @@ export class IssueList {
     const { issues, title, url } = response;
 
     const list = new IssueList(issues, { title, url });
+
+    // Set Project metavariables
     list.organization = params.organization;
     list.projectNumber = params.projectNumber;
+    list.projectFieldsFetched = true;
 
     let view: ProjectView;
     if (params.projectViewNumber === undefined) {
