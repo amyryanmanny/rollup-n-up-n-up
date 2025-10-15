@@ -1,4 +1,4 @@
-export function getChannelIdFromName(channelName: string) {
+export async function getChannelIdFromName(channelName: string) {
   if (channelName.startsWith("#")) {
     channelName = channelName.slice(1);
   }
