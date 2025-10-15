@@ -414,6 +414,10 @@ export class IssueWrapper {
 
     await Promise.all(
       this.assignees.map((assignee) => {
+        // Log the DMs since it's an important operation
+        console.log(
+          `Sending Slack DM to @${assignee} about Issue ${this.header}`,
+        );
         return slack.sendDm(assignee, message);
       }),
     );
