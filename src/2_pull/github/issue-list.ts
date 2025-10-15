@@ -396,6 +396,11 @@ export class IssueList {
     this.projectFieldsFetched = true;
   }
 
+  // Slack
+  async dmAssignees(message: string): Promise<void> {
+    await Promise.all(this.issues.map((issue) => issue.dmAssignees(message)));
+  }
+
   // Render / Memory Functions
   private _render(
     options: DirtyIssueRenderOptions,

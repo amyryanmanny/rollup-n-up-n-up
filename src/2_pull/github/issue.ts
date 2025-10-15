@@ -28,6 +28,11 @@ import {
   type ProjectField,
 } from "./project-fields";
 
+import { SlackClient } from "@push/slack/client";
+import { slackLink } from "@push/slack/util";
+
+const FOOTER = `This is an automated message from the Rollup-n-up bot from Synapse team. Report any errors in #synapse.`;
+
 // Interface
 export type Issue = {
   title: string;
@@ -400,6 +405,19 @@ export class IssueWrapper {
 
   get hasUpdate(): boolean {
     return !this.latestUpdate.isEmpty;
+  }
+
+  // Slack
+  async dmAssignees(message: string): Promise<void> {
+    const slack = new SlackClient();
+
+    message = `Regarding the Issue ${slackLink(this.url, this.title)}:\n${message}\n_${FOOTER}_`;
+
+    await Promise.all(
+      this.assignees.map((assignee) => {
+        return slack.sendDm(assignee, message);
+      }),
+    );
   }
 
   // Render / Memory Functions
