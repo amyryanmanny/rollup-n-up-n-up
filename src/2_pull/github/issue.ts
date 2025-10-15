@@ -28,8 +28,7 @@ import {
   type ProjectField,
 } from "./project-fields";
 
-import { SlackClient } from "@push/slack/client";
-import { slackLink } from "@push/slack/util";
+import { SlackClient, slackLink } from "@push/slack";
 
 const FOOTER = `This is an automated message from the Rollup-n-up bot from Synapse team. Report any errors in #synapse.`;
 
