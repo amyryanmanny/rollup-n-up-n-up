@@ -229,6 +229,10 @@ export class IssueList {
     this.issues = issues.map((issue) => new IssueWrapper(issue));
   }
 
+  static null(): IssueList {
+    return new IssueList([], { title: "No Issues", url: "" });
+  }
+
   static async forRepo(
     params: ListIssuesForRepoParameters,
     fetchParams: IssueFetchParameters,
@@ -246,13 +250,21 @@ export class IssueList {
     params: ListSubissuesForIssueParameters,
     fetchParams: IssueFetchParameters,
   ): Promise<IssueList> {
-    const response = await listSubissuesForIssue(params);
-    const { subissues, title, url } = response;
+    try {
+      const response = await listSubissuesForIssue(params);
+      const { subissues, title, url } = response;
 
-    const list = new IssueList(subissues, { title, url });
-    list.organization = params.organization;
+      const list = new IssueList(subissues, { title, url });
+      list.organization = params.organization;
 
-    return await list.fetch(fetchParams);
+      return await list.fetch(fetchParams);
+    } catch (error: unknown) {
+      // Sometimes the Subissues call fails
+      warning(
+        `Could not fetch Subissues for ${JSON.stringify(params)}. Error: ${error}`,
+      );
+      return IssueList.null();
+    }
   }
 
   static async forProject(
