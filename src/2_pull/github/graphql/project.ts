@@ -44,7 +44,7 @@ async function listIssuesForProject(
       organization(login: $organization) {
         projectV2(number: $projectNumber) {
           title
-          items(first: 5, after: $cursor) {
+          items(first: 10, after: $cursor) {
             nodes {
               content {
                 __typename
