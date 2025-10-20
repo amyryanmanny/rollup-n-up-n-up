@@ -114,7 +114,7 @@ async function listIssuesForProject(
 
 const memoizedListIssuesForProject = memoize(listIssuesForProject, {
   cacheKey: ([params]: [ListIssuesForProjectParameters]) =>
-    JSON.stringify(params),
+    `${params.organization}/${params.projectNumber}`,
 });
 
 export { memoizedListIssuesForProject as listIssuesForProject };
