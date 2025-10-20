@@ -11,6 +11,7 @@ import {
 import { rateLimitFragment, type RateLimit } from "./fragments/rate-limit";
 
 import { debugGraphQL } from "./debug";
+import { isOctokitRequestError } from "@util/error";
 
 type ListCommentsForListOfIssuesParams = {
   issues: Array<GetIssueParameters>;
@@ -22,7 +23,7 @@ type ListCommentsForListOfIssuesResponse = Map<
   Array<Comment>
 >;
 
-const BATCH_SIZE = 10;
+let batchSize = 25;
 
 async function listCommentsForBatchOfIssues(
   params: ListCommentsForListOfIssuesParams,
@@ -65,9 +66,9 @@ async function listCommentsForBatchOfIssues(
         };
       };
     } & RateLimit
-  >(query);
+  >(query, { request: { retries: 0 } });
 
-  if (response === undefined) {
+  if (!response) {
     throw new Error("No response from GitHub, please try again.");
   }
 
@@ -99,16 +100,32 @@ export async function listCommentsForListOfIssues(
 
   let cursor = 0;
 
-  while (cursor < params.issues.length) {
-    const batch = params.issues.slice(cursor, cursor + BATCH_SIZE);
-    const batchIssues = await listCommentsForBatchOfIssues({
-      issues: batch,
-      numComments: params.numComments,
-    });
-    batchIssues.forEach((comments, issue) => {
-      issues.set(issue, comments);
-    });
-    cursor += BATCH_SIZE;
+  try {
+    while (cursor < params.issues.length) {
+      const batch = params.issues.slice(cursor, cursor + batchSize);
+      const batchIssues = await listCommentsForBatchOfIssues({
+        issues: batch,
+        numComments: params.numComments,
+      });
+      batchIssues.forEach((comments, issue) => {
+        issues.set(issue, comments);
+      });
+      cursor += batchSize;
+    }
+  } catch (error) {
+    if (isOctokitRequestError(error)) {
+      if (error.status === 429) {
+        batchSize = Math.floor(batchSize / 2);
+        if (batchSize < 1) {
+          throw new Error("Cannot reduce Comments batchSize further");
+        }
+        console.warn(
+          `Comments request timed out, reducing batchSize to ${batchSize} and retrying...`,
+        );
+        return listCommentsForListOfIssues(params);
+      }
+    }
+    throw error;
   }
 
   return issues;

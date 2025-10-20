@@ -12,6 +12,7 @@ import { pageInfoFragment } from "./fragments/page-info";
 import { rateLimitFragment, type RateLimit } from "./fragments/rate-limit";
 
 import { debugGraphQL } from "./debug";
+import { isOctokitRequestError } from "@util/error";
 
 type ListProjectFieldsForProjectParams = {
   organization: string;
@@ -22,6 +23,8 @@ type ListProjectFieldsForProjectResponse = Array<{
   issue: GetIssueParameters;
   fields: Map<string, ProjectField>;
 }>;
+
+let pageSize = 100;
 
 export async function listProjectFieldsForProject(
   params: ListProjectFieldsForProjectParams,
@@ -40,7 +43,7 @@ export async function listProjectFieldsForProject(
     query paginate($organization: String!, $projectNumber: Int!, $cursor: String) {
       organization(login: $organization) {
         projectV2(number: $projectNumber) {
-          items(first: 3, after: $cursor) {
+          items(first: ${pageSize}, after: $cursor) {
             nodes {
               content {
                 ... on Issue {
@@ -67,32 +70,54 @@ export async function listProjectFieldsForProject(
     }
   `;
 
+  let response;
   const startTime = new Date();
-  const response = await octokit.graphql.paginate<
-    {
-      organization: {
-        projectV2: {
-          items: {
-            nodes: Array<{
-              content: {
-                __typename: string;
-                repository: {
-                  owner: {
-                    login: string;
+  try {
+    response = await octokit.graphql.paginate<
+      {
+        organization: {
+          projectV2: {
+            items: {
+              nodes: Array<{
+                content: {
+                  __typename: string;
+                  repository: {
+                    owner: {
+                      login: string;
+                    };
+                    name: string;
                   };
-                  name: string;
+                  number: number;
+                } | null;
+                fieldValues: {
+                  nodes: Array<ProjectFieldValueNode>;
                 };
-                number: number;
-              } | null;
-              fieldValues: {
-                nodes: Array<ProjectFieldValueNode>;
-              };
-            }>;
+              }>;
+            };
           };
         };
-      };
-    } & RateLimit
-  >(query, params);
+      } & RateLimit
+    >(query, { ...params, request: { retries: 0 } });
+  } catch (error) {
+    if (isOctokitRequestError(error)) {
+      if (error.status === 429) {
+        pageSize = Math.floor(pageSize / 2);
+        if (pageSize < 1) {
+          throw new Error("Cannot reduce Project Fields pageSize further");
+        }
+        console.warn(
+          `Project Fields request timed out, reducing pageSize to ${pageSize} and retrying...`,
+        );
+        return listProjectFieldsForProject(params);
+      }
+    }
+    throw error;
+  }
+
+  if (!response) {
+    console.trace();
+    throw new Error("No response from GitHub, please try again.");
+  }
 
   debugGraphQL("List Project Fields for Project", params, response, startTime);
 
