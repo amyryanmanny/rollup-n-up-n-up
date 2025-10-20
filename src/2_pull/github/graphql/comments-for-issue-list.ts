@@ -8,11 +8,9 @@ import {
   mapCommentNode,
   type CommentNode,
 } from "./fragments/comment";
-import {
-  debugGraphQLRateLimit,
-  rateLimitFragment,
-  type RateLimit,
-} from "./fragments/rate-limit";
+import { rateLimitFragment, type RateLimit } from "./fragments/rate-limit";
+
+import { debugGraphQL } from "./debug";
 
 type ListCommentsForListOfIssuesParams = {
   issues: Array<GetIssueParameters>;
@@ -56,6 +54,7 @@ async function listCommentsForBatchOfIssues(
     }
   `;
 
+  const startTime = new Date();
   const response = await octokit.graphql<
     {
       [issue: string]: {
@@ -72,10 +71,11 @@ async function listCommentsForBatchOfIssues(
     throw new Error("No response from GitHub, please try again.");
   }
 
-  debugGraphQLRateLimit(
+  debugGraphQL(
     "List Comments for List of Issues",
     `Num Issues: ${params.issues.length}`,
     response,
+    startTime,
   );
 
   const issues = new Map<GetIssueParameters, Array<Comment>>();

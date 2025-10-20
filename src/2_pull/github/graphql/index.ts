@@ -6,3 +6,5 @@ export * from "./project-fields-for-project";
 export * from "./project";
 export * from "./repo";
 export * from "./subissues";
+
+export * from "./debug";

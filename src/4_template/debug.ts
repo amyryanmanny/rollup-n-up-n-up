@@ -40,3 +40,5 @@ export function overrideUpdateDetection(configBlob: string): void {
   const updateDetection = UpdateDetection.getInstance();
   updateDetection.setStrategies(configBlob);
 }
+
+export { logGraphQLTotals, resetGraphQLTotals } from "@pull/github/graphql";

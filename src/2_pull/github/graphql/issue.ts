@@ -7,11 +7,9 @@ import {
   mapIssueNode,
   type IssueNode,
 } from "./fragments/issue";
-import {
-  debugGraphQLRateLimit,
-  rateLimitFragment,
-  type RateLimit,
-} from "./fragments/rate-limit";
+import { rateLimitFragment, type RateLimit } from "./fragments/rate-limit";
+
+import { debugGraphQL } from "./debug";
 
 export type GetIssueParameters = {
   organization: string;
@@ -35,6 +33,7 @@ export async function getIssue(params: GetIssueParameters): Promise<Issue> {
     }
   `;
 
+  const startTime = new Date();
   const response = await octokit.graphql<
     {
       organization: {
@@ -45,7 +44,7 @@ export async function getIssue(params: GetIssueParameters): Promise<Issue> {
     } & RateLimit
   >(query, params);
 
-  debugGraphQLRateLimit("Get Issue", params, response);
+  debugGraphQL("Get Issue", params, response, startTime);
 
   return mapIssueNode(response.organization.repository.issue);
 }

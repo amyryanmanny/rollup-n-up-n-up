@@ -1,6 +1,9 @@
 import { getOctokit } from "@util/octokit";
 import { ProjectView } from "../project-view";
 
+import { debugGraphQL } from "./debug";
+import { rateLimitFragment, type RateLimit } from "./fragments/rate-limit";
+
 export type GetProjectViewParameters = {
   organization: string;
   projectNumber: number;
@@ -23,23 +26,29 @@ export async function getProjectView(
           }
         }
       }
+      ${rateLimitFragment}
     }
   `;
 
-  const response = await octokit.graphql<{
-    organization: {
-      projectV2: {
-        view: {
-          name: string;
-          filter: string;
+  const startTime = new Date();
+  const response = await octokit.graphql<
+    {
+      organization: {
+        projectV2: {
+          view: {
+            name: string;
+            filter: string;
+          };
         };
       };
-    };
-  }>(query, {
+    } & RateLimit
+  >(query, {
     organization: params.organization,
     projectNumber: params.projectNumber,
     projectViewNumber: params.projectViewNumber,
   });
+
+  debugGraphQL("Get Project View", params, response, startTime);
 
   return new ProjectView({
     name: response.organization.projectV2.view.name,

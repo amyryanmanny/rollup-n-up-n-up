@@ -9,11 +9,9 @@ import {
   type IssueNode,
 } from "./fragments/issue";
 import { pageInfoFragment } from "./fragments/page-info";
-import {
-  debugGraphQLRateLimit,
-  rateLimitFragment,
-  type RateLimit,
-} from "./fragments/rate-limit";
+import { rateLimitFragment, type RateLimit } from "./fragments/rate-limit";
+
+import { debugGraphQL } from "./debug";
 
 type IssueStateParam = "OPEN" | "CLOSED" | "ALL";
 type IssueState = Omit<IssueStateParam, "ALL">; // Doesn't work due to GraphQL weirdness
@@ -68,6 +66,7 @@ export async function listIssuesForRepo(
     }
   `;
 
+  const startTime = new Date();
   const response = await octokit.graphql.paginate<
     {
       repositoryOwner: {
@@ -85,7 +84,7 @@ export async function listIssuesForRepo(
     states,
   });
 
-  debugGraphQLRateLimit("List Issues for Repo", params, response);
+  debugGraphQL("List Issues for Repo", params, response, startTime);
 
   const issues = response.repositoryOwner.repository.issues.nodes.map(
     (issue) => {

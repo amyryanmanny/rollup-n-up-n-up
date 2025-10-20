@@ -6,12 +6,10 @@ import { Memory } from "@transform/memory";
 import { loadTemplate } from "./load";
 import * as debug from "./debug";
 
-import { debugTotalGraphQLRateLimit } from "@pull/github/graphql/fragments/rate-limit";
-
 // Setup Globals
 const github = new GitHubClient();
 const memory = Memory.getInstance();
-const today = new Date().toISOString().split("T")[0]; // TODO: Support the same date logic as push
+const today = new Date().toISOString().split("T")[0]; // TODO: Support the same date formatting as push
 
 const globals = { github, memory, today };
 
@@ -27,8 +25,11 @@ export async function renderTemplate(
     debugTemplate: () => debug.debugTemplate(template),
   });
 
-  memory.headbonk(); // Reset memory after rendering
-  debugTotalGraphQLRateLimit(); // Check how much RateLimit this report used
+  debug.logGraphQLTotals(); // Check how much RateLimit this report used
+
+  // Reset some State after Rendering
+  memory.headbonk();
+  debug.resetGraphQLTotals();
 
   return result.content;
 }

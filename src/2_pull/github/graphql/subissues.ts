@@ -11,11 +11,9 @@ import {
 } from "./fragments/issue";
 import { type ProjectItems } from "./fragments/project";
 import { pageInfoFragment } from "./fragments/page-info";
-import {
-  debugGraphQLRateLimit,
-  rateLimitFragment,
-  type RateLimit,
-} from "./fragments/rate-limit";
+import { rateLimitFragment, type RateLimit } from "./fragments/rate-limit";
+
+import { debugGraphQL } from "./debug";
 
 export type ListSubissuesForIssueParameters = GetIssueParameters;
 type ListSubissuesForIssueResponse = {
@@ -62,6 +60,7 @@ export async function listSubissuesForIssue(
     }
   `;
 
+  const startTime = new Date();
   const response = await octokit.graphql.paginate<
     {
       repositoryOwner: {
@@ -87,7 +86,7 @@ export async function listSubissuesForIssue(
     };
   });
 
-  debugGraphQLRateLimit("List Subissues for Issue", params, response);
+  debugGraphQL("List Subissues for Issue", params, response, startTime);
 
   return {
     subissues,

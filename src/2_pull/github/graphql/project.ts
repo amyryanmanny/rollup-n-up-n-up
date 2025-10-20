@@ -17,11 +17,9 @@ import {
   type ProjectFieldValueNode,
 } from "./fragments/project-fields";
 import { pageInfoFragment } from "./fragments/page-info";
-import {
-  debugGraphQLRateLimit,
-  rateLimitFragment,
-  type RateLimit,
-} from "./fragments/rate-limit";
+import { rateLimitFragment, type RateLimit } from "./fragments/rate-limit";
+
+import { debugGraphQL } from "./debug";
 
 export type ListIssuesForProjectParameters = {
   organization: string;
@@ -66,6 +64,7 @@ async function listIssuesForProject(
     }
   `;
 
+  const startTime = new Date();
   const response = await octokit.graphql.paginate<
     {
       organization: {
@@ -85,7 +84,7 @@ async function listIssuesForProject(
     } & RateLimit
   >(query, params);
 
-  debugGraphQLRateLimit("List Issues for Project", params, response);
+  debugGraphQL("List Issues for Project", params, response, startTime);
 
   const issues = response.organization.projectV2.items.nodes
     .filter((projectItem) => {

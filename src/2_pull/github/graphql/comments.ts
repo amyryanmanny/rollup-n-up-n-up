@@ -9,11 +9,9 @@ import {
   type CommentNode,
 } from "./fragments/comment";
 import { pageInfoFragment } from "./fragments/page-info";
-import {
-  debugGraphQLRateLimit,
-  rateLimitFragment,
-  type RateLimit,
-} from "./fragments/rate-limit";
+import { rateLimitFragment, type RateLimit } from "./fragments/rate-limit";
+
+import { debugGraphQL } from "./debug";
 
 type ListCommentsForIssueParams = GetIssueParameters & {
   numComments: number;
@@ -43,6 +41,7 @@ export async function listCommentsForIssue(
     }
   `;
 
+  const startTime = new Date();
   const response = await octokit.graphql.paginate<
     {
       repositoryOwner: {
@@ -61,7 +60,7 @@ export async function listCommentsForIssue(
     issueNumber: params.issueNumber,
   });
 
-  debugGraphQLRateLimit("List Comments for Issue", params, response);
+  debugGraphQL("List Comments for Issue", params, response, startTime);
 
   return response.repositoryOwner.repository.issue.comments.nodes.map(
     mapCommentNode,
