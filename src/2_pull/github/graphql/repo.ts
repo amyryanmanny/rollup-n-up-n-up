@@ -28,6 +28,8 @@ type ListIssuesForRepoResponse = {
   url: string;
 };
 
+const pageSize = 50;
+
 export async function listIssuesForRepo(
   params: ListIssuesForRepoParameters,
 ): Promise<ListIssuesForRepoResponse> {
@@ -54,7 +56,7 @@ export async function listIssuesForRepo(
     query paginate($organization: String!, $repository: String!, $states: [IssueState!], $cursor: String) {
       repositoryOwner(login: $organization) {
         repository(name: $repository) {
-          issues(first: 50, states: $states, after: $cursor) {
+          issues(first: ${pageSize}, states: $states, after: $cursor) {
             nodes {
               ${issueNodeFragment}
             }

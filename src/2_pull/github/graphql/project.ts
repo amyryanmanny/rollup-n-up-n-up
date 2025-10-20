@@ -32,6 +32,8 @@ type ListIssuesForProjectResponse = {
   url: string;
 };
 
+const pageSize = 50;
+
 async function listIssuesForProject(
   params: ListIssuesForProjectParameters,
 ): Promise<ListIssuesForProjectResponse> {
@@ -42,7 +44,7 @@ async function listIssuesForProject(
       organization(login: $organization) {
         projectV2(number: $projectNumber) {
           title
-          items(first: 10, after: $cursor) {
+          items(first: ${pageSize}, after: $cursor) {
             nodes {
               content {
                 __typename

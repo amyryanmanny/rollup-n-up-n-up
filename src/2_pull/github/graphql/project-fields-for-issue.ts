@@ -22,6 +22,7 @@ export async function listProjectFieldsForIssue(
 ): Promise<Map<string, ProjectField>> {
   const octokit = getOctokit();
 
+  // TODO: ProjectV2 method would be a little faster than ProjectItems
   const query = `
     query paginate($organization: String!, $repository: String!, $issueNumber: Int!, $cursor: String) {
       organization(login: $organization) {
@@ -32,7 +33,7 @@ export async function listProjectFieldsForIssue(
                 project {
                   number
                 }
-                fieldValues(first: 50) {
+                fieldValues(first: 100) {
                   nodes {
                     ${projectFieldValueFragment}
                   }

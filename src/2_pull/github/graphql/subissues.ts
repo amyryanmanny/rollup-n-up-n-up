@@ -22,6 +22,8 @@ type ListSubissuesForIssueResponse = {
   url: string;
 };
 
+const pageSize = 50;
+
 // TODO: Subissues short circuit to improve performance
 // query {
 //   node(id: "I_123") {
@@ -47,7 +49,7 @@ export async function listSubissuesForIssue(
           issue(number: $issueNumber) {
             title
             url
-            subIssues(first: 50, after: $cursor) {
+            subIssues(first: ${pageSize}, after: $cursor) {
               nodes {
                 ${issueNodeFragment}
               }
