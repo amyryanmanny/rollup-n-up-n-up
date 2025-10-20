@@ -4,7 +4,6 @@ import path from "path";
 import vento from "ventojs";
 
 import * as filters from "@transform/filters";
-import * as plugins from "./plugins";
 
 import { getActionPath, isGitHubAction } from "@config";
 
@@ -21,11 +20,6 @@ const env = vento({
 // Register Filters
 for (const filter of Object.values(filters)) {
   env.filters[filter.name] = filter;
-}
-
-// Register Plugins
-for (const plugin of Object.values(plugins)) {
-  env.use(plugin());
 }
 
 export async function loadTemplate(templatePath: string | undefined) {

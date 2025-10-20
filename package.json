@@ -11,7 +11,6 @@
     "render": "bun ./src/1_trigger/local.ts",
     "render-debug": "bun --inspect-wait=4000/debug ./src/1_trigger/local.ts",
     "push": "bun ./src/5_push/local.ts",
-
     "clear-cache": "bun run ./src/scripts/clear-cache.ts",
     "check-graphql-rate-limit": "bun ./src/scripts/check-graphql-rate-limit.ts"
   },
@@ -21,7 +20,7 @@
     ]
   },
   "dependencies": {
-    "@actions/cache": "^4.0.5",
+    "@actions/cache": "^4.1.0",
     "@actions/core": "^1.11.1",
     "@actions/github": "^6.0.1",
     "@azure-rest/ai-inference": "latest",
@@ -29,10 +28,10 @@
     "@octokit/auth-app": "^7.2.2",
     "@octokit/plugin-paginate-graphql": "^6.0.0",
     "@octokit/plugin-retry": "^8.0.2",
-    "@octokit/plugin-throttling": "^11.0.1",
+    "@octokit/plugin-throttling": "^11.0.2",
     "@octokit/request-error": "^7.0.1",
     "@octokit/rest": "^22.0.0",
-    "@slack/web-api": "^7.10.0",
+    "@slack/web-api": "^7.11.0",
     "limiter": "^3.0.0",
     "lodash": "^4.17.21",
     "memoize": "^10.1.0",
@@ -40,24 +39,24 @@
     "quickchart-js": "^3.1.3",
     "strftime": "^0.10.3",
     "tiktoken": "latest",
-    "ventojs": "^1.15.2",
+    "ventojs": "^2.2.0",
     "yaml": "^2.8.1"
   },
   "devDependencies": {
-    "@eslint/js": "^9.34.0",
+    "@eslint/js": "^9.38.0",
     "@types/bun": "latest",
     "@types/lodash": "^4.17.20",
     "@types/pluralize": "^0.0.33",
     "@types/strftime": "^0.9.8",
     "dotenv": "^16.6.1",
-    "eslint": "^9.34.0",
+    "eslint": "^9.38.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",
-    "globals": "^16.3.0",
+    "globals": "^16.4.0",
     "husky": "^9.1.7",
     "lint-staged": "^15.5.2",
     "prettier": "^3.6.2",
-    "typescript-eslint": "^8.42.0"
+    "typescript-eslint": "^8.46.2"
   },
   "peerDependencies": {
     "typescript": "^5.8.3"
