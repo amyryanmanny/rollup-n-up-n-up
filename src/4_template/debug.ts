@@ -1,4 +1,4 @@
-import { type Template } from "ventojs/src/environment.js";
+import { type Template } from "ventojs/core/environment.js";
 
 import { Memory } from "@transform/memory";
 import { UpdateDetection } from "@config";
