@@ -7,6 +7,7 @@ import {
   type IssueFetchParameters,
 } from "@config";
 import { fuzzy } from "@util/string";
+import { emitInfo } from "@util/log";
 
 import { Memory } from "@transform/memory";
 import { renderIssue, type RenderedIssue } from "@transform/render-objects";
@@ -414,10 +415,7 @@ export class IssueWrapper {
 
     await Promise.all(
       this.assignees.map((assignee) => {
-        // Log the DMs since it's an important operation
-        console.log(
-          `Sending Slack DM to @${assignee} about Issue ${this.header}`,
-        );
+        emitInfo(`Sending Slack DM to @${assignee} about Issue ${this.header}`);
         return slack.sendDm(assignee, message);
       }),
     );
