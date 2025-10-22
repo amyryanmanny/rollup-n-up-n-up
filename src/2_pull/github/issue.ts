@@ -1,6 +1,7 @@
 import {
   getConfig,
   isTrueString,
+  UpdateDetection,
   validateFetchParameters,
   validateRenderOptions,
   type DirtyIssueRenderOptions,
@@ -395,8 +396,15 @@ export class IssueWrapper {
     return CommentWrapper.empty(this);
   }
 
-  latestUpdates(n: number): CommentWrapper[] {
-    const updates = findLatestUpdates(this.comments, n);
+  latestUpdates(
+    n: number,
+    strategiesBlob?: string | string[],
+  ): CommentWrapper[] {
+    let strategies = undefined;
+    if (strategiesBlob) {
+      strategies = UpdateDetection.parseStrategies(strategiesBlob);
+    }
+    const updates = findLatestUpdates(this.comments, n, strategies);
     if (updates !== undefined && updates.length > 0) {
       return updates;
     }

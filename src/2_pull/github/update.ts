@@ -51,19 +51,24 @@ type FailStrategy = {
 export function findLatestUpdates(
   comments: CommentWrapper[],
   n: number = 1,
+  strategiesOverride?: UpdateDetectionStrategy[],
 ): CommentWrapper[] | undefined {
   if (comments.length === 0) {
     return undefined; // No comments to process
   }
 
-  const updates = comments.filter((comment) => comment.isUpdate);
+  const strategies =
+    strategiesOverride ?? UpdateDetection.getInstance().strategies;
+
+  const updates = comments.filter(
+    (comment) => extractUpdate(comment, strategies) !== undefined,
+  );
   if (updates.length > 0) {
     return updates.slice(0, n);
   }
 
   // Handle the special fallback strategies
-  const updateDetection = UpdateDetection.getInstance();
-  for (const strategy of updateDetection.strategies) {
+  for (const strategy of strategies) {
     switch (strategy.kind) {
       case "skip":
       case "blame":
@@ -81,10 +86,14 @@ export function findLatestUpdates(
   return comments.slice(0, n); // Default strategy is to return latest comment(s)
 }
 
-export function extractUpdate(comment: CommentWrapper): string | undefined {
-  const updateDetection = UpdateDetection.getInstance();
+export function extractUpdate(
+  comment: CommentWrapper,
+  strategiesOverride?: UpdateDetectionStrategy[],
+): string | undefined {
+  const strategies =
+    strategiesOverride ?? UpdateDetection.getInstance().strategies;
 
-  for (const strategy of updateDetection.strategies) {
+  for (const strategy of strategies) {
     const update = memoizedExtractUpdateWithStrategy(comment, strategy);
     if (update !== undefined) {
       return update;

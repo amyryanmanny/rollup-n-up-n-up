@@ -214,9 +214,13 @@ export class IssueList {
     return this.issues.some((issue) => issue.hasUpdate);
   }
 
-  get blame(): IssueList {
+  blame(strategiesBlob?: string | string[]): IssueList {
     const blameList = this.copy();
-    blameList.filter((issue) => !issue.hasUpdate);
+    blameList.filter((issue) => {
+      const update = issue.latestUpdates(1, strategiesBlob)[0];
+      // Filter to only issues without updates
+      return update!.isEmpty;
+    });
     blameList.sourceOfTruth.title += " - Missing Updates";
     return blameList;
   }
