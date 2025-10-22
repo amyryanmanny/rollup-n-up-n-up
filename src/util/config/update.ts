@@ -11,9 +11,8 @@ type FunctionSyntax = {
   args: string[];
 };
 
-const DEFAULT_MARKER = /<!--\s*UPDATE\s*-->/i; // Case insensitive with variable spacing
+const HTML_MARKER = /<!--\s*UPDATE\s*-->/i; // Case insensitive with variable spacing
 
-// Singleton
 export class UpdateDetection {
   private static instance: UpdateDetection;
 
@@ -78,7 +77,7 @@ export class UpdateDetection {
   static defaultStrategies: UpdateDetectionStrategy[] = [
     {
       kind: "marker",
-      marker: DEFAULT_MARKER,
+      marker: HTML_MARKER,
       timeframe: "last-month",
     },
     {
@@ -163,11 +162,12 @@ export class UpdateDetection {
 
         switch (sectionName) {
           case "MARKER":
+          case "HTML_MARKER":
           case "DEFAULT_MARKER":
             return {
               kind: "marker",
               // TODO: Add a way to configure the Regex
-              marker: DEFAULT_MARKER,
+              marker: HTML_MARKER,
               timeframe,
             };
           default:
