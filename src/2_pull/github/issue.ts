@@ -261,7 +261,7 @@ export class IssueWrapper {
   }
 
   status(fieldName: string): string {
-    // Return the status of the issue by field name
+    // Return the status of the issue by fieldName
     const emojiOverride = getConfig("EMOJI_OVERRIDE");
     if (emojiOverride) {
       // If EMOJI_OVERRIDE is set, check the body of an update for an emoji

@@ -145,8 +145,8 @@ export class IssueList {
   sort(fieldName: string, direction: "asc" | "desc" = "asc"): IssueList {
     // Sort the issues by the given field name and direction
     this.issues = this.issues.sort((a, b): number => {
-      const aValue = a.field(fieldName);
-      const bValue = b.field(fieldName);
+      const aValue = a.status(fieldName);
+      const bValue = b.status(fieldName);
 
       const comparison =
         emojiCompare(aValue, bValue) || aValue.localeCompare(bValue);
