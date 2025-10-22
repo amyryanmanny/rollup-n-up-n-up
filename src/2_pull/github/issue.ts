@@ -1,7 +1,6 @@
 import {
   getConfig,
   isTrueString,
-  UpdateDetection,
   validateFetchParameters,
   validateRenderOptions,
   type DirtyIssueRenderOptions,
@@ -13,8 +12,8 @@ import { emitInfo } from "@util/log";
 import { Memory } from "@transform/memory";
 import { renderIssue, type RenderedIssue } from "@transform/render-objects";
 
-import { CommentWrapper, type Comment } from "./comment";
-import { findLatestUpdates } from "./update";
+import { type Comment } from "./comment";
+import { CommentList } from "./comment-list";
 import { IssueList } from "./issue-list";
 
 import {
@@ -65,6 +64,7 @@ export class IssueWrapper {
   private memory = Memory.getInstance();
 
   private issue: Issue;
+  private commentList: CommentList | undefined; // Cached property
   public subissues: IssueList | undefined;
 
   constructor(issue: Issue) {
@@ -263,9 +263,9 @@ export class IssueWrapper {
   status(fieldName: string): string {
     // Return the status of the issue by fieldName
     const emojiOverride = getConfig("EMOJI_OVERRIDE");
-    if (emojiOverride) {
+    const update = this.comments.latestUpdate;
+    if (emojiOverride && update) {
       // If EMOJI_OVERRIDE is set, check the body of an update for an emoji
-      const update = this.latestUpdate;
       let emojiSections: string[];
       if (isTrueString(emojiOverride)) {
         emojiSections = []; // If just set to true, search entire body
@@ -352,67 +352,18 @@ export class IssueWrapper {
     this.subissues = subissues;
   }
 
-  // Comment
-  get comments(): CommentWrapper[] {
-    // TODO: Replace with CommentList property
-    // TODO: Sorting should be done in CommentList constructor
-    const sortCommentsByDateDesc = (a: CommentWrapper, b: CommentWrapper) => {
-      // Sort comments by createdAt in descending order
-      return b.createdAt.getTime() - a.createdAt.getTime();
-    };
-
-    return (this.issue.comments as Comment[])
-      .map((comment) => new CommentWrapper(this, comment))
-      .sort(sortCommentsByDateDesc); // Newest comments first
+  // Comments
+  get comments(): CommentList {
+    if (!this.commentList) {
+      const comments = this.issue.comments || [];
+      this.commentList = new CommentList(this, comments);
+    }
+    return this.commentList;
   }
 
   set comments(comments: Comment[]) {
     this.issue.comments = comments;
-  }
-
-  get latestComment(): CommentWrapper {
-    const comments = this.comments;
-
-    if (comments.length !== 0) {
-      return comments[0] as CommentWrapper;
-    }
-    return CommentWrapper.empty(this);
-  }
-
-  latestComments(n: number): CommentWrapper[] {
-    const comments = this.comments;
-
-    if (comments.length !== 0) {
-      return comments.slice(0, n);
-    }
-    return [CommentWrapper.empty(this)];
-  }
-
-  get latestUpdate(): CommentWrapper {
-    const updates = findLatestUpdates(this.comments);
-    if (updates !== undefined) {
-      return updates[0] as CommentWrapper;
-    }
-    return CommentWrapper.empty(this);
-  }
-
-  latestUpdates(
-    n: number,
-    strategiesBlob?: string | string[],
-  ): CommentWrapper[] {
-    let strategies = undefined;
-    if (strategiesBlob) {
-      strategies = UpdateDetection.parseStrategies(strategiesBlob);
-    }
-    const updates = findLatestUpdates(this.comments, n, strategies);
-    if (updates !== undefined && updates.length > 0) {
-      return updates;
-    }
-    return [CommentWrapper.empty(this)];
-  }
-
-  get hasUpdate(): boolean {
-    return !this.latestUpdate.isEmpty;
+    this.commentList = undefined; // Invalidate cache
   }
 
   // Slack

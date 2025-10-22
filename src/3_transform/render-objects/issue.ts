@@ -37,7 +37,7 @@ export function renderIssue(
   }
 
   if (
-    (!options.updates || !issue.hasUpdate) &&
+    (!options.updates || !issue.comments.hasUpdate) &&
     (!options.body || !issue._body) &&
     (!options.subissues || !issue.subissues || !issue.subissues.hasUpdates)
   ) {
@@ -75,7 +75,7 @@ export function renderIssue(
   }
 
   if (options.updates) {
-    const latestUpdates = issue.latestUpdates(options.updates);
+    const latestUpdates = issue.comments.latestUpdates(options.updates);
 
     for (const update of latestUpdates) {
       const renderedUpdate = renderComment(update, options, headerLevel + 1);
