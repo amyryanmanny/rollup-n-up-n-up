@@ -26,16 +26,16 @@ let octokitInstance: OctokitType;
 // TODO: Clustering: https://github.com/octokit/plugin-throttling.js/?tab=readme-ov-file#clustering
 const throttle: ThrottlingOptions = {
   onRateLimit: (retryAfter, options, octokit, retryCount) => {
-    octokit.log.warn(
+    console.warn(
       `Request quota exhausted for request ${options.method} ${options.url}`,
     );
     if (retryCount < 3) {
-      octokit.log.info(`Retrying after ${retryAfter} seconds!`);
+      console.info(`Retrying after ${retryAfter} seconds!`);
       return true;
     }
   },
-  onSecondaryRateLimit: (retryAfter, options, octokit) => {
-    octokit.log.warn(
+  onSecondaryRateLimit: (retryAfter, options) => {
+    console.warn(
       `SecondaryRateLimit detected for request ${options.method} ${options.url}`,
     );
   },
