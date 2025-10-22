@@ -144,13 +144,12 @@ export class IssueList {
 
   sort(fieldName: string, direction: "asc" | "desc" = "asc"): IssueList {
     // Sort the issues by the given field name and direction
-    this.issues.sort((a, b) => {
+    this.issues = this.issues.sort((a, b): number => {
       const aValue = a.field(fieldName);
       const bValue = b.field(fieldName);
 
       const comparison =
-        emojiCompare(aValue, bValue) ??
-        aValue.localeCompare(bValue, undefined, { sensitivity: "base" });
+        emojiCompare(aValue, bValue) || aValue.localeCompare(bValue);
 
       return direction === "asc" ? comparison : -comparison;
     });
