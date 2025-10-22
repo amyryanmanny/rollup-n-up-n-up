@@ -14,8 +14,13 @@ type FunctionSyntax = {
 const HTML_MARKER = /<!--\s*UPDATE\s*-->/i; // Case insensitive with variable spacing
 
 export class UpdateDetection {
-  private static instance: UpdateDetection;
+  // Singleton
+  private constructor() {
+    const config = getConfig("UPDATE_DETECTION");
+    this.setStrategies(config);
+  }
 
+  private static instance: UpdateDetection;
   static getInstance(): UpdateDetection {
     if (!UpdateDetection.instance) {
       UpdateDetection.instance = new UpdateDetection();
@@ -52,11 +57,6 @@ export class UpdateDetection {
     return output;
   }
 
-  private constructor() {
-    const config = getConfig("UPDATE_DETECTION");
-    this.setStrategies(config);
-  }
-
   setStrategies(config?: string) {
     let strategies: UpdateDetectionStrategy[];
 
@@ -87,10 +87,10 @@ export class UpdateDetection {
     { kind: "skip" },
   ];
 
-  static parseFunctionSyntax(input: string): FunctionSyntax {
+  static parseFunctionSyntax(functionCallStr: string): FunctionSyntax {
     const functionCallRegex = /^([a-zA-Z_][a-zA-Z0-9_]*)\(([^)]*)\)$/;
 
-    const match = input.match(functionCallRegex);
+    const match = functionCallStr.match(functionCallRegex);
     if (match) {
       const [, functionName, argsString] = match;
       const args = argsString!
@@ -99,14 +99,29 @@ export class UpdateDetection {
         .map((arg) => arg.replace(/^["']|["']$/g, "")); // Remove optional quotes
       return { name: functionName!, args };
     } else {
-      return { name: input, args: [] };
+      return { name: functionCallStr, args: [] };
     }
   }
 
-  static parseStrategies(configBlob: string): UpdateDetectionStrategy[] {
-    // Process the configuration string as lines
-    return configBlob
-      .split("\n")
+  static parseStrategies(
+    configBlob: string | string[],
+  ): UpdateDetectionStrategy[] {
+    let lines: string[] = [];
+    if (typeof configBlob === "string") {
+      // Split by whitespace or commas
+      lines = configBlob.split(/[\s,]+/);
+    } else if (
+      Array.isArray(configBlob) &&
+      configBlob.every((line) => typeof line === "string")
+    ) {
+      lines = configBlob;
+    } else {
+      throw new Error(
+        "Invalid update_detection configuration; must be a string or array of strings.",
+      );
+    }
+
+    return lines
       .map((line) => line.trim())
       .filter((line) => line !== "")
       .map((line): UpdateDetectionStrategy => {
