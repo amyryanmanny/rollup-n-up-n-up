@@ -50,11 +50,19 @@ export class IssueList {
   public organization?: string; // All issues from the same Org
   public projectNumber?: number; // All issues from the same Project
 
-  // State to prevent unnecessary fetching
+  // Fetch State to prevent unnecessary requests
   private commentsFetched = false;
   private projectFieldsFetched = false;
 
-  // Some Array functions should fall through
+  // Array-like Methods
+  all(): IssueWrapper[] {
+    return this.issues;
+  }
+
+  filter(predicate: (issue: IssueWrapper) => boolean): IssueWrapper[] {
+    return this.issues.filter(predicate);
+  }
+
   get length(): number {
     return this.issues.length;
   }
@@ -74,15 +82,6 @@ export class IssueList {
         issue.repository === params.repository &&
         issue.number === params.issueNumber,
     );
-  }
-
-  filter(predicate: (issue: IssueWrapper) => boolean): IssueList {
-    // Filter the issues by a predicate
-    // A bit naughty, but it mutates the original list
-    // More like an ORM QuerySet than a JavaScript array
-    this.issues = this.issues.filter(predicate);
-
-    return this;
   }
 
   copy(): IssueList {
@@ -110,118 +109,6 @@ export class IssueList {
       throw new Error("Don't use groupKey without a groupBy.");
     }
     return this.sourceOfTruth.groupKey;
-  }
-
-  // Issue Transformations
-  private async applyViewFilter(view: ProjectView): Promise<IssueList> {
-    if (view.usesProjectFields) {
-      // Make sure the Project Fields are fetched so we can filter on them
-      await this.fetchProjectFields(view.projectNumber);
-    }
-
-    // Scope the Source of Truth to the View
-    if (view.number) {
-      this.sourceOfTruth.url += `/views/${view.number}`;
-    } else {
-      this.sourceOfTruth.url += `?filterQuery=${encodeURIComponent(
-        view.filterQuery,
-      )}`;
-    }
-    if (view.name) {
-      this.sourceOfTruth.title += ` (${view.name})`;
-    }
-
-    if (view.unsupportedFields.length > 0) {
-      emitWarning(
-        `View "${this.sourceOfTruth.url}" uses unsupported filters: ${view.unsupportedFields.join(", ")}.
-        These fields will be ignored. Please contact the maintainer or open a "rollup-n-up-n-up" Issue to request for them to be implemented.`,
-      );
-    }
-
-    // Filter the issues by the View's query
-    return this.filter((issue) => view.filterIssue(issue));
-  }
-
-  sort(fieldName: string, direction: "asc" | "desc" = "asc"): IssueList {
-    // Sort the issues by the given field name and direction
-    this.issues = this.issues.sort((a, b): number => {
-      const aValue = a.status(fieldName);
-      const bValue = b.status(fieldName);
-
-      const comparison =
-        emojiCompare(aValue, bValue) || aValue.localeCompare(bValue);
-
-      return direction === "asc" ? comparison : -comparison;
-    });
-
-    return this; // Allow method chaining
-  }
-
-  groupBy(fieldName: string): IssueList[] {
-    // Group the issues by the given field name
-    const groups = new Map<string, IssueList>();
-
-    for (const issue of this.issues) {
-      const key = issue.field(fieldName);
-      if (!groups.has(key)) {
-        groups.set(
-          key,
-          new IssueList([], {
-            title: this.sourceOfTruth.title,
-            url: this.sourceOfTruth.url,
-            groupKey: key || "No " + title(fieldName),
-          }),
-        );
-      }
-      groups.get(key)!.issues.push(issue);
-    }
-
-    // TODO: Pull out default sort function
-    return Array.from(groups.entries())
-      .sort(([a], [b]) => emojiCompare(a, b) ?? a.localeCompare(b))
-      .map(([, group]) => group);
-  }
-
-  chart(fieldName: string, title?: string): string {
-    // Groups by the given field name and a Markdown-embedded QuickChart
-    const groups = this.groupBy(fieldName);
-    if (groups.length === 0) {
-      return "ERROR: No issues found. Cannot create chart.";
-    }
-
-    title = title || `Number of Issues by ${fieldName}`;
-
-    // TODO: Support other chart types
-    return barChart(
-      new Map(groups.map((group) => [group.groupKey, group.length])),
-      fieldName,
-      title,
-    );
-  }
-
-  overallStatus(fieldName: string): string | undefined {
-    // TODO: Custom sort order in case they don't use emoji
-    // Get the max status emoji from the issues
-    return this.issues
-      .map((issue) => issue.field(fieldName) ?? "")
-      .sort((a, b) => emojiCompare(a, b) ?? a.localeCompare(b))[0];
-  }
-
-  // Updates
-  get hasUpdates(): boolean {
-    // Check if any issue has an update
-    return this.issues.some((issue) => issue.hasUpdate);
-  }
-
-  blame(strategiesBlob?: string | string[]): IssueList {
-    const blameList = this.copy();
-    blameList.filter((issue) => {
-      const update = issue.latestUpdates(1, strategiesBlob)[0];
-      // Filter to only issues without updates
-      return update!.isEmpty;
-    });
-    blameList.sourceOfTruth.title += " - Missing Updates";
-    return blameList;
   }
 
   // Constructors
@@ -329,7 +216,7 @@ export class IssueList {
       await this.fetchComments(params.comments);
     }
 
-    this.filter(params.filter);
+    this.issues = this.filter(params.filter);
 
     for (const issue of this.issues) {
       await issue.fetch(params);
@@ -407,6 +294,121 @@ export class IssueList {
     }
 
     this.projectFieldsFetched = true;
+  }
+
+  // Issue Transformations
+  private async applyViewFilter(view: ProjectView): Promise<IssueList> {
+    if (view.usesProjectFields) {
+      // Make sure the Project Fields are fetched so we can filter on them
+      await this.fetchProjectFields(view.projectNumber);
+    }
+
+    // Scope the Source of Truth to the View
+    if (view.number) {
+      this.sourceOfTruth.url += `/views/${view.number}`;
+    } else {
+      this.sourceOfTruth.url += `?filterQuery=${encodeURIComponent(
+        view.filterQuery,
+      )}`;
+    }
+    if (view.name) {
+      this.sourceOfTruth.title += ` (${view.name})`;
+    }
+
+    if (view.unsupportedFields.length > 0) {
+      emitWarning(
+        `View "${this.sourceOfTruth.url}" uses unsupported filters: ${view.unsupportedFields.join(", ")}.
+        These fields will be ignored. Please contact the maintainer or open a "rollup-n-up-n-up" Issue to request for them to be implemented.`,
+      );
+    }
+
+    // Filter the issues by the View's query
+    this.issues = this.filter((issue) => view.filterIssue(issue));
+
+    return this;
+  }
+
+  sort(fieldName: string, direction: "asc" | "desc" = "asc"): IssueList {
+    // Sort the issues by the given fieldName and direction
+    this.issues.sort((a, b): number => {
+      const aValue = a.status(fieldName);
+      const bValue = b.status(fieldName);
+
+      const comparison =
+        emojiCompare(aValue, bValue) || aValue.localeCompare(bValue);
+
+      return direction === "asc" ? comparison : -comparison;
+    });
+
+    return this; // Allow method chaining
+  }
+
+  groupBy(fieldName: string): IssueList[] {
+    // Group the issues by the given fieldName
+    const groups = new Map<string, IssueList>();
+
+    for (const issue of this.issues) {
+      const key = issue.field(fieldName);
+      if (!groups.has(key)) {
+        groups.set(
+          key,
+          new IssueList([], {
+            title: this.sourceOfTruth.title,
+            url: this.sourceOfTruth.url,
+            // This replicates the formatting of GitHub Project groupBy
+            groupKey: key || "No " + title(fieldName),
+          }),
+        );
+      }
+      groups.get(key)!.issues.push(issue);
+    }
+
+    return Array.from(groups.entries())
+      .sort(([a], [b]) => {
+        // Sort alphabetically by groupKey
+        return emojiCompare(a, b) ?? a.localeCompare(b);
+      })
+      .map(([, group]) => group);
+  }
+
+  status(fieldName: string): string | undefined {
+    // Get the max status emoji from the Issues
+    return this.issues
+      .map((issue) => issue.status(fieldName) ?? "")
+      .sort((a, b) => emojiCompare(a, b) ?? a.localeCompare(b))[0];
+  }
+
+  chart(fieldName: string, title?: string): string {
+    // Groups by the given field name and a Markdown-embedded QuickChart
+    const groups = this.groupBy(fieldName);
+    if (groups.length === 0) {
+      return "ERROR: No issues found. Cannot create chart.";
+    }
+
+    title = title || `Number of Issues by ${fieldName}`;
+
+    // TODO: Support other chart types
+    return barChart(
+      new Map(groups.map((group) => [group.groupKey, group.length])),
+      fieldName,
+      title,
+    );
+  }
+
+  // Updates
+  get hasUpdates(): boolean {
+    // Check if any Issue has an Update
+    return this.issues.some((issue) => issue.comments.hasUpdate);
+  }
+
+  blame(strategiesBlob?: string | string[]): IssueList {
+    const blameList = this.copy();
+    blameList.filter((issue) => {
+      const updates = issue.comments.latestUpdates(1, strategiesBlob);
+      return updates.length === 0; // Keep Issues with no Updates
+    });
+    blameList.sourceOfTruth.title += " - Stale Updates";
+    return blameList;
   }
 
   // Slack
