@@ -17,6 +17,7 @@ import type { IssueWrapper } from "./issue";
 import { extractUpdate, type Timeframe } from "./update";
 
 export type Comment = {
+  id: number;
   author: string;
   body: string;
   createdAt: Date;
@@ -35,7 +36,6 @@ export class CommentWrapper {
   private dataBlocks: Map<string, string>;
 
   constructor(issue: IssueWrapper, comment: Comment) {
-    // TODO: Move this.issue onto CommentList class instead
     // Call it parent, also support Discussion since there's big overlap
     this.issue = issue;
     this.comment = comment;
@@ -48,6 +48,10 @@ export class CommentWrapper {
   // Properties
   get header(): string {
     return `[${this.issue.title}](${this.url})`;
+  }
+
+  get id(): number {
+    return this.comment.id;
   }
 
   get url(): string {
@@ -184,7 +188,7 @@ export class CommentWrapper {
   }
 
   emojiStatus(sections?: string | string[]): string | undefined {
-    // Extract a status emoji from the comment body
+    // Extract a status emoji from the body
     if (this.isEmpty) {
       return undefined;
     }

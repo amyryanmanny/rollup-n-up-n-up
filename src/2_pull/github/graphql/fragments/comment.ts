@@ -1,6 +1,7 @@
 import type { Comment } from "@pull/github/comment";
 
 export type CommentNode = {
+  databaseId: number;
   author: {
     login: string;
   } | null;
@@ -11,6 +12,7 @@ export type CommentNode = {
 };
 
 export const commentFragment = `
+  databaseId
   author {
     login
   }
@@ -22,6 +24,7 @@ export const commentFragment = `
 
 export function mapCommentNode(node: CommentNode): Comment {
   return {
+    id: Number(node.databaseId),
     author: node.author?.login || "Unknown",
     body: node.body,
     createdAt: new Date(node.createdAt),
