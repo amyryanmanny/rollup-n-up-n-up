@@ -39543,14 +39543,14 @@ var OctokitWithPlugins = Octokit2.plugin(paginateGraphQL, retry, throttling);
 var octokitInstance;
 var throttle = {
   onRateLimit: (retryAfter, options, octokit, retryCount) => {
-    octokit.log.warn(`Request quota exhausted for request ${options.method} ${options.url}`);
+    console.warn(`Request quota exhausted for request ${options.method} ${options.url}`);
     if (retryCount < 3) {
-      octokit.log.info(`Retrying after ${retryAfter} seconds!`);
+      console.info(`Retrying after ${retryAfter} seconds!`);
       return true;
     }
   },
-  onSecondaryRateLimit: (retryAfter, options, octokit) => {
-    octokit.log.warn(`SecondaryRateLimit detected for request ${options.method} ${options.url}`);
+  onSecondaryRateLimit: (retryAfter, options) => {
+    console.warn(`SecondaryRateLimit detected for request ${options.method} ${options.url}`);
   }
 };
 function initOctokit() {
@@ -39951,9 +39951,8 @@ function matchDiscussionCategoryUrl(url) {
 
 // src/util/log.ts
 var import_core4 = __toESM(require_core(), 1);
-var import_summary = __toESM(require_summary(), 1);
 function addLinkToSummary(message, url) {
-  if (import_summary.SUMMARY_ENV_VAR in process.env) {
+  if (isGitHubAction()) {
     import_core4.summary.addLink(message, url).write();
   } else {
     console.debug(`${message}: ${url}`);
