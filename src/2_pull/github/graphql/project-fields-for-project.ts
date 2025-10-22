@@ -20,7 +20,7 @@ type ListProjectFieldsForProjectParams = {
 };
 
 type ListProjectFieldsForProjectResponse = Array<{
-  issue: GetIssueParameters;
+  issueParams: GetIssueParameters;
   fields: Map<string, ProjectField>;
 }>;
 
@@ -128,7 +128,7 @@ export async function listProjectFieldsForProject(
     })
     .map((projectItem) => {
       return {
-        issue: {
+        issueParams: {
           organization: projectItem.content!.repository.owner.login,
           repository: projectItem.content!.repository.name,
           issueNumber: projectItem.content!.number,

@@ -352,14 +352,14 @@ export class IssueList {
       numComments,
     });
 
-    for (const [params, comments] of commentsMap) {
-      const issue = this.find(params);
+    for (const [issueParams, comments] of commentsMap) {
+      const issue = this.find(issueParams);
       if (issue !== undefined) {
         issue.comments = comments;
       } else {
         // This is good at catching race conditions, not much else
         throw new Error(
-          `Fetching Comments for nonexistent Issue ${JSON.stringify(params)}`,
+          `Fetching Comments for nonexistent Issue ${JSON.stringify(issueParams)}`,
         );
       }
     }
@@ -396,7 +396,7 @@ export class IssueList {
     }
 
     for (const item of projectFieldItems) {
-      const issue = this.find(item.issue);
+      const issue = this.find(item.issueParams);
       if (issue !== undefined) {
         issue.project = {
           organization: this.organization,
