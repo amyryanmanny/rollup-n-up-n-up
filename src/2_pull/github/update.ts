@@ -52,9 +52,9 @@ export function findLatestUpdates(
   comments: CommentWrapper[],
   n: number = 1,
   strategiesOverride?: UpdateDetectionStrategy[],
-): CommentWrapper[] | undefined {
+): CommentWrapper[] {
   if (comments.length === 0) {
-    return undefined; // No comments to process
+    return []; // No comments to process
   }
 
   const strategies =
@@ -72,7 +72,7 @@ export function findLatestUpdates(
     switch (strategy.kind) {
       case "skip":
       case "blame":
-        return undefined; // Return no comment
+        return [];
       case "fail": {
         const firstComment = comments[0] as CommentWrapper;
         const issue = firstComment.issue;
@@ -108,7 +108,7 @@ function extractUpdateWithStrategy(
   strategy: UpdateDetectionStrategy,
 ): string | undefined {
   if (comment.isEmpty) {
-    // Empty comment isn't an update no matter the strategy
+    // Empty Comment isn't an Update no matter the strategy
     return undefined;
   }
 

@@ -27,8 +27,6 @@ export type Comment = {
 export class CommentWrapper {
   private memory = Memory.getInstance();
 
-  static NULL_UPDATE = "No updates found";
-
   private comment: Comment;
   public issue: IssueWrapper;
 
@@ -45,16 +43,6 @@ export class CommentWrapper {
     this.sections = splitMarkdownByHeaders(comment.body);
     this.boldedSections = splitMarkdownByBoldedText(comment.body);
     this.dataBlocks = extractDataBlocks(comment.body);
-  }
-
-  static empty(issue: IssueWrapper): CommentWrapper {
-    return new CommentWrapper(issue, {
-      author: "",
-      body: CommentWrapper.NULL_UPDATE,
-      createdAt: new Date(0),
-      updatedAt: new Date(0),
-      url: issue.url,
-    });
   }
 
   // Properties
@@ -88,8 +76,8 @@ export class CommentWrapper {
   }
 
   get isEmpty(): boolean {
-    // Check if the comment body is empty or null
-    return this._body === "" || this._body === CommentWrapper.NULL_UPDATE;
+    // Check if the body is empty
+    return this._body === "";
   }
 
   get isUpdate(): boolean {

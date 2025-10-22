@@ -23,7 +23,7 @@ export function renderComment(
     if (options.skipIfEmpty || !options.header) {
       return undefined;
     }
-    markdown += CommentWrapper.NULL_UPDATE;
+    markdown += "No updates found.";
     return { markdown, sources: [] };
   }
 
