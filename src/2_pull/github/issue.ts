@@ -39,7 +39,7 @@ export type Issue = {
   body: string;
   url: string;
   number: number;
-  state: "OPEN" | "CLOSED";
+  isOpen: boolean;
   createdAt: Date;
   updatedAt: Date;
   type: string;
@@ -103,7 +103,7 @@ export class IssueWrapper {
   }
 
   get _body(): string {
-    return this.issue.body || "";
+    return this.issue.body.trim();
   }
 
   get body(): void {
@@ -121,7 +121,7 @@ export class IssueWrapper {
   }
 
   get isOpen(): boolean {
-    return this.issue.state === "OPEN";
+    return this.issue.isOpen;
   }
 
   get isSubissue(): boolean {

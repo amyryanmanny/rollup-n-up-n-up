@@ -74,7 +74,7 @@ export function mapIssueNode(node: IssueNode): Issue {
     body: node.body,
     url: node.url,
     number: node.number,
-    state: node.state,
+    isOpen: node.state === "OPEN",
     createdAt: new Date(node.createdAt),
     updatedAt: new Date(node.updatedAt),
     type: node.issueType?.name || "Issue",
