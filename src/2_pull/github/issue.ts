@@ -29,7 +29,7 @@ import {
   type ProjectField,
 } from "./project-fields";
 
-import { SlackClient, slackLink } from "@push/slack";
+import { SlackClient, SLACK_MUTE, slackLink } from "@push/slack";
 
 const FOOTER = `This is an automated message from the Rollup-n-up bot from Synapse team. Report any errors in #synapse.`;
 
@@ -371,9 +371,12 @@ export class IssueWrapper {
     message = `Regarding the Issue ${slackLink(this.url, this.title)}:\n${message}\n_${FOOTER}_`;
 
     await Promise.all(
-      this.assignees.map((assignee) => {
-        emitInfo(`Sending Slack DM to @${assignee} about Issue ${this.header}`);
-        return slack.sendDm(assignee, message);
+      this.assignees.map(async (assignee) => {
+        emitInfo(
+          `${SLACK_MUTE ? "[SLACK_MUTE=true]" : ""} 
+          ${SLACK_MUTE ? "Sending" : "Skipping"} Slack DM to @${assignee} about Issue ${this.header}`,
+        );
+        return await slack.sendDm(assignee, message);
       }),
     );
   }

@@ -4,7 +4,7 @@ import { getChannelIdFromName } from "./channel";
 import { getDmIdFromGithubUsername } from "./dm";
 
 import { getConfig, isTruthy } from "@util/config";
-import { emitError, emitInfo } from "@util/log";
+import { emitError } from "@util/log";
 
 import { isDuplicate } from "./util";
 
@@ -15,11 +15,6 @@ export class SlackClient {
 
   async sendToChannel(channelName: string, message: string) {
     if (isDuplicate(channelName, message)) {
-      return;
-    }
-
-    if (SLACK_MUTE) {
-      emitInfo(`[SLACK_MUTE=true] Skipping Slack message to #${channelName}`);
       return;
     }
 
@@ -38,11 +33,6 @@ export class SlackClient {
       return;
     }
 
-    if (SLACK_MUTE) {
-      emitInfo(`[SLACK_MUTE=true] Skipping Slack message to @${username}`);
-      return;
-    }
-
     const dmId = await getDmIdFromGithubUsername(username);
     const res = await this.send(dmId, message);
     if (!res.ok) {
@@ -53,6 +43,9 @@ export class SlackClient {
 
   private async send(conversationId: string, message: string) {
     // conversationId can be a channel ID, DM ID, MPDM ID, or Group ID
+    if (SLACK_MUTE) {
+      return { ok: true, channel: conversationId, ts: "", message: {} };
+    }
 
     // See: https://docs.slack.dev/reference/methods/chat.postMessage
     const res = await this.slack.chat.postMessage({
