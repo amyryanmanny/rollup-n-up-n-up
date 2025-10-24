@@ -76,6 +76,7 @@ export class GitHubClient {
     );
   }
 
+  // Issues
   issue(
     organization: string,
     repository: string,

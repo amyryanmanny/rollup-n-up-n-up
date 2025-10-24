@@ -4,7 +4,7 @@ import { getConfig } from "@config";
 import {
   type Timeframe,
   type UpdateDetectionStrategy,
-} from "@pull/github/update";
+} from "@pull/github/update-detection";
 
 type FunctionSyntax = {
   name: string;

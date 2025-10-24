@@ -1,7 +1,10 @@
 import { UpdateDetection } from "@util/config";
 import { type Comment, CommentWrapper } from "./comment";
 import type { IssueWrapper } from "./issue";
-import { findLatestUpdates, type UpdateDetectionStrategy } from "./update";
+import {
+  findLatestUpdates,
+  type UpdateDetectionStrategy,
+} from "./update-detection";
 
 export class CommentList {
   private issue: IssueWrapper;
@@ -10,6 +13,7 @@ export class CommentList {
   private _latestUpdate: CommentWrapper | undefined; // Cached property
 
   constructor(issue: IssueWrapper, comments: Comment[]) {
+    // Call it parent, also support Discussion
     this.issue = issue;
     this.comments = comments.map(
       (comment) => new CommentWrapper(issue, comment),

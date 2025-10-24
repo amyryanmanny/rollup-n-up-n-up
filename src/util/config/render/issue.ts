@@ -1,6 +1,6 @@
 import type { IssueRenderOptions } from "@transform/render-objects";
 
-import { isTruthy } from "./truthy";
+import { isTruthy } from "../truthy";
 
 export type DirtyIssueRenderOptions = {
   // TODO: Eventually should be unknown for all, this just includes sane types

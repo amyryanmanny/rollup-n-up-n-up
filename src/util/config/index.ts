@@ -40,10 +40,10 @@ export function getEnv(key: string): string | undefined {
 export * from "./assets";
 export * from "./fetch";
 export * from "./github";
-export * from "./issue-render";
+export * from "./render/issue";
 export * from "./models";
 export * from "./prompts";
 export * from "./push";
 export * from "./slack";
 export * from "./truthy";
-export * from "./update";
+export * from "./update-detection";

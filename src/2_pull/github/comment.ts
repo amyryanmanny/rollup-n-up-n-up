@@ -14,7 +14,7 @@ import {
 } from "@util/string";
 
 import type { IssueWrapper } from "./issue";
-import { extractUpdate, type Timeframe } from "./update";
+import { extractUpdate, type Timeframe } from "./update-detection";
 
 export type Comment = {
   id: number;
