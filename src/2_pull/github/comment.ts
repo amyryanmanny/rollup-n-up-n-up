@@ -14,6 +14,8 @@ import {
 } from "@util/string";
 
 import type { IssueWrapper } from "./issue";
+import type { DiscussionWrapper } from "./discussion";
+
 import { extractUpdate, type Timeframe } from "./update-detection";
 
 export type Comment = {
@@ -29,15 +31,15 @@ export class CommentWrapper {
   private memory = Memory.getInstance();
 
   private comment: Comment;
-  public issue: IssueWrapper;
+  public parent: IssueWrapper | DiscussionWrapper;
 
   private sections: Map<string, string>;
   private boldedSections: Map<string, string>;
   private dataBlocks: Map<string, string>;
 
-  constructor(issue: IssueWrapper, comment: Comment) {
+  constructor(parent: IssueWrapper | DiscussionWrapper, comment: Comment) {
     // Call it parent, also support Discussion since there's big overlap
-    this.issue = issue;
+    this.parent = parent;
     this.comment = comment;
 
     this.sections = splitMarkdownByHeaders(comment.body);
@@ -47,7 +49,7 @@ export class CommentWrapper {
 
   // Properties
   get header(): string {
-    return `[${this.issue.title}](${this.url})`;
+    return `[${this.parent.title}](${this.url})`;
   }
 
   get id(): number {

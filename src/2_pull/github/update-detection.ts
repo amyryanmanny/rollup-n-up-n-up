@@ -75,9 +75,9 @@ export function findLatestUpdates(
         return [];
       case "fail": {
         const firstComment = comments[0] as CommentWrapper;
-        const issue = firstComment.issue;
+        const parent = firstComment.parent;
         throw new Error(
-          `No valid update found for issue ${issue.title} - ${issue.url}!`,
+          `No valid Update found for ${parent.title} (${parent.url})`,
         );
       }
     }

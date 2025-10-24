@@ -1,6 +1,7 @@
 import type {
   IssueRenderOptions,
   CommentRenderOptions,
+  DiscussionRenderOptions,
 } from "@transform/render-objects";
 
 import { isTruthy } from "./truthy";
@@ -22,7 +23,7 @@ export type DirtyRenderOptions = {
 
 export function validateRenderOptions(
   options: DirtyRenderOptions,
-): IssueRenderOptions & CommentRenderOptions {
+): IssueRenderOptions & CommentRenderOptions & DiscussionRenderOptions {
   let fields: string[] = [];
   if (options.field && options.fields) {
     throw new Error(

@@ -184,6 +184,20 @@ export class IssueWrapper {
     return this.issue.parent?.title;
   }
 
+  // Comments
+  get comments(): CommentList {
+    if (!this.commentList) {
+      const comments = this.issue.comments || [];
+      this.commentList = new CommentList(this, comments);
+    }
+    return this.commentList;
+  }
+
+  set comments(comments: Comment[]) {
+    this.issue.comments = comments;
+    this.commentList = undefined; // Invalidate cache
+  }
+
   // Fields
   field(fieldName: string): string {
     // Return the value of a field by name
@@ -350,20 +364,6 @@ export class IssueWrapper {
       await subissues.fetchProjectFields(this.projectNumber);
     }
     this.subissues = subissues;
-  }
-
-  // Comments
-  get comments(): CommentList {
-    if (!this.commentList) {
-      const comments = this.issue.comments || [];
-      this.commentList = new CommentList(this, comments);
-    }
-    return this.commentList;
-  }
-
-  set comments(comments: Comment[]) {
-    this.issue.comments = comments;
-    this.commentList = undefined; // Invalidate cache
   }
 
   // Slack

@@ -3,7 +3,11 @@ import { IssueList } from "./issue-list";
 import { DiscussionWrapper } from "./discussion";
 
 import { getOctokit } from "@util/octokit";
-import { matchIssueUrl, matchProjectViewUrl } from "@util/github-url";
+import {
+  matchDiscussionUrl,
+  matchIssueUrl,
+  matchProjectViewUrl,
+} from "@util/github-url";
 
 import {
   validateFetchParameters,
@@ -23,7 +27,7 @@ export class GitHubClient {
   async url(
     url: string,
     issueFetchParams?: DirtyIssueFetchParameters,
-  ): Promise<IssueList | IssueWrapper> {
+  ): Promise<IssueList | IssueWrapper | DiscussionWrapper> {
     // Single Issue
     const issueMatch = matchIssueUrl(url);
     if (issueMatch) {
@@ -70,6 +74,18 @@ export class GitHubClient {
         projectNumber,
         issueFetchParams,
       );
+    }
+
+    // Discussion
+    const discussionMatch = matchDiscussionUrl(url);
+    if (discussionMatch) {
+      const { owner, repo, discussionNumber } = discussionMatch;
+
+      if (discussionNumber) {
+        return await this.discussion(owner, repo, discussionNumber);
+      } else {
+        // return this.discussionsForRepo(owner, repo);
+      }
     }
 
     throw new Error(

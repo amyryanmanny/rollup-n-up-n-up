@@ -1,22 +1,25 @@
 import { UpdateDetection } from "@util/config";
+
 import { type Comment, CommentWrapper } from "./comment";
 import type { IssueWrapper } from "./issue";
+import type { DiscussionWrapper } from "./discussion";
+
 import {
   findLatestUpdates,
   type UpdateDetectionStrategy,
 } from "./update-detection";
 
 export class CommentList {
-  private issue: IssueWrapper;
+  private parent: IssueWrapper | DiscussionWrapper;
   private comments: CommentWrapper[];
 
   private _latestUpdate: CommentWrapper | undefined; // Cached property
 
-  constructor(issue: IssueWrapper, comments: Comment[]) {
+  constructor(parent: IssueWrapper | DiscussionWrapper, comments: Comment[]) {
     // Call it parent, also support Discussion
-    this.issue = issue;
+    this.parent = parent;
     this.comments = comments.map(
-      (comment) => new CommentWrapper(issue, comment),
+      (comment) => new CommentWrapper(parent, comment),
     );
     this.comments.sort((a, b) => {
       // Sort comments by createdAt in descending order
@@ -46,18 +49,18 @@ export class CommentList {
   }
 
   copy(): CommentList {
-    const copy = new CommentList(this.issue, []);
+    const copy = new CommentList(this.parent, []);
     copy.comments = [...this.comments];
     return copy;
   }
 
   // Properties
   get header(): string {
-    return `[${this.issue.title}](${this.issue.url})`;
+    return `[${this.parent.title}](${this.parent.url})`;
   }
 
   get url(): string {
-    return this.issue.url;
+    return this.parent.url;
   }
 
   // Comments
