@@ -1,5 +1,6 @@
 import { IssueWrapper } from "./issue";
 import { IssueList } from "./issue-list";
+import { DiscussionWrapper } from "./discussion";
 
 import { getOctokit } from "@util/octokit";
 import { matchIssueUrl, matchProjectViewUrl } from "@util/github-url";
@@ -19,7 +20,7 @@ export class GitHubClient {
   // The Client class is a wrapper around the GitHub API client.
   public octokit = getOctokit();
 
-  url(
+  async url(
     url: string,
     issueFetchParams?: DirtyIssueFetchParameters,
   ): Promise<IssueList | IssueWrapper> {
@@ -30,10 +31,10 @@ export class GitHubClient {
 
       if (issueNumber) {
         // If issueNumber is defined, return the specific issue
-        return this.issue(owner, repo, issueNumber, issueFetchParams);
+        return await this.issue(owner, repo, issueNumber, issueFetchParams);
       } else {
         // Else return all issues for the repo
-        return this.issuesForRepo(owner, repo, issueFetchParams);
+        return await this.issuesForRepo(owner, repo, issueFetchParams);
       }
     }
 
@@ -45,7 +46,7 @@ export class GitHubClient {
 
       // Custom Query - Discard the View if it exists
       if (customQuery) {
-        return this.issuesForProjectQuery(
+        return await this.issuesForProjectQuery(
           organization,
           projectNumber,
           customQuery,
@@ -55,7 +56,7 @@ export class GitHubClient {
 
       // Project View
       if (projectViewNumber) {
-        return this.issuesForProjectView(
+        return await this.issuesForProjectView(
           organization,
           projectNumber,
           projectViewNumber,
@@ -64,7 +65,7 @@ export class GitHubClient {
       }
 
       // Default to all Project Issues
-      return this.issuesForProject(
+      return await this.issuesForProject(
         organization,
         projectNumber,
         issueFetchParams,
@@ -77,13 +78,13 @@ export class GitHubClient {
   }
 
   // Issues
-  issue(
+  async issue(
     organization: string,
     repository: string,
     issueNumber: string | number,
     issueFetchParams?: DirtyIssueFetchParameters,
   ): Promise<IssueWrapper> {
-    return IssueWrapper.forIssue(
+    return await IssueWrapper.forIssue(
       {
         organization,
         repository,
@@ -93,12 +94,12 @@ export class GitHubClient {
     );
   }
 
-  issuesForRepo(
+  async issuesForRepo(
     organization: string,
     repository: string,
     issueFetchParams?: DirtyIssueFetchParameters,
   ): Promise<IssueList> {
-    return IssueList.forRepo(
+    return await IssueList.forRepo(
       {
         organization,
         repository,
@@ -107,13 +108,13 @@ export class GitHubClient {
     );
   }
 
-  subissuesForIssue(
+  async subissuesForIssue(
     organization: string,
     repository: string,
     issueNumber: string | number,
     issueFetchParams?: DirtyIssueFetchParameters,
   ): Promise<IssueList> {
-    return IssueList.forSubissues(
+    return await IssueList.forSubissues(
       {
         organization,
         repository,
@@ -123,12 +124,12 @@ export class GitHubClient {
     );
   }
 
-  issuesForProject(
+  async issuesForProject(
     organization: string,
     projectNumber: string | number,
     issueFetchParams?: DirtyIssueFetchParameters,
   ): Promise<IssueList> {
-    return IssueList.forProject(
+    return await IssueList.forProject(
       {
         organization,
         projectNumber: Number(projectNumber),
@@ -137,13 +138,13 @@ export class GitHubClient {
     );
   }
 
-  issuesForProjectView(
+  async issuesForProjectView(
     organization: string,
     projectNumber: number | string,
     projectViewNumber: number | string,
     issueFetchParams?: DirtyIssueFetchParameters,
   ): Promise<IssueList> {
-    return IssueList.forProjectView(
+    return await IssueList.forProjectView(
       {
         organization,
         projectNumber: Number(projectNumber),
@@ -153,13 +154,13 @@ export class GitHubClient {
     );
   }
 
-  issuesForProjectQuery(
+  async issuesForProjectQuery(
     organization: string,
     projectNumber: number | string,
     customQuery: string,
     issueFetchParams?: DirtyIssueFetchParameters,
   ): Promise<IssueList> {
-    return IssueList.forProjectView(
+    return await IssueList.forProjectView(
       {
         organization,
         projectNumber: Number(projectNumber),
@@ -167,5 +168,18 @@ export class GitHubClient {
       },
       validateFetchParameters(issueFetchParams),
     );
+  }
+
+  // Discussions
+  async discussion(
+    organization: string,
+    repository: string,
+    discussionNumber: string | number,
+  ): Promise<DiscussionWrapper> {
+    return await DiscussionWrapper.forDiscussion({
+      organization,
+      repository,
+      discussionNumber: Number(discussionNumber),
+    });
   }
 }
