@@ -198,19 +198,20 @@ export class ProjectView {
   }
 
   // Filtering
-  checkFilters(filterName: string, values: string[]): boolean {
+  checkFilters(filterName: string, inputValues: string[]): boolean {
     const filters = this.filters.filter((f) => f.key === filterName);
 
     for (const filter of filters) {
       const { values: filterValues, exclude } = filter;
 
-      if (values.length === 0) {
+      if (filterValues.length === 0) {
+        // Nothing to check
         continue;
       }
 
       // If any value matches (OR), it's a match
       const filterMatches = filterValues.some((value) =>
-        values.includes(value),
+        inputValues.includes(value),
       );
 
       if (exclude && filterMatches) {
@@ -218,7 +219,7 @@ export class ProjectView {
         return false;
       }
       if (!exclude && !filterMatches) {
-        // At least one value must match
+        // If no value matches, exclude the issue
         return false;
       }
     }
@@ -319,9 +320,9 @@ export class ProjectView {
   }
 
   checkProjectFields(issue: IssueWrapper): boolean {
-    for (const field of this.projectFields) {
-      const value = issue._projectFields?.get(field);
-      if (!this.checkProjectField(field, value)) {
+    for (const fieldName of this.projectFields) {
+      const field = issue._projectFields?.get(fieldName);
+      if (!this.checkProjectField(fieldName, field)) {
         return false;
       }
     }

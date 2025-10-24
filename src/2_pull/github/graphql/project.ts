@@ -4,7 +4,6 @@ import { getOctokit } from "@util/octokit";
 import type { PageInfoForward } from "@octokit/plugin-paginate-graphql";
 
 import type { Issue } from "../issue";
-import type { Project } from "../project-fields";
 
 import {
   issueNodeFragment,
@@ -93,14 +92,14 @@ async function listIssuesForProject(
       const content = projectItem.content;
       return content && content.__typename === "Issue";
     })
-    .map((projectItem) => {
+    .map((projectItem): Issue => {
       return {
         ...mapIssueNode(projectItem.content!),
         project: {
           organization: params.organization,
           number: params.projectNumber,
           fields: mapProjectFieldValues(projectItem.fieldValues.nodes),
-        } as Project,
+        },
         isSubissue: false,
       };
     });

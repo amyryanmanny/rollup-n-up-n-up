@@ -235,14 +235,12 @@ export class IssueWrapper {
   }
 
   get _projectFields(): Map<string, ProjectField> | undefined {
-    if (this.issue.project === undefined) {
-      return undefined;
-    }
-    return this.issue.project.fields;
+    // Raw Project Fields for internal use
+    return this.issue.project?.fields;
   }
 
   get projectFields(): Map<string, string> {
-    // Project Fields of the issue (mapped to string representation for simple interface)
+    // Project Fields mapped to string representation for simple interface in the templates
     if (!this._projectFields) {
       return new Map();
     }
