@@ -1,9 +1,12 @@
-import type { IssueRenderOptions } from "@transform/render-objects";
+import type {
+  IssueRenderOptions,
+  CommentRenderOptions,
+} from "@transform/render-objects";
 
-import { isTruthy } from "../truthy";
+import { isTruthy } from "./truthy";
 
-export type DirtyIssueRenderOptions = {
-  // TODO: Eventually should be unknown for all, this just includes sane types
+export type DirtyRenderOptions = {
+  // TODO: Should really be unknown for all, this just includes sane types
   header?: string | boolean;
   body?: string | boolean;
   updates?: string | number | boolean;
@@ -18,8 +21,8 @@ export type DirtyIssueRenderOptions = {
 };
 
 export function validateRenderOptions(
-  options: DirtyIssueRenderOptions,
-): IssueRenderOptions {
+  options: DirtyRenderOptions,
+): IssueRenderOptions & CommentRenderOptions {
   let fields: string[] = [];
   if (options.field && options.fields) {
     throw new Error(

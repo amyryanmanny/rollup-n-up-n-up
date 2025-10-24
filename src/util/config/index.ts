@@ -40,7 +40,7 @@ export function getEnv(key: string): string | undefined {
 export * from "./assets";
 export * from "./fetch";
 export * from "./github";
-export * from "./render/issue";
+export * from "./render";
 export * from "./models";
 export * from "./prompts";
 export * from "./push";

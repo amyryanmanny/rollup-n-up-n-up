@@ -1,4 +1,4 @@
-import { validateRenderOptions, type DirtyIssueRenderOptions } from "@config";
+import { validateRenderOptions, type DirtyRenderOptions } from "@config";
 
 import { Memory } from "@transform/memory";
 import { renderComment, type RenderedComment } from "@transform/render-objects";
@@ -209,13 +209,11 @@ export class CommentWrapper {
   }
 
   // Render / Memory Functions
-  private _render(
-    options: DirtyIssueRenderOptions,
-  ): RenderedComment | undefined {
+  private _render(options: DirtyRenderOptions): RenderedComment | undefined {
     return renderComment(this, validateRenderOptions(options));
   }
 
-  remember(options: DirtyIssueRenderOptions = {}) {
+  remember(options: DirtyRenderOptions = {}) {
     const rendered = this._render(options);
     if (rendered) {
       this.memory.remember({
@@ -225,7 +223,7 @@ export class CommentWrapper {
     }
   }
 
-  render(options: DirtyIssueRenderOptions = {}): string {
+  render(options: DirtyRenderOptions = {}): string {
     this.remember(options);
     const rendered = this._render(options);
     if (rendered === undefined) {

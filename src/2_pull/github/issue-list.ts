@@ -1,7 +1,7 @@
 import {
   validateRenderOptions,
   type IssueFetchParameters,
-  type DirtyIssueRenderOptions,
+  type DirtyRenderOptions,
 } from "@config";
 
 import { Memory } from "@transform/memory";
@@ -417,13 +417,11 @@ export class IssueList {
   }
 
   // Render / Memory Functions
-  private _render(
-    options: DirtyIssueRenderOptions,
-  ): RenderedIssueList | undefined {
+  private _render(options: DirtyRenderOptions): RenderedIssueList | undefined {
     return renderIssueList(this, validateRenderOptions(options));
   }
 
-  remember(options: DirtyIssueRenderOptions = {}) {
+  remember(options: DirtyRenderOptions = {}) {
     const rendered = this._render(options);
     if (rendered) {
       this.memory.remember({
@@ -433,7 +431,7 @@ export class IssueList {
     }
   }
 
-  render(options: DirtyIssueRenderOptions = {}): string {
+  render(options: DirtyRenderOptions = {}): string {
     this.remember(options);
     const rendered = this._render(options);
     if (rendered) {

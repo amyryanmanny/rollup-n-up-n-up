@@ -1,5 +1,11 @@
 import { CommentWrapper } from "@pull/github/comment";
-import type { IssueRenderOptions } from "./issue";
+
+export type CommentRenderOptions = {
+  header: boolean;
+  body: boolean;
+  author: boolean;
+  skipIfEmpty: boolean; // Skip rendering if no content
+};
 
 export type RenderedComment = {
   markdown: string;
@@ -8,7 +14,7 @@ export type RenderedComment = {
 
 export function renderComment(
   comment: CommentWrapper,
-  options: IssueRenderOptions,
+  options: CommentRenderOptions,
   headerLevel: number = 4, // Default to Level 4 for Comments
 ): RenderedComment | undefined {
   // Render a CommentWrapper as a Markdown string

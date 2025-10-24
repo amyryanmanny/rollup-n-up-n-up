@@ -3,7 +3,7 @@ import {
   isTrueString,
   validateFetchParameters,
   validateRenderOptions,
-  type DirtyIssueRenderOptions,
+  type DirtyRenderOptions,
   type IssueFetchParameters,
 } from "@config";
 import { fuzzy } from "@util/string";
@@ -215,6 +215,8 @@ export class IssueWrapper {
         return this.parentTitle;
     }
 
+    // TODO: Labels
+
     // Fallback to Project Fields
     if (this._projectFields === undefined) {
       throw new Error(
@@ -382,11 +384,11 @@ export class IssueWrapper {
   }
 
   // Render / Memory Functions
-  private _render(options: DirtyIssueRenderOptions): RenderedIssue | undefined {
+  private _render(options: DirtyRenderOptions): RenderedIssue | undefined {
     return renderIssue(this, validateRenderOptions(options));
   }
 
-  remember(options: DirtyIssueRenderOptions = {}) {
+  remember(options: DirtyRenderOptions = {}) {
     const rendered = this._render(options);
     if (rendered) {
       this.memory.remember({
@@ -396,7 +398,7 @@ export class IssueWrapper {
     }
   }
 
-  render(options: DirtyIssueRenderOptions = {}): string {
+  render(options: DirtyRenderOptions = {}): string {
     this.remember(options);
     const rendered = this._render(options);
     if (rendered) {
