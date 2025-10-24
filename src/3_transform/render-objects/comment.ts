@@ -21,19 +21,11 @@ export function renderComment(
   let markdown = "";
   const sources = [`${comment.url} - ${comment.updatedAt}`];
 
-  if (options.header) {
+  if (options.header && comment.url) {
     markdown += `${"#".repeat(headerLevel)} [Update](${comment.url})\n\n`;
   }
 
-  if (comment.isEmpty) {
-    if (options.skipIfEmpty || !options.header) {
-      return undefined;
-    }
-    markdown += "No updates found.";
-    return { markdown, sources: [] };
-  }
-
-  if (options.author) {
+  if (options.author && comment.author) {
     markdown += `**Update Author:** ${comment.author}\n\n`;
   }
 
@@ -42,6 +34,15 @@ export function renderComment(
   } else {
     markdown += `${comment._body}`;
   }
+
+  if (markdown.trim() === "") {
+    if (options.skipIfEmpty) {
+      return undefined;
+    }
+    markdown += "No Updates found.";
+    return { markdown, sources: [] };
+  }
+
   markdown += `\n\n`;
 
   return {

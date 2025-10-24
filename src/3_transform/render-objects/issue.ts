@@ -44,7 +44,7 @@ export function renderIssue(
     if (options.skipIfEmpty || !options.header) {
       return undefined;
     } else {
-      markdown += "This issue has no updates, or body content to render.\n\n";
+      markdown += "This Issue has no updates, or body content to render.\n\n";
       return {
         markdown,
         sources,

@@ -23,7 +23,7 @@ export function renderIssueList(
     if (options.skipIfEmpty || !options.header) {
       return undefined;
     }
-    markdown += "No issues found.\n\n";
+    markdown += "No Issues found.\n\n";
     return { markdown, sources };
   }
 
