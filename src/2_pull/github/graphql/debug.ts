@@ -39,9 +39,9 @@ export function debugGraphQL(
 }
 
 export function logGraphQLTotals() {
-  console.log(
-    `Total GraphQL RateLimit cost of this Report: ${rateLimitRunningTotal}`,
-  );
+  console.log("======== GraphQL Totals ========");
+
+  console.log(`Total RateLimit cost of this Report: ${rateLimitRunningTotal}`);
   console.log(
     `Total Duration of GraphQL Requests: ${durationRunningTotal / 1000}s`,
   );
@@ -59,6 +59,8 @@ export function logGraphQLTotals() {
   )) {
     console.log(`  -> ${key}: ${value / 1000}s`);
   }
+
+  console.log("================================");
 }
 
 export function resetGraphQLTotals() {
