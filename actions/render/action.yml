@@ -30,8 +30,13 @@ inputs:
       Defaults to models.github.ai, with the org-specific path if using a GitHub App.
     required: false
     # default: https://models.github.ai/
+  truncate_tokens:
+    description: |
+      The maximum number of tokens to truncate to when rendering the template.
+    required: false
+    # default: 15600
 
-  # Templating
+  # Template Config
   template:
     description: The path to the Vento.js template file to render.
     required: false # Defaults to default/summary.md.vto
@@ -43,6 +48,18 @@ inputs:
     description: >
       If a matching Emoji exists in the latest update, it will override the Project Field status.
     required: false
+
+  # Slack
+  slack_token:
+    description: Slack App Token to send notifications.
+    required: false
+  slack_mute:
+    description: Mute Slack notifications if set to "true". Good for testing.
+    required: false
+  slack_enterprise_domain:
+    description: Slack enterprise email domain.
+    required: false
+    default: "github.com"
 
 outputs:
   md:

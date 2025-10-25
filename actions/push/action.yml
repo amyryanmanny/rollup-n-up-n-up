@@ -4,6 +4,27 @@ description: >
 author: amyryanmanny
 
 inputs:
+  # Authentication
+  # At least one of these auth strategies (App, PAT, or default) is required.
+  github_token:
+    description: |
+      GITHUB_TOKEN to authenticate with the GitHub API.
+      Should be explicitly set to {{ github.token }} if used.
+    required: false
+  github_pat_token:
+    description: GitHub Personal Access Token to authenticate with the GitHub API.
+    required: false
+  github_app_id:
+    description: GitHub App ID to authenticate with the GitHub API.
+    required: false
+  github_app_installation_id:
+    description: GitHub App Installation ID to authenticate with the GitHub API.
+    required: false
+  github_app_private_key:
+    description: GitHub App Private Key to authenticate with the GitHub API.
+    required: false
+
+  # Push Config
   title:
     description: The title of the document.
     required: false
