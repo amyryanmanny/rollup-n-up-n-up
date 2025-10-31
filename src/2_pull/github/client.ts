@@ -4,6 +4,7 @@ import { DiscussionWrapper } from "./discussion";
 
 import { getOctokit } from "@util/octokit";
 import {
+  matchDiscussionCategoryUrl,
   matchDiscussionUrl,
   matchIssueUrl,
   matchProjectViewUrl,
@@ -85,6 +86,16 @@ export class GitHubClient {
         return await this.discussion(owner, repo, discussionNumber);
       } else {
         // return this.discussionsForRepo(owner, repo);
+      }
+    }
+
+    // Discussion Category - Latest Discussion
+    const discussionCategoryMatch = matchDiscussionCategoryUrl(url);
+    if (discussionCategoryMatch) {
+      const { owner, repo, categoryName } = discussionCategoryMatch;
+
+      if (categoryName) {
+        return await this.latestDiscussionInCategory(owner, repo, categoryName);
       }
     }
 
@@ -196,6 +207,18 @@ export class GitHubClient {
       organization,
       repository,
       discussionNumber: Number(discussionNumber),
+    });
+  }
+
+  async latestDiscussionInCategory(
+    organization: string,
+    repository: string,
+    categoryName: string,
+  ): Promise<DiscussionWrapper> {
+    return await DiscussionWrapper.forLatestInCategory({
+      organization,
+      repository,
+      categoryName,
     });
   }
 }

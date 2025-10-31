@@ -6,6 +6,11 @@ import {
   type GetDiscussionParameters,
 } from "./graphql/discussion";
 import {
+  getLatestDiscussionInCategory,
+  type GetDiscussionCategoryParameters,
+} from "./graphql/discussion-category";
+
+import {
   renderDiscussion,
   type RenderedDiscussion,
 } from "@transform/render-objects";
@@ -36,7 +41,7 @@ export class DiscussionWrapper {
   private discussion: Discussion;
   private commentList?: CommentList;
 
-  private constructor(discussion: Discussion) {
+  constructor(discussion: Discussion) {
     this.discussion = discussion;
   }
 
@@ -44,6 +49,13 @@ export class DiscussionWrapper {
     params: GetDiscussionParameters,
   ): Promise<DiscussionWrapper> {
     const discussion = await getDiscussion(params);
+    return new DiscussionWrapper(discussion);
+  }
+
+  static async forLatestInCategory(
+    params: GetDiscussionCategoryParameters,
+  ): Promise<DiscussionWrapper> {
+    const discussion = await getLatestDiscussionInCategory(params);
     return new DiscussionWrapper(discussion);
   }
 

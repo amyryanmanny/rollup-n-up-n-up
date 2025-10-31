@@ -17,7 +17,7 @@ import {
   getDiscussionByNumber,
   getDiscussionByTitle,
   getDiscussionCategoryId,
-  getLatestDiscussionForCategory,
+  getLatestDiscussionInCategory,
   updateDiscussion,
   type Discussion,
 } from "./discussion";
@@ -331,7 +331,7 @@ export class GitHubPushClient {
         );
       }
     } else if (categoryName) {
-      discussion = await getLatestDiscussionForCategory(
+      discussion = await getLatestDiscussionInCategory(
         this,
         owner,
         repo,

@@ -142,7 +142,7 @@ export async function getDiscussionCategoryId(
   return categoryId;
 }
 
-export async function getLatestDiscussionForCategory(
+export async function getLatestDiscussionInCategory(
   client: GitHubPushClient,
   owner: string,
   repo: string,
