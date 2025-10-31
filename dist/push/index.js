@@ -39766,7 +39766,7 @@ async function getDiscussionCategoryId(client, owner, repo, categoryName) {
   }
   return categoryId;
 }
-async function getLatestDiscussionForCategory(client, owner, repo, categoryName) {
+async function getLatestDiscussionInCategory(client, owner, repo, categoryName) {
   const categoryId = await getDiscussionCategoryId(client, owner, repo, categoryName);
   const query = `
     query ($owner: String!, $repo: String!, $categoryId: ID!) {
@@ -40144,7 +40144,7 @@ ${append}`);
         throw new Error(`Discussion with title "${title}" not found in ${owner}/${repo}.`);
       }
     } else if (categoryName) {
-      discussion = await getLatestDiscussionForCategory(this, owner, repo, categoryName);
+      discussion = await getLatestDiscussionInCategory(this, owner, repo, categoryName);
       if (!discussion) {
         throw new Error(`No discussions found in category "${categoryName}" for ${owner}/${repo}.`);
       }
