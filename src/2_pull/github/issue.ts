@@ -376,7 +376,7 @@ export class IssueWrapper {
       this.assignees.map(async (assignee) => {
         emitInfo(
           `${SLACK_MUTE ? "[SLACK_MUTE=true]" : ""} 
-          ${SLACK_MUTE ? "Sending" : "Skipping"} Slack DM to @${assignee} about Issue ${this.header}`,
+          ${SLACK_MUTE ? "Skipping" : "Sending"} Slack DM to @${assignee} about Issue ${this.header}`,
         );
         return await slack.sendDm(assignee, message);
       }),
