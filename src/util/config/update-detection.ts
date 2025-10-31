@@ -62,11 +62,6 @@ export class UpdateDetection {
 
     if (config !== undefined) {
       strategies = UpdateDetection.parseStrategies(config);
-      if (strategies.length === 0) {
-        throw new Error(
-          'No valid strategies found in the "update_detection" input. See docs.',
-        );
-      }
     } else {
       strategies = UpdateDetection.defaultStrategies;
     }
