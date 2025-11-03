@@ -1,4 +1,4 @@
-import { UpdateDetection } from "@util/config";
+import { UpdateDetection } from "@config";
 
 import { type Comment, CommentWrapper } from "./comment";
 import type { IssueWrapper } from "./issue";

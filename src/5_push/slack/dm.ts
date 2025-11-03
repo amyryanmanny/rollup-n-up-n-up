@@ -1,4 +1,4 @@
-import { getConfig } from "@util/config";
+import { getConfig } from "@config";
 import { getSlack } from "@util/slack";
 
 const DEFAULT_ENTERPRISE_DOMAIN = "github.com";

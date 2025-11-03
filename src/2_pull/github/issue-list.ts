@@ -3,6 +3,9 @@ import {
   type IssueFetchParameters,
   type DirtyRenderOptions,
 } from "@config";
+import { emojiCompare } from "@util/emoji";
+import { emitWarning } from "@util/log";
+import { title } from "@util/string";
 
 import { Memory } from "@transform/memory";
 import {
@@ -11,15 +14,8 @@ import {
 } from "@transform/render-objects";
 import { barChart } from "@transform/charts";
 
-import { emojiCompare } from "@util/emoji";
-import { emitWarning } from "@util/log";
-import { title } from "@util/string";
-
+import { IssueWrapper, type Issue } from "./issue";
 import { ProjectView } from "./project-view";
-import {
-  getProjectView,
-  type GetProjectViewParameters,
-} from "./graphql/project-view";
 
 import {
   type GetIssueParameters,
@@ -31,9 +27,9 @@ import {
   type ListSubissuesForIssueParameters,
   listCommentsForListOfIssues,
   listProjectFieldsForProject,
+  getProjectView,
+  type GetProjectViewParameters,
 } from "./graphql";
-
-import { IssueWrapper, type Issue } from "./issue";
 
 type SourceOfTruth = {
   title: string;

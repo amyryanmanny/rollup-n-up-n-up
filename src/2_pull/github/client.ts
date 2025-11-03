@@ -1,6 +1,7 @@
-import { IssueWrapper } from "./issue";
-import { IssueList } from "./issue-list";
-import { DiscussionWrapper } from "./discussion";
+import {
+  validateFetchParameters,
+  type DirtyIssueFetchParameters,
+} from "@config";
 
 import { getOctokit } from "@util/octokit";
 import {
@@ -10,10 +11,9 @@ import {
   matchProjectViewUrl,
 } from "@util/github-url";
 
-import {
-  validateFetchParameters,
-  type DirtyIssueFetchParameters,
-} from "@config";
+import { IssueWrapper } from "./issue";
+import { IssueList } from "./issue-list";
+import { DiscussionWrapper } from "./discussion";
 
 // TODO: Positional and kwarg-based params
 // kwargs need fuzzy matching
@@ -27,7 +27,7 @@ export class GitHubClient {
 
   async url(
     url: string,
-    issueFetchParams?: DirtyIssueFetchParameters,
+    issueFetchParams?: DirtyIssueFetchParameters, // TODO: Generalize
   ): Promise<IssueList | IssueWrapper | DiscussionWrapper> {
     // Single Issue
     const issueMatch = matchIssueUrl(url);

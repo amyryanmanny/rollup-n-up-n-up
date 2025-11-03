@@ -1,8 +1,5 @@
 import { validateRenderOptions, type DirtyRenderOptions } from "@config";
 
-import { Memory } from "@transform/memory";
-import { renderComment, type RenderedComment } from "@transform/render-objects";
-
 import { ONE_DAY } from "@util/date";
 import { extractEmoji } from "@util/emoji";
 import {
@@ -12,6 +9,9 @@ import {
   stripHtml,
   toSnakeCase,
 } from "@util/string";
+
+import { Memory } from "@transform/memory";
+import { renderComment, type RenderedComment } from "@transform/render-objects";
 
 import type { IssueWrapper } from "./issue";
 import type { DiscussionWrapper } from "./discussion";
