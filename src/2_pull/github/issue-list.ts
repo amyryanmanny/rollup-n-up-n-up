@@ -43,8 +43,8 @@ export class IssueList {
   private sourceOfTruth: SourceOfTruth;
   private issues: IssueWrapper[];
 
-  public organization?: string; // All issues from the same Org
-  public projectNumber?: number; // All issues from the same Project
+  public organization?: string; // All Issues from the same Org
+  public projectNumber?: number; // All Issues from the same Project
 
   // Fetch State to prevent unnecessary requests
   private commentsFetched = false;
