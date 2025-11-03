@@ -1,14 +1,14 @@
 import { getSlack } from "@util/slack";
 
-import { getChannelIdFromName } from "./channel";
-import { getDmIdFromGithubUsername } from "./dm";
-
-import { getConfig, isTruthy } from "@util/config";
+import { getConfig, isTruthy } from "@config";
 import { emitError } from "@util/log";
 
+import { getChannelIdFromName } from "./channel";
+import { getDmIdFromGithubUsername } from "./dm";
 import { isDuplicate } from "./util";
 
 export const SLACK_MUTE = isTruthy(getConfig("SLACK_MUTE"));
+export const SLACK_FOOTER = `This is an automated message from the Rollup-n-up bot from Synapse team. Report any errors in #synapse.`;
 
 export class SlackClient {
   public slack = getSlack();

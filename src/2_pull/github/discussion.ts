@@ -1,5 +1,14 @@
+import { validateRenderOptions, type DirtyRenderOptions } from "@config";
+import { emitInfo } from "@util/log";
+
 import { Memory } from "@transform/memory";
+import {
+  renderDiscussion,
+  type RenderedDiscussion,
+} from "@transform/render-objects";
+
 import type { Comment } from "./comment";
+import { CommentList } from "./comment-list";
 
 import {
   getDiscussion,
@@ -10,12 +19,7 @@ import {
   type GetDiscussionCategoryParameters,
 } from "./graphql/discussion-category";
 
-import {
-  renderDiscussion,
-  type RenderedDiscussion,
-} from "@transform/render-objects";
-import { validateRenderOptions, type DirtyRenderOptions } from "@util/config";
-import { CommentList } from "./comment-list";
+import { SLACK_FOOTER, SLACK_MUTE, SlackClient, slackLink } from "@push/slack";
 
 export type Discussion = {
   title: string;
@@ -144,6 +148,18 @@ export class DiscussionWrapper {
   set comments(comments: Comment[]) {
     this.discussion.comments = comments;
     this.commentList = undefined; // Invalidate cache
+  }
+
+  // Slack
+  async dmAuthor(message: string): Promise<void> {
+    const slack = new SlackClient();
+
+    message = `Regarding the Discussion ${slackLink(this.url, this.title)}:\n${message}\n_${SLACK_FOOTER}_`;
+    emitInfo(
+      `${SLACK_MUTE ? "[SLACK_MUTE=true]" : ""} 
+          ${SLACK_MUTE ? "Skipping" : "Sending"} Slack DM to @${this.author} about Discussion ${this.header}`,
+    );
+    return await slack.sendDm(this.author, message);
   }
 
   // Render / Memory Functions

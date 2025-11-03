@@ -15,6 +15,11 @@ import { renderIssue, type RenderedIssue } from "@transform/render-objects";
 import { type Comment } from "./comment";
 import { CommentList } from "./comment-list";
 import { IssueList } from "./issue-list";
+import {
+  slugifyProjectFieldName,
+  type Project,
+  type ProjectField,
+} from "./project-fields";
 
 import {
   getIssue,
@@ -23,15 +28,7 @@ import {
   listProjectFieldsForIssue,
 } from "./graphql";
 
-import {
-  slugifyProjectFieldName,
-  type Project,
-  type ProjectField,
-} from "./project-fields";
-
-import { SlackClient, SLACK_MUTE, slackLink } from "@push/slack";
-
-const FOOTER = `This is an automated message from the Rollup-n-up bot from Synapse team. Report any errors in #synapse.`;
+import { SlackClient, slackLink, SLACK_FOOTER, SLACK_MUTE } from "@push/slack";
 
 // Interface
 export type Issue = {
@@ -370,7 +367,7 @@ export class IssueWrapper {
   async dmAssignees(message: string): Promise<void> {
     const slack = new SlackClient();
 
-    message = `Regarding the Issue ${slackLink(this.url, this.title)}:\n${message}\n_${FOOTER}_`;
+    message = `Regarding the Issue ${slackLink(this.url, this.title)}:\n${message}\n_${SLACK_FOOTER}_`;
 
     await Promise.all(
       this.assignees.map(async (assignee) => {
