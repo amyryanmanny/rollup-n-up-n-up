@@ -344,7 +344,7 @@ export class IssueList {
     const groups = new Map<string, IssueList>();
 
     for (const issue of this.issues) {
-      const key = issue.field(fieldName);
+      const key = issue.status(fieldName);
       if (!groups.has(key)) {
         groups.set(
           key,
