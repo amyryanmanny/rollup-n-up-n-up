@@ -128,11 +128,11 @@ export async function generateSummary(
 ): Promise<string> {
   let { content, prompt, placeholders, truncateTokens } = params;
 
-  if (typeof prompt === "string") {
-    // Try to load the prompt file if a string is provided
-    if (!prompt || prompt.trim() === "") {
-      throw new Error("prompt cannot be empty.");
-    }
+  if (!prompt) {
+    throw new Error("Prompt cannot be empty.");
+  } else if (typeof prompt === "string") {
+    // Try to load the string as a prompt file
+
     prompt = loadPromptFile(prompt);
   }
 
