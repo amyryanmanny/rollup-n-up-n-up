@@ -9,6 +9,7 @@ import { isDuplicate } from "./util";
 
 export const SLACK_MUTE = isTruthy(getConfig("SLACK_MUTE"));
 export const SLACK_FOOTER = `This is an automated message from the Rollup-n-up bot from Synapse team. Report any errors in #synapse.`;
+export const SLACK_FALLBACK_USERNAME = getConfig("SLACK_FALLBACK_USERNAME");
 
 export class SlackClient {
   public slack = getSlack();
@@ -27,7 +28,15 @@ export class SlackClient {
     }
   }
 
-  async sendDm(username: string, message: string) {
+  async sendDm(username: string | undefined, message: string) {
+    if (!username) {
+      if (SLACK_FALLBACK_USERNAME) {
+        username = SLACK_FALLBACK_USERNAME;
+      } else {
+        return; // Skip
+      }
+    }
+
     if (isDuplicate(username, message)) {
       // Prevent sending duplicate messages in the same run
       return;

@@ -369,6 +369,9 @@ export class IssueWrapper {
 
     message = `Regarding the Issue ${slackLink(this.url, this.title)}:\n${message}\n_${SLACK_FOOTER}_`;
 
+    if (this.assignees.length === 0) {
+      return await slack.sendDm(undefined, message);
+    }
     await Promise.all(
       this.assignees.map(async (assignee) => {
         emitInfo(

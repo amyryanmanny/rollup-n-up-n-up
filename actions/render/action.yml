@@ -60,6 +60,9 @@ inputs:
     description: Slack enterprise email domain.
     required: false
     default: "github.com"
+  slack_fallback_username:
+    description: Fallback GitHub username to DM on Slack, if no assignees exist on an issue.
+    required: false
 
 outputs:
   md:
