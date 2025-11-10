@@ -1,12 +1,14 @@
 import {
   getConfig,
   isTrueString,
+  UpdateDetection,
   validateFetchParameters,
   validateRenderOptions,
   type DirtyRenderOptions,
   type IssueFetchParameters,
 } from "@config";
 import { fuzzy } from "@util/string";
+import { ONE_DAY } from "@util/date";
 import { emitInfo } from "@util/log";
 
 import { Memory } from "@transform/memory";
@@ -20,6 +22,7 @@ import {
   type Project,
   type ProjectField,
 } from "./project-fields";
+import type { Timeframe } from "./update-detection";
 
 import {
   getIssue,
@@ -78,8 +81,11 @@ export class IssueWrapper {
   }
 
   async fetch(params: IssueFetchParameters): Promise<IssueWrapper> {
-    if (params.comments > 0) {
-      await this.fetchComments(params.comments);
+    if (!this.issue.comments && params.comments > 0) {
+      const timeframe = UpdateDetection.getInstance().timeframe;
+      if (this.wasUpdatedWithinTimeframe(timeframe)) {
+        await this.fetchComments(params.comments);
+      }
     }
     if (params.projectFields && this.projectNumber) {
       await this.fetchProjectFields(this.projectNumber);
@@ -305,6 +311,68 @@ export class IssueWrapper {
       return "No Status";
     }
     return value;
+  }
+
+  // Timeframe
+  // TODO: Reuse functions from CommentWrapper
+  wasPostedSince(daysAgo: number): boolean {
+    return new Date().getTime() - this.createdAt.getTime() < daysAgo * ONE_DAY;
+  }
+
+  wasUpdatedSince(daysAgo: number): boolean {
+    return new Date().getTime() - this.updatedAt.getTime() < daysAgo * ONE_DAY;
+  }
+
+  get wasPostedToday(): boolean {
+    return this.wasPostedSince(1);
+  }
+
+  get wasPostedThisWeek(): boolean {
+    return this.wasPostedSince(7);
+  }
+
+  get wasPostedThisMonth(): boolean {
+    return this.wasPostedSince(31);
+  }
+
+  get wasPostedThisYear(): boolean {
+    return this.wasPostedSince(365);
+  }
+
+  get wasUpdatedToday(): boolean {
+    return this.wasUpdatedSince(1);
+  }
+
+  get wasUpdatedThisWeek(): boolean {
+    return this.wasUpdatedSince(7);
+  }
+
+  get wasUpdatedThisMonth(): boolean {
+    return this.wasUpdatedSince(31);
+  }
+
+  get wasUpdatedThisYear(): boolean {
+    return this.wasUpdatedSince(365);
+  }
+
+  wasUpdatedWithinTimeframe(timeframe: Timeframe): boolean {
+    // Check if the Issue was created within the given Timeframe
+    switch (timeframe) {
+      case "all-time":
+        return true;
+      case "today":
+        return this.wasUpdatedToday;
+      case "last-week":
+        return this.wasUpdatedThisWeek;
+      case "last-month":
+        return this.wasUpdatedThisMonth;
+      case "last-year":
+        return this.wasUpdatedThisYear;
+      default:
+        throw new Error(
+          `Invalid Timeframe for Issue filtering: "${timeframe}".`,
+        );
+    }
   }
 
   // Fetching

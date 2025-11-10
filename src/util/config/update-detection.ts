@@ -189,4 +189,36 @@ export class UpdateDetection {
         }
       });
   }
+
+  get timeframe(): Timeframe {
+    // Return the widest Timeframe from the strategies
+    // Useful for issue-level filtering
+    const order: Timeframe[] = [
+      "today",
+      "last-week",
+      "last-month",
+      "last-year",
+      "all-time",
+    ];
+
+    if (!this.strategies.some((s) => "timeframe" in s)) {
+      // No timeframe specified anywhere
+      return "all-time";
+    }
+
+    let max: Timeframe = "today";
+    for (const strategy of this.strategies) {
+      let timeframe: Timeframe | undefined = undefined;
+      if ("timeframe" in strategy) {
+        timeframe = strategy.timeframe;
+      }
+
+      if (timeframe !== undefined) {
+        if (order.indexOf(timeframe) > order.indexOf(max)) {
+          max = timeframe;
+        }
+      }
+    }
+    return max;
+  }
 }

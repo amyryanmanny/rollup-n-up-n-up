@@ -103,7 +103,7 @@ export class CommentWrapper {
     return this.comment.updatedAt;
   }
 
-  // Date Logic
+  // Timeframe
   wasPostedSince(daysAgo: number): boolean {
     return new Date().getTime() - this.createdAt.getTime() < daysAgo * ONE_DAY;
   }

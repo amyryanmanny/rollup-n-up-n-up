@@ -2,6 +2,7 @@ import {
   validateRenderOptions,
   type IssueFetchParameters,
   type DirtyRenderOptions,
+  UpdateDetection,
 } from "@config";
 import { emojiCompare } from "@util/emoji";
 import { emitWarning } from "@util/log";
@@ -224,14 +225,22 @@ export class IssueList {
   private async fetchComments(numComments: number) {
     if (this.commentsFetched) return;
 
+    const timeframe = UpdateDetection.getInstance().timeframe;
+
     const commentsMap = await listCommentsForListOfIssues({
-      issues: this.issues.map((issue) => {
-        return {
-          organization: issue.organization,
-          repository: issue.repository,
-          issueNumber: issue.number,
-        };
-      }),
+      issues: this.issues
+        .filter((issue) => {
+          // Exclude issues outside configured timeframe
+          // TODO: Make this configurable with an environment variable
+          return issue.wasUpdatedWithinTimeframe(timeframe);
+        })
+        .map((issue) => {
+          return {
+            organization: issue.organization,
+            repository: issue.repository,
+            issueNumber: issue.number,
+          };
+        }),
       numComments,
     });
 
