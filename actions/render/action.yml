@@ -63,6 +63,11 @@ inputs:
   slack_fallback_username:
     description: Fallback GitHub username to DM on Slack, if no assignees exist on an issue.
     required: false
+  
+  # Debug
+  debug_graphql_queries:
+    description: Enable detailed logging for GraphQL queries if set to "true".
+    required: false
 
 outputs:
   md:

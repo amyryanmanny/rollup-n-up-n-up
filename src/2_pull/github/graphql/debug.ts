@@ -1,8 +1,8 @@
-import { getConfig } from "@config";
+import { getConfig, isTruthy } from "@config";
 
 import type { RateLimit } from "./fragments/rate-limit";
 
-const debugRateLimit = getConfig("DEBUG_RATE_LIMIT_QUERY_COST");
+const debugRateLimit = isTruthy(getConfig("DEBUG_GRAPHQL_QUERIES"));
 
 let rateLimitRunningTotal = 0;
 let durationRunningTotal = 0;
