@@ -2,7 +2,7 @@ import { getConfig, isTruthy } from "@config";
 
 import type { RateLimit } from "./fragments/rate-limit";
 
-const debugRateLimit = isTruthy(getConfig("DEBUG_GRAPHQL_QUERIES"));
+const queryDebugEnabled = isTruthy(getConfig("DEBUG_GRAPHQL_QUERIES"));
 
 let rateLimitRunningTotal = 0;
 let durationRunningTotal = 0;
@@ -26,7 +26,7 @@ export function debugGraphQL(
       Math.max(maxDurationMap.get(caller) ?? 0, duration),
     );
 
-    if (debugRateLimit) {
+    if (queryDebugEnabled) {
       console.log(`Query: "${caller}"`);
       console.log(`${JSON.stringify(params, null, 2)}`);
       console.log(`  -> Rate limit cost: ${response.rateLimit.cost}\n`);
