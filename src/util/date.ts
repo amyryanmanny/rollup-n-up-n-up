@@ -44,3 +44,11 @@ export function getDayOfThisWeek(
 
   return dayOfThisWeek;
 }
+
+export function formatDateAsYYYYMMDD(date?: Date): string {
+  if (!date) {
+    date = new Date();
+  }
+  // This is the format used by GitHub Search / Project View filters
+  return date.toISOString().split("T")[0]!;
+}

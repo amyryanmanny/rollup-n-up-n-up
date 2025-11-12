@@ -2,6 +2,8 @@ import { context } from "@actions/github";
 
 import { makeRe } from "minimatch";
 
+import { formatDateAsYYYYMMDD } from "@util/date";
+
 import type { IssueWrapper } from "./issue";
 import type { ProjectField } from "./project-fields";
 
@@ -148,9 +150,8 @@ export class ProjectView {
             } else {
               date.setDate(today.getDate() + days);
             }
-            const dateString = date.toISOString().split("T")[0]; // Format as YYYY-MM-DD
 
-            return comparator + dateString;
+            return comparator + formatDateAsYYYYMMDD(date);
           }
 
           return v; // Return as-is for any other values
@@ -280,7 +281,7 @@ export class ProjectView {
       return false; // Null dates are not valid
     }
 
-    const dateString = date.toISOString().split("T")[0] as string; // Format as YYYY-MM-DD
+    const dateString = formatDateAsYYYYMMDD(date);
 
     for (const f of filters) {
       const condition = f.values[0]; // TODO: Support OR date conditions

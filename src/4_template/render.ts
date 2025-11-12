@@ -1,5 +1,7 @@
 import { GitHubClient } from "@pull/github/client";
 
+import { formatDateAsYYYYMMDD } from "@util/date";
+
 import { getConfig } from "@config";
 import { Memory } from "@transform/memory";
 
@@ -9,7 +11,7 @@ import * as debug from "./debug";
 // Setup Globals
 const github = new GitHubClient();
 const memory = Memory.getInstance();
-const today = new Date().toISOString().split("T")[0]; // TODO: Support the same date formatting as push
+const today = formatDateAsYYYYMMDD(); // TODO: Support the same date formatting as push
 
 const globals = { github, memory, today };
 
