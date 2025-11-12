@@ -112,7 +112,7 @@ export class ProjectView {
                 subtract = false;
               } else {
                 throw new Error(
-                  `Invalid @today operand in Project View filter: ${v}`,
+                  `Invalid @today operator (use "+" or "-") in Project View filter: ${v}`,
                 );
               }
               rest = rest.slice(1);
@@ -121,7 +121,7 @@ export class ProjectView {
               const numberOf = parseInt(rest.slice(0, -1));
               if (isNaN(numberOf)) {
                 throw new Error(
-                  `Invalid @today math in Project View filter: ${v}`,
+                  `Invalid @today operand in Project View filter: ${v}`,
                 );
               }
               if (rest.endsWith("d")) {
