@@ -75,42 +75,85 @@ export class ProjectView {
           return v.trim();
         })
         .map((v) => {
-          // Resolve metavariables - like dates, @me, other special values
+          // Resolve metavariables - like @me, @today, etc.
           if (v === "@me") {
             return context.actor;
           }
 
-          if (v.startsWith("@today")) {
-            // There might be other date syntaxes I'm missing
+          if (v.includes("@today")) {
             const today = new Date();
-            const rest = v.split("@today-")[1]?.trim();
+            const pieces = v.split("@today").map((s) => s.trim());
+
+            const comparator = pieces[0]; // Could be >=, <=, =
+            if (comparator === "") {
+              throw new Error(
+                `Missing @today comparator in Project View filter: ${v}`,
+              );
+            } else if (
+              comparator !== ">=" &&
+              comparator !== "<=" &&
+              comparator !== "="
+            ) {
+              throw new Error(
+                `Invalid @today comparator in Project View filter: ${v}`,
+              );
+            }
+
+            let rest = pieces[1]; // Could be +7d, -1m, etc.
 
             let days = 0;
+            let subtract = false;
+
             if (rest) {
-              // Calculate number of days (e.g., @today-7d, @today-1m, @today-1y)
+              // Determine sign and remove it
+              if (!rest.startsWith("-")) {
+                subtract = true;
+              } else if (rest.startsWith("+")) {
+                subtract = false;
+              } else {
+                throw new Error(
+                  `Invalid @today operand in Project View filter: ${v}`,
+                );
+              }
+              rest = rest.slice(1);
+
+              // Calculate number of days (e.g., -7d, -1m, +1y)
+              const numberOf = parseInt(rest.slice(0, -1));
+              if (isNaN(numberOf)) {
+                throw new Error(
+                  `Invalid @today math in Project View filter: ${v}`,
+                );
+              }
               if (rest.endsWith("d")) {
-                days = parseInt(rest.slice(0, -1));
+                days = numberOf;
               }
               if (rest.endsWith("w")) {
-                const weeks = parseInt(rest.slice(0, -1));
-                days = weeks * 7; // Convert weeks to days
+                days = numberOf * 7; // Convert weeks to days
               }
               if (rest.endsWith("m")) {
-                const months = parseInt(rest.slice(0, -1));
-                days = months * 30; // Approximate month as 30 days
+                days = numberOf * 30; // Approximate month as 30 days
               }
               if (rest.endsWith("y")) {
-                const years = parseInt(rest.slice(0, -1));
-                days = years * 365; // Approximate year as 365 days
+                days = numberOf * 365; // Approximate year as 365 days
+              } else {
+                throw new Error(
+                  `Invalid @today time unit (use "d", "w", "m", or "y") in Project View filter: ${v}`,
+                );
               }
             }
 
             const date = new Date();
-            date.setDate(today.getDate() - days);
-            return date.toISOString().split("T")[0]; // Return as YYYY-MM-DD
+            if (subtract) {
+              date.setDate(today.getDate() - days);
+            } else {
+              date.setDate(today.getDate() + days);
+            }
+            const dateString = date.toISOString().split("T")[0]; // Format as YYYY-MM-DD
+
+            return comparator + dateString;
           }
 
-          return v; // Return as is for other values
+          return v; // Return as-is for any other values
         }) as string[];
 
       this.filters.push({ key, values, exclude });
