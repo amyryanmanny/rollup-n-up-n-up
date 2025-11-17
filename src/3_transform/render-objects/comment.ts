@@ -22,7 +22,7 @@ export function renderComment(
   const sources = [`${comment.url} - ${comment.updatedAt}`];
 
   if (options.header && comment.url) {
-    markdown += `${"#".repeat(headerLevel)} [Update](${comment.url})\n\n`;
+    markdown += `${"#".repeat(headerLevel)} ${comment.header}\n\n`;
   }
 
   if (options.author && comment.author) {

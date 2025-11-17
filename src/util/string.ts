@@ -45,17 +45,41 @@ function splitMarkdownByRegex(
 
   while ((match = regex.exec(markdown)) !== null) {
     if (lastHeader !== null) {
-      sections.set(lastHeader, markdown.slice(lastIndex, match.index).trim());
+      const content = markdown.slice(lastIndex, match.index).trim();
+      if (sections.has(lastHeader)) {
+        // Append to existing section
+        const existingContent = sections.get(lastHeader);
+        sections.set(lastHeader, existingContent + "\n\n" + content);
+      } else {
+        sections.set(lastHeader, content);
+      }
     }
     lastHeader = toSnakeCase(match[1]!.trim());
     lastIndex = match.index + match[0].length;
   }
 
   if (lastHeader !== null) {
-    sections.set(lastHeader, markdown.slice(lastIndex).trim());
+    // TODO: Remove duplication with above
+    const content = markdown.slice(lastIndex).trim();
+    if (sections.has(lastHeader)) {
+      // Append to existing section
+      const existingContent = sections.get(lastHeader);
+      sections.set(lastHeader, existingContent + "\n\n" + content);
+    } else {
+      sections.set(lastHeader, content);
+    }
   }
 
   return sections;
+}
+
+export function firstHeader(markdown: string): string | undefined {
+  const regex = /^#+\s+(.*)$/m;
+  const match = markdown.match(regex);
+  if (match) {
+    return title(match[1]!.trim());
+  }
+  return undefined;
 }
 
 export function splitMarkdownByHeaders(markdown: string): Map<string, string> {

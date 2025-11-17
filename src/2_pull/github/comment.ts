@@ -4,6 +4,7 @@ import { ONE_DAY } from "@util/date";
 import { extractEmoji } from "@util/emoji";
 import {
   extractDataBlocks,
+  firstHeader,
   splitMarkdownByBoldedText,
   splitMarkdownByHeaders,
   stripHtml,
@@ -48,8 +49,13 @@ export class CommentWrapper {
   }
 
   // Properties
+  get title(): string {
+    const header = firstHeader(this.comment.body);
+    return header || "Update";
+  }
+
   get header(): string {
-    return `[${this.parent.title}](${this.url})`;
+    return `[${this.title}](${this.url})`;
   }
 
   get id(): number {
