@@ -1,4 +1,9 @@
 import type { Issue } from "@pull/github/issue";
+import {
+  issueFieldValueNodeFragment,
+  mapIssueFieldValueNodes,
+  type IssueFieldValueNode,
+} from "./issue-field-values";
 
 export const issueNodeFragment = `
   __typename
@@ -27,6 +32,11 @@ export const issueNodeFragment = `
   labels(first: 100) {
     nodes {
       name
+    }
+  }
+  issueFieldValues(first: 100) {
+    nodes {
+      ${issueFieldValueNodeFragment}
     }
   }
   parent {
@@ -61,6 +71,9 @@ export type IssueNode = {
   labels: {
     nodes: Array<{ name: string }>;
   };
+  issueFieldValues: {
+    nodes: Array<IssueFieldValueNode>;
+  };
   parent: {
     title: string;
     url: string;
@@ -85,6 +98,7 @@ export function mapIssueNode(node: IssueNode): Issue {
     },
     assignees: node.assignees.nodes.map((assignee) => assignee.login),
     labels: node.labels.nodes.map((label) => label.name),
+    issueFields: mapIssueFieldValueNodes(node.issueFieldValues.nodes),
     parent: node.parent
       ? {
           title: node.parent.title,

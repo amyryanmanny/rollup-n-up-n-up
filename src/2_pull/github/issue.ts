@@ -9,19 +9,21 @@ import {
 } from "@config";
 import { fuzzy } from "@util/string";
 import { ONE_DAY } from "@util/date";
-import { emitInfo } from "@util/log";
+import { emitInfo, emitWarning } from "@util/log";
 
 import { Memory } from "@transform/memory";
 import { renderIssue, type RenderedIssue } from "@transform/render-objects";
 
 import { type Comment } from "./comment";
 import { CommentList } from "./comment-list";
+
 import { IssueList } from "./issue-list";
-import {
-  slugifyProjectFieldName,
-  type Project,
-  type ProjectField,
-} from "./project-fields";
+import { mapFieldsToString } from "./fields";
+import { type IssueFieldValue } from "./issue-fields";
+
+import { type Project, type ProjectField } from "./project-fields";
+import { ProjectView } from "./project-view";
+
 import type { Timeframe } from "./update-detection";
 
 import {
@@ -57,6 +59,7 @@ export type Issue = {
     number: number;
   };
   project?: Project;
+  issueFields?: Map<string, IssueFieldValue>;
   isSubissue?: boolean;
 };
 
@@ -234,15 +237,28 @@ export class IssueWrapper {
 
     // TODO: Labels
 
-    // Fallback to Project Fields
-    if (this._projectFields === undefined) {
-      throw new Error(
-        `Cannot access "${fieldName}", because Project Fields were not fetched.
-        Double check the field name, or set { projectFields: true } in FetchParams.`,
+    // Finally check Project / IssueFields Fields
+    const slug = ProjectView.slugifyFieldName(fieldName);
+
+    const fieldValue =
+      this.projectFields.get(slug) || this.issueFields.get(slug);
+
+    if (fieldValue === undefined) {
+      emitWarning(
+        `Found no value for field: "${fieldName}" on "${this.header}". If this is unexpected, double check the field name.`,
       );
+      const someFieldsNotFetched =
+        this._projectFields === undefined || this._issueFields === undefined;
+
+      if (someFieldsNotFetched) {
+        emitWarning(
+          `Fields may be missing because Project Fields or Issue Fields were not fetched.
+          Set { projectFields: true, issueFields: true } in FetchParams.`,
+        );
+      }
     }
 
-    return this.projectFields.get(slugifyProjectFieldName(fieldName)) || "";
+    return fieldValue || "";
   }
 
   set project(project: Project) {
@@ -264,17 +280,21 @@ export class IssueWrapper {
       return new Map();
     }
 
-    return new Map(
-      Array.from(this._projectFields.entries()).map(([name, field]) => {
-        switch (field.kind) {
-          case "SingleSelect":
-          case "Date":
-            return [name, field.value ?? ""];
-          case "MultiSelect": // Doesn't really exist but included for completeness
-            return [name, (field.values || []).join(", ")];
-        }
-      }),
-    );
+    // TODO: Memoize these mappings
+    return mapFieldsToString(this._projectFields);
+  }
+
+  get _issueFields(): Map<string, IssueFieldValue> | undefined {
+    return this.issue.issueFields;
+  }
+
+  get issueFields(): Map<string, string> {
+    // Issue Fields mapped to string representation for simple interface in the templates
+    if (!this._issueFields) {
+      return new Map();
+    }
+
+    return mapFieldsToString(this._issueFields);
   }
 
   status(fieldName: string): string {

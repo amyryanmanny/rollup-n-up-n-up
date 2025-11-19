@@ -5,7 +5,7 @@ import { makeRe } from "minimatch";
 import { formatDateAsYYYYMMDD } from "@util/date";
 
 import type { IssueWrapper } from "./issue";
-import type { ProjectField } from "./project-fields";
+import type { Field } from "./fields";
 
 type ProjectViewParameters = {
   name?: string;
@@ -24,9 +24,7 @@ export class ProjectView {
   private params: ProjectViewParameters;
 
   private filters = new Array<Filter>();
-
-  // There is no way to exclude a title
-  private titleFilters: RegExp[] = [];
+  private titleFilters: RegExp[] = []; // There is no way to exclude a title
 
   constructor(params: ProjectViewParameters) {
     this.params = params;
@@ -179,9 +177,9 @@ export class ProjectView {
   }
 
   // Filter Introspection
-  get projectFields(): string[] {
-    // Currently any non-default field is a Project Field
-    // But when implementing Issue Fields, they will need to be distinguished
+  get customFieldNames(): string[] {
+    // A union of ProjectFields and IssueFields
+    // TODO: Pass in IssueFieldSettings to discriminate between the two
     const defaultFields = ProjectView.defaultFields;
     return this.filters
       .map((f) => f.key)
@@ -190,8 +188,8 @@ export class ProjectView {
       });
   }
 
-  get usesProjectFields(): boolean {
-    return this.projectFields.length > 0;
+  get usesCustomFields(): boolean {
+    return this.customFieldNames.length > 0;
   }
 
   get unsupportedFields(): string[] {
@@ -230,13 +228,9 @@ export class ProjectView {
       return false;
     }
 
-    // Custom Fields
-    if (!this.checkProjectFields(issue)) {
+    if (!this.checkCustomFields(issue)) {
       return false;
     }
-
-    // TODO: Handle Issue Fields
-    // https://github.com/github/core-productivity/discussions/821
 
     return true;
   }
@@ -281,6 +275,8 @@ export class ProjectView {
       return false; // Null dates are not valid
     }
 
+    // For Date filters, the format is:
+    //   date:>=2025-06-16 or date:<=2025-06-22
     const dateString = formatDateAsYYYYMMDD(date);
 
     for (const f of filters) {
@@ -309,21 +305,26 @@ export class ProjectView {
     return true;
   }
 
-  checkProjectField(
-    fieldName: string,
-    field: ProjectField | undefined,
-  ): boolean {
+  checkField(fieldName: string, field: Field | undefined): boolean {
     let values: Array<string> = [];
-    if (!field) {
-      values = [];
-    } else if (field.kind === "SingleSelect") {
-      values = field.value ? [field.value] : [];
-    } else if (field.kind === "MultiSelect") {
-      values = field.values ?? [];
-    } else if (field.kind === "Date") {
-      // For Date filters, the format is:
-      //   date:>=2025-06-16 or date:<=2025-06-22
-      return this.checkDateFilters(fieldName, field.date);
+    switch (field?.kind) {
+      case "Text":
+      case "SingleSelect":
+      case "Number":
+        if (field.value) {
+          values = [String(field.value)];
+        }
+        break;
+      case "MultiSelect":
+        values = field.values ?? [];
+        break;
+      case "Date":
+        return this.checkDateFilters(fieldName, field.date);
+      case undefined:
+      case null:
+      default:
+        values = [];
+        break;
     }
 
     return this.checkFilters(fieldName, values);
@@ -363,10 +364,14 @@ export class ProjectView {
     return this.checkDateFilters("updated", issue.updatedAt);
   }
 
-  checkProjectFields(issue: IssueWrapper): boolean {
-    for (const fieldName of this.projectFields) {
-      const field = issue._projectFields?.get(fieldName);
-      if (!this.checkProjectField(fieldName, field)) {
+  checkCustomFields(issue: IssueWrapper): boolean {
+    for (const fieldName of this.customFieldNames) {
+      // These names can technically collide, since they get sluggified
+      // But I think it's safe to short circuit
+      const field =
+        issue._projectFields?.get(fieldName) ||
+        issue._issueFields?.get(fieldName);
+      if (!this.checkField(fieldName, field)) {
         return false;
       }
     }
@@ -375,6 +380,12 @@ export class ProjectView {
   }
 
   // Static
+  static slugifyFieldName(field: string): string {
+    // RoB Area FY25Q4 -> rob-area-fy25q4
+    // Since slugs are not accessible with GraphQL
+    return field.toLowerCase().replace(/\s+/g, "-");
+  }
+
   static get defaultFields(): string[] {
     return [
       // Supported fields

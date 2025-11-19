@@ -84,6 +84,9 @@ export async function listIssuesForRepo(
     organization: params.organization,
     repository: params.repository,
     states,
+    headers: {
+      "GraphQL-Features": "issue_fields",
+    },
   });
 
   debugGraphQL("List Issues for Repo", params, response, startTime);

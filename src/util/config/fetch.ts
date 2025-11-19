@@ -12,6 +12,7 @@ import type { IssueWrapper } from "@pull/github/issue";
 export type IssueFetchParameters = {
   comments: number; // Number of Comments to Fetch (default 20)
   projectFields: boolean;
+  issueFields: boolean;
   subissues: boolean;
   filter: (issue: IssueWrapper) => boolean;
 };
@@ -19,6 +20,7 @@ export type IssueFetchParameters = {
 export type DirtyIssueFetchParameters = {
   comments?: number | string;
   projectFields?: boolean;
+  issueFields?: boolean;
   subissues?: boolean | string;
   filter?: (issue: IssueWrapper) => boolean;
 };
@@ -36,6 +38,11 @@ export function validateFetchParameters(
     projectFields = isTruthy(params.projectFields);
   }
 
+  let issueFields = false;
+  if (params?.issueFields !== undefined) {
+    issueFields = isTruthy(params.issueFields);
+  }
+
   let subissues = false;
   if (params?.subissues !== undefined) {
     subissues = isTruthy(params.subissues);
@@ -46,5 +53,5 @@ export function validateFetchParameters(
     filter = params.filter;
   }
 
-  return { comments, projectFields, subissues, filter };
+  return { comments, projectFields, issueFields, subissues, filter };
 }

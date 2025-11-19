@@ -1,7 +1,5 @@
-import {
-  slugifyProjectFieldName,
-  type ProjectField,
-} from "@pull/github/project-fields";
+import { type ProjectField } from "@pull/github/project-fields";
+import { ProjectView } from "@pull/github/project-view";
 
 export const projectFieldValueFragment = `
   __typename
@@ -66,7 +64,8 @@ export function mapProjectFieldValues(
           // Ignore other field types
           return accumulator;
       }
-      const fieldName = slugifyProjectFieldName(node.field.name);
+      // TODO: Don't slugify here. Although helpful, it's lossy
+      const fieldName = ProjectView.slugifyFieldName(node.field.name);
       accumulator.set(fieldName, field);
     }
     return accumulator;

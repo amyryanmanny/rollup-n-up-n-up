@@ -83,7 +83,12 @@ async function listIssuesForProject(
         };
       };
     } & RateLimit
-  >(query, params);
+  >(query, {
+    ...params,
+    headers: {
+      "GraphQL-Features": "issue_fields",
+    },
+  });
 
   debugGraphQL("List Issues for Project", params, response, startTime);
 

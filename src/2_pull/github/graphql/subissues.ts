@@ -78,7 +78,12 @@ export async function listSubissuesForIssue(
         };
       };
     } & RateLimit
-  >(query, params);
+  >(query, {
+    ...params,
+    headers: {
+      "GraphQL-Features": "issue_fields",
+    },
+  });
 
   const issue = response.repositoryOwner.repository.issue;
   const subissues = issue.subIssues.nodes.map((subIssue) => {

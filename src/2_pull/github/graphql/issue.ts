@@ -42,7 +42,12 @@ export async function getIssue(params: GetIssueParameters): Promise<Issue> {
         };
       };
     } & RateLimit
-  >(query, params);
+  >(query, {
+    ...params,
+    headers: {
+      "GraphQL-Features": "issue_fields",
+    },
+  });
 
   debugGraphQL("Get Issue", params, response, startTime);
 
