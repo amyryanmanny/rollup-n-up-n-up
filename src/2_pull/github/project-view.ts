@@ -205,17 +205,6 @@ export class ProjectView {
 
   // Apply the View's filters to an Issue
   filterIssue(issue: IssueWrapper): boolean {
-    if (issue.number === 577) {
-      console.log("Debugging Issue 577");
-      console.log(`ISSUE FIELDS:`);
-      console.log(
-        JSON.stringify(Array.from(issue._issueFields?.entries() || [])),
-      );
-      console.log(`PROJECT FIELDS:`);
-      console.log(
-        JSON.stringify(Array.from(issue._projectFields?.entries() || [])),
-      );
-    }
     // Default Fields
     if (!this.checkOpen(issue)) {
       return false;
