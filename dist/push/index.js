@@ -39366,6 +39366,27 @@ throttling.triggersNotification = triggersNotification;
 // src/util/config/index.ts
 var import_dotenv = __toESM(require_main2(), 1);
 var import_core3 = __toESM(require_core(), 1);
+// src/util/config/fetch.ts
+var validKeys = new Set([
+  "comments",
+  "projectFields",
+  "issueFields",
+  "subissues",
+  "filter"
+]);
+// src/util/config/render.ts
+var validKeys2 = new Set([
+  "header",
+  "body",
+  "updates",
+  "author",
+  "createdAt",
+  "updatedAt",
+  "field",
+  "fields",
+  "subissues",
+  "skipIfEmpty"
+]);
 // src/util/config/models.ts
 var import_github2 = __toESM(require_github(), 1);
 // src/util/config/prompts.ts
