@@ -237,25 +237,15 @@ export class IssueWrapper {
 
     // TODO: Labels
 
-    // Finally check Project / IssueFields Fields
+    // Finally check ProjectFields / IssueFields
     const slug = ProjectView.slugifyFieldName(fieldName);
-
     const fieldValue =
-      this.projectFields.get(slug) || this.issueFields.get(slug);
+      this.issueFields.get(slug) || this.projectFields.get(slug);
 
     if (fieldValue === undefined) {
       emitWarning(
         `Found no value for field: "${fieldName}" on "${this.header}". If this is unexpected, double check the field name.`,
       );
-      const someFieldsNotFetched =
-        this._projectFields === undefined || this._issueFields === undefined;
-
-      if (someFieldsNotFetched) {
-        emitWarning(
-          `Fields may be missing because Project Fields or Issue Fields were not fetched.
-          Set { projectFields: true, issueFields: true } in FetchParams.`,
-        );
-      }
     }
 
     return fieldValue || "";
