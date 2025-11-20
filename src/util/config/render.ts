@@ -22,7 +22,7 @@ export type DirtyRenderOptions = {
 };
 
 export function validateRenderOptions(
-  options: DirtyRenderOptions,
+  options: DirtyRenderOptions = {},
 ): IssueRenderOptions & CommentRenderOptions & DiscussionRenderOptions {
   let fields: string[] = [];
   if (options.field && options.fields) {

@@ -112,12 +112,12 @@ export class DiscussionList {
 
   // Render / Memory Functions
   private _render(
-    options: DirtyRenderOptions,
+    options?: DirtyRenderOptions,
   ): RenderedDiscussionList | undefined {
     return renderDiscussionList(this, validateRenderOptions(options));
   }
 
-  remember(options: DirtyRenderOptions = {}) {
+  remember(options?: DirtyRenderOptions) {
     const rendered = this._render(options);
     if (rendered) {
       this.memory.remember({
@@ -127,7 +127,7 @@ export class DiscussionList {
     }
   }
 
-  render(options: DirtyRenderOptions = {}): string {
+  render(options?: DirtyRenderOptions): string {
     this.remember(options);
     const rendered = this._render(options);
     if (rendered) {

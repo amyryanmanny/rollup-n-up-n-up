@@ -217,11 +217,11 @@ export class CommentWrapper {
   }
 
   // Render / Memory Functions
-  private _render(options: DirtyRenderOptions): RenderedComment | undefined {
+  private _render(options?: DirtyRenderOptions): RenderedComment | undefined {
     return renderComment(this, validateRenderOptions(options));
   }
 
-  remember(options: DirtyRenderOptions = {}) {
+  remember(options?: DirtyRenderOptions) {
     const rendered = this._render(options);
     if (rendered) {
       this.memory.remember({
@@ -231,7 +231,7 @@ export class CommentWrapper {
     }
   }
 
-  render(options: DirtyRenderOptions = {}): string {
+  render(options?: DirtyRenderOptions): string {
     this.remember(options);
     const rendered = this._render(options);
     if (rendered === undefined) {

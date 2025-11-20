@@ -163,11 +163,13 @@ export class DiscussionWrapper {
   }
 
   // Render / Memory Functions
-  private _render(options: DirtyRenderOptions): RenderedDiscussion | undefined {
+  private _render(
+    options?: DirtyRenderOptions,
+  ): RenderedDiscussion | undefined {
     return renderDiscussion(this, validateRenderOptions(options));
   }
 
-  remember(options: DirtyRenderOptions = {}) {
+  remember(options?: DirtyRenderOptions) {
     const rendered = this._render(options);
     if (rendered) {
       this.memory.remember({
@@ -177,7 +179,7 @@ export class DiscussionWrapper {
     }
   }
 
-  render(options: DirtyRenderOptions = {}): string {
+  render(options?: DirtyRenderOptions): string {
     this.remember(options);
     const rendered = this._render(options);
     if (rendered) {

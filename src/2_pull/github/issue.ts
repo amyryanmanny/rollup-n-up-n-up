@@ -462,11 +462,11 @@ export class IssueWrapper {
   }
 
   // Render / Memory Functions
-  private _render(options: DirtyRenderOptions): RenderedIssue | undefined {
+  private _render(options?: DirtyRenderOptions): RenderedIssue | undefined {
     return renderIssue(this, validateRenderOptions(options));
   }
 
-  remember(options: DirtyRenderOptions = {}) {
+  remember(options?: DirtyRenderOptions) {
     const rendered = this._render(options);
     if (rendered) {
       this.memory.remember({
@@ -476,7 +476,7 @@ export class IssueWrapper {
     }
   }
 
-  render(options: DirtyRenderOptions = {}): string {
+  render(options?: DirtyRenderOptions): string {
     this.remember(options);
     const rendered = this._render(options);
     if (rendered) {

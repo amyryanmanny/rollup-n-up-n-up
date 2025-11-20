@@ -439,11 +439,11 @@ export class IssueList {
   }
 
   // Render / Memory Functions
-  private _render(options: DirtyRenderOptions): RenderedIssueList | undefined {
+  private _render(options?: DirtyRenderOptions): RenderedIssueList | undefined {
     return renderIssueList(this, validateRenderOptions(options));
   }
 
-  remember(options: DirtyRenderOptions = {}) {
+  remember(options?: DirtyRenderOptions) {
     const rendered = this._render(options);
     if (rendered) {
       this.memory.remember({
@@ -453,7 +453,7 @@ export class IssueList {
     }
   }
 
-  render(options: DirtyRenderOptions = {}): string {
+  render(options?: DirtyRenderOptions): string {
     this.remember(options);
     const rendered = this._render(options);
     if (rendered) {

@@ -26,7 +26,7 @@ export type DirtyIssueFetchParameters = {
 };
 
 export function validateFetchParameters(
-  params: DirtyIssueFetchParameters | undefined,
+  params: DirtyIssueFetchParameters = {},
 ): IssueFetchParameters {
   let comments = 20;
   if (params?.comments !== undefined) {
