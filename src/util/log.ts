@@ -13,15 +13,17 @@ export function emitInfo(message: string) {
 export function emitWarning(message: string) {
   if (isGitHubAction()) {
     warning(message);
+  } else {
+    console.warn(message);
   }
-  console.warn(message);
 }
 
 export function emitError(message: string) {
   if (isGitHubAction()) {
     error(message);
+  } else {
+    console.error(message);
   }
-  console.error(message);
 }
 
 // Summary
