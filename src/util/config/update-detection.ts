@@ -103,8 +103,8 @@ export class UpdateDetection {
   ): UpdateDetectionStrategy[] {
     let lines: string[] = [];
     if (typeof configBlob === "string") {
-      // Split by whitespace or commas
-      lines = configBlob.split(/[\s,]+/);
+      // Split by newlines or commas
+      lines = configBlob.split(/[\n,]+/);
     } else if (
       Array.isArray(configBlob) &&
       configBlob.every((line) => typeof line === "string")
