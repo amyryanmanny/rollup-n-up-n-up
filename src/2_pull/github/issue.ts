@@ -9,7 +9,7 @@ import {
 } from "@config";
 import { fuzzy } from "@util/string";
 import { ONE_DAY } from "@util/date";
-import { emitInfo, emitWarning } from "@util/log";
+import { emitInfo } from "@util/log";
 
 import { Memory } from "@transform/memory";
 import { renderIssue, type RenderedIssue } from "@transform/render-objects";
@@ -242,11 +242,11 @@ export class IssueWrapper {
     const fieldValue =
       this.issueFields.get(slug) || this.projectFields.get(slug);
 
-    if (fieldValue === undefined) {
-      emitWarning(
-        `Found no value for field: "${fieldName}" on "${this.header}". If this is unexpected, double check the field name.`,
-      );
-    }
+    // if (fieldValue === undefined) {
+    //   emitWarning(
+    //     `Found no value for field: "${fieldName}" on "${this.header}". If this is unexpected, double check the field name.`,
+    //   );
+    // }
 
     return fieldValue || "";
   }
