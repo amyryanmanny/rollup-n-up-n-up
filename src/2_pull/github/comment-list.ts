@@ -16,15 +16,13 @@ export class CommentList {
   private _latestUpdate: CommentWrapper | undefined; // Cached property
 
   constructor(parent: IssueWrapper | DiscussionWrapper, comments: Comment[]) {
-    // Call it parent, also support Discussion
     this.parent = parent;
-    this.comments = comments.map(
-      (comment) => new CommentWrapper(parent, comment),
-    );
-    this.comments.sort((a, b) => {
-      // Sort comments by createdAt in descending order
-      return b.createdAt.getTime() - a.createdAt.getTime();
-    });
+    this.comments = comments
+      .map((comment) => new CommentWrapper(parent, comment))
+      .sort((a, b) => {
+        // Sort comments by createdAt in descending order
+        return b.createdAt.getTime() - a.createdAt.getTime();
+      });
   }
 
   // Array-like methods
@@ -90,7 +88,9 @@ export class CommentList {
       strategies = UpdateDetection.parseStrategies(strategiesBlob);
     }
     const updates = findLatestUpdates(this.all(), n, strategies);
-    this._latestUpdate = updates[0];
+    if (strategiesBlob === undefined) {
+      this._latestUpdate = updates[0];
+    }
     return updates;
   }
 
