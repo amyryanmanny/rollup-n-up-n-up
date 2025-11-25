@@ -95,7 +95,7 @@ export class DiscussionList {
 
   blame(strategiesBlob?: string | string[]): DiscussionList {
     const blameList = this.copy();
-    blameList.filter((discussion) => {
+    blameList.discussions = blameList.filter((discussion) => {
       const updates = discussion.comments.latestUpdates(1, strategiesBlob);
       return updates.length === 0; // Keep Discussions with no Updates
     });

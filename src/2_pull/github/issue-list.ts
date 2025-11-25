@@ -425,7 +425,7 @@ export class IssueList {
 
   blame(strategiesBlob?: string | string[]): IssueList {
     const blameList = this.copy();
-    blameList.filter((issue) => {
+    blameList.issues = blameList.filter((issue) => {
       const updates = issue.comments.latestUpdates(1, strategiesBlob);
       return updates.length === 0; // Keep Issues with no Updates
     });
