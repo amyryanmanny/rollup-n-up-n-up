@@ -179,7 +179,8 @@ export class ProjectView {
   // Filter Introspection
   get customFieldNames(): string[] {
     // A union of ProjectFields and IssueFields
-    // TODO: Pass in IssueFieldSettings to discriminate between the two
+    // Not necessary to distinguish between the two within Project Views, since they're handled the same way,
+    //   and will be removed when Project Views are queryable with GraphQL anyway
     const defaultFields = ProjectView.defaultFields;
     return this.filters
       .map((f) => f.key)

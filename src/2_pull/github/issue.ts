@@ -431,8 +431,7 @@ export class IssueWrapper {
       },
       validateFetchParameters({
         ...params, // Inherit fetch params
-        // Don't recursively fetch Subissues automatically
-        subissues: false,
+        subissues: true,
       }),
     );
     if (this.projectNumber) {

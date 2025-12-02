@@ -3,7 +3,6 @@ export * from "./comments-for-issue-list";
 export * from "./discussion";
 export * from "./discussion-category";
 export * from "./issue";
-export * from "./issue-field-settings";
 export * from "./issue-field-values";
 export * from "./project";
 export * from "./project-view";

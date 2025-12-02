@@ -16,7 +16,6 @@ import {
 import { barChart } from "@transform/charts";
 
 import { IssueWrapper, type Issue } from "./issue";
-import { type IssueFieldSetting } from "./issue-fields";
 import { ProjectView } from "./project-view";
 
 import {
@@ -29,7 +28,6 @@ import {
   type ListSubissuesForIssueParameters,
   listCommentsForListOfIssues,
   listProjectFieldsForProject,
-  getIssueFieldSettings,
   getProjectView,
   type GetProjectViewParameters,
 } from "./graphql";
@@ -52,8 +50,6 @@ export class IssueList {
   // Fetch State to prevent unnecessary requests
   private commentsFetched = false;
   private projectFieldsFetched = false;
-
-  private issueFieldSettings?: Map<string, IssueFieldSetting> = undefined;
 
   // Array-like Methods
   all(): IssueWrapper[] {
@@ -211,10 +207,6 @@ export class IssueList {
     if (params.projectFields && this.projectNumber) {
       await this.fetchProjectFields(this.projectNumber);
     }
-    if (params.issueFields && this.organization) {
-      await this.fetchIssueFieldSettings(this.organization);
-    }
-
     if (params.comments > 0) {
       await this.fetchComments(params.comments);
     }
@@ -279,6 +271,7 @@ export class IssueList {
       );
     }
 
+    // This function is memoized, only called once per Project
     const projectFieldItems = await listProjectFieldsForProject({
       organization: this.organization,
       projectNumber: this.projectNumber,
@@ -307,22 +300,11 @@ export class IssueList {
     this.projectFieldsFetched = true;
   }
 
-  async fetchIssueFieldSettings(organization: string | undefined) {
-    if (this.issueFieldSettings) return;
-
-    if (!organization) {
-      throw new Error("Cannot fetch IssueFields without an organization.");
-    }
-
-    this.issueFieldSettings = await getIssueFieldSettings({ organization });
-  }
-
   // Issue Transformations
   private async applyViewFilter(view: ProjectView): Promise<IssueList> {
     if (view.usesCustomFields) {
       // Make sure Fields are fetched so we can filter on them
       await this.fetchProjectFields(view.projectNumber);
-      await this.fetchIssueFieldSettings(this.organization);
     }
 
     // Scope the Source of Truth to the View

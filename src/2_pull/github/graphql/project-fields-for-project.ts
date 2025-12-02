@@ -1,5 +1,7 @@
 import { getOctokit } from "@util/octokit";
 
+import memoize from "memoize";
+
 import type { GetIssueParameters } from "./issue";
 import type { ProjectField } from "../project-fields";
 
@@ -26,9 +28,10 @@ type ListProjectFieldsForProjectResponse = Array<{
 
 let pageSize = 100;
 
-export async function listProjectFieldsForProject(
+async function listProjectFieldsForProject(
   params: ListProjectFieldsForProjectParams,
 ): Promise<ListProjectFieldsForProjectResponse> {
+  // Fetch all Project Items in the Project
   const { organization, projectNumber } = params;
 
   if (!organization || !projectNumber) {
@@ -139,3 +142,13 @@ export async function listProjectFieldsForProject(
 
   return projectFieldsForProject;
 }
+
+const memoizedListProjectFieldsForProject = memoize(
+  listProjectFieldsForProject,
+  {
+    cacheKey: ([params]: [ListProjectFieldsForProjectParams]) =>
+      `${params.organization}/projects/${params.projectNumber}`,
+  },
+);
+
+export { memoizedListProjectFieldsForProject as listProjectFieldsForProject };
